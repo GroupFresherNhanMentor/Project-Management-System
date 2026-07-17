@@ -46,7 +46,7 @@ Tạo hệ thống web nội bộ để quản lý vòng đời dự án và cô
 | `ADMIN` | Quản lý User, tạo Project, xem toàn bộ dữ liệu hệ thống |
 | `USER` | Người dùng hệ thống (bao gồm PM, DEV, TESTER ở cấp dự án). Phân quyền chi tiết dựa trên Project Role. |
 
-Project Role (`PM`, `DEV`, `TESTER`) được gán theo từng Project và khác System Role. Quan hệ/ràng buộc giữa hai loại role chưa được chốt.
+Project Role (`PM`, `DEV`, `TESTER`) được gán theo từng Project và khác System Role. `ADMIN` có toàn quyền cấp hệ thống; mọi hành động trong phạm vi dự án được phân quyền bởi Project Role.
 
 ## Phạm vi chức năng
 
@@ -58,7 +58,7 @@ Project Role (`PM`, `DEV`, `TESTER`) được gán theo từng Project và khác
 - Comment, Activity History và Worklog trên Task.
 - Dashboard cá nhân, Dashboard dự án và báo cáo Worklog.
 
-Không có yêu cầu xóa Project/Sprint/Task, sửa nội dung Sprint, xóa/sửa Comment/Worklog hoặc quản lý permission động. Không được tự bổ sung các chức năng này.
+Không có yêu cầu xóa Project/Sprint/Task, sửa nội dung Sprint, xóa/sửa Comment hoặc quản lý permission động. **Worklog được phép sửa và xóa bởi người tạo** (FR-WLOG-02/03). Không được tự bổ sung các chức năng nằm ngoài danh sách này.
 
 ## Luồng nghiệp vụ chính
 
@@ -100,8 +100,8 @@ flowchart LR
 
 | Luồng | Đường đi | Điểm kiểm soát |
 |---|---|---|
-| Login | Login form → `/auth/login` → UserRepository → BCrypt → JWT | User tồn tại, password đúng, trạng thái khóa cần được làm rõ trong API |
-| Refresh/logout | Interceptor → `/auth/refresh`; logout → revoke refresh token | TTL, rotation, reuse detection chưa đặc tả |
+| Login | Login form → `/auth/login` → UserRepository → BCrypt → JWT stateless | User tồn tại, password đúng, User `LOCKED` bị từ chối |
+| Refresh/logout | Interceptor gắn AT → `/auth/refresh` bằng RT khi AT hết hạn; logout xóa token phía Client | Backend không lưu token; stateless hoàn toàn |
 | Tạo Task | Task form → TaskService → kiểm tra Project/Member/Sprint → TaskRepository → Activity | Project Role PM, Task Key, liên kết cùng Project |
 | Cập nhật Task | Detail form → TaskService → assignee + field whitelist + state machine → Activity | Từ chối chuyển trạng thái sai và field ngoài whitelist |
 | Worklog report | Filter → ReportService → Worklog/Task/Project query → trang kết quả | Phạm vi dữ liệu theo role và khoảng ngày chưa rõ |
@@ -332,18 +332,18 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 |---|---|---|---:|---|---|---|---|
 | T001 | Lập decision log và baseline: tập hợp mọi điểm chưa rõ, trình PO chốt; không tự quyết nghiệp vụ | P0 / Vừa | 3 | Dev 1 | Không | Decision log, OpenAPI/DDL baseline | Mỗi điểm có trạng thái, owner, deadline; điểm critical chưa chốt được đánh blocked; các tài liệu baseline được ghi phiên bản |
 | T002 | Khởi tạo Backend theo package-by-feature và cấu hình build/profile | P0 / Dễ | 4 | Dev 1 | Không | Spring Boot skeleton | App khởi động; package đúng Architecture; test context pass; không lỗi build |
-| T003 | Tạo Flyway V1 từ DDL 9 bảng và kiểm tra migration | P0 / Vừa | 4 | Dev 1 | T002 | Migration DB | DB sạch migrate thành công; 9 bảng/index/constraint đúng DDL; ghi rõ sai lệch “10 bảng” trong tài liệu |
+| T003 | Tạo Flyway V1 từ DDL 8 bảng và kiểm tra migration | P0 / Vừa | 4 | Dev 1 | T002 | Migration DB | DB sạch migrate thành công; 8 bảng/index/constraint đúng DDL (không có `roles` hay `refresh_tokens`) |
 | T004 | Common Backend: response/page/error/logging/security skeleton | P0 / Khó | 6 | Dev 1 | T002 | Common libraries/filter/handler | Success/error contract nhất quán theo decision T001; validation map được; request/exception được log nhưng token/password không bị log |
 | T005 | Angular shell: core/shared/layout, lazy routes, table/pagination/loading/error primitives | P0 / Khó | 7 | Dev 4 | T001 | FE skeleton và shared UI | App build/lint pass; feature route lazy-load; shared states hiển thị được; chưa thêm chức năng ngoài scope |
 | T006 | Docker Compose baseline cho DB/BE/FE-Nginx | P1 / Vừa | 4 | Dev 1 | T002, T003, T005 | Compose + Docker build | Ba service khởi động; FE gọi `/api`; DB dùng volume; secret/config đọc từ environment |
-| T007 | Ánh xạ OpenAPI thành FE models/services/mock fixtures | P0 / Vừa | 3 | Dev 6 | T001, T005 | Typed contracts và mock data | 30 operations được mapping; enum/wrapper/page types dùng chung; mock không tạo field ngoài API |
+| T007 | Ánh xạ OpenAPI thành FE models/services/mock fixtures | P0 / Vừa | 3 | Dev 6 | T001, T005 | Typed contracts và mock data | 33 operations được mapping; enum/wrapper/page types dùng chung; mock không tạo field ngoài API |
 
 ## Phase 2: Core Management
 
 | Mã | Tên / mô tả | Ưu tiên / khó | Giờ | Owner | Phụ thuộc | Đầu ra | Acceptance Criteria |
 |---|---|---|---:|---|---|---|---|
-| T008 | Backend Auth: login/refresh/logout, BCrypt, JWT và revoke token | P0 / Khó | 7 | Dev 2 | T003, T004 | 3 Auth APIs | Login hợp lệ trả token/user; sai credential bị 401; refresh/revoke theo decision; password/token không lộ |
-| T009 | Frontend Auth: login, token flow, logout và lỗi 401 | P0 / Vừa | 5 | Dev 2 | T005, T007, T008 | Login/logout flow | Login điều hướng theo decision; request có bearer; refresh/401 không loop; logout xóa trạng thái phiên |
+| T008 | Backend Auth: login/refresh/logout, BCrypt, JWT stateless | P0 / Khó | 7 | Dev 2 | T003, T004 | 3 Auth APIs | Login hợp lệ trả AT+RT; sai credential bị 401; User `LOCKED` bị 403; Backend chỉ verify, không lưu token; logout xóa phía Client; password/token không lộ |
+| T009 | Frontend Auth: login, token flow, logout và lỗi 401 | P0 / Vừa | 5 | Dev 2 | T005, T007, T008 | Login/logout flow | AT lưu trong memory; RT lưu localStorage; App Initializer khôi phục AT khi F5; logout xóa cả AT và RT phía Client |
 | T010 | Backend User: list/search/create/update/lock/detail | P1 / Khó | 8 | Dev 2 | T003, T004, T008 | 5 User operations | ADMIN-only theo SRS; paging/filter chạy DB; unique/email/enum/required được validate; BCrypt khi tạo |
 | T011 | Frontend User management | P1 / Vừa | 8 | Dev 2 | T005, T007, T010 | User screens/forms | List/search/page/create/edit/lock/detail chạy API thật; validation/error/empty/loading hiển thị; route ADMIN-only |
 | T012 | Test Auth/User | P0 / Vừa | 4 | Dev 2 | T008–T011 | Unit/integration/component tests | Happy path, 400/401/403/404, duplicate và locked cases theo quyết định đều pass |
@@ -393,12 +393,12 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 | T041 | Benchmark Task search/Report với dữ liệu mục tiêu | P0 / Khó | 4 | Dev 5 | T024, T038 | Performance evidence | Dataset khoảng 10.000 Task; p95 dưới 3 giây trong môi trường ghi nhận; query plan và index bottleneck được lưu |
 | T042 | Sweep FE guard/interceptor/API contract | P0 / Khó | 3 | Dev 4 | T009, T011, T020, T026, T037, T039 | Contract/security FE report | Route/action permission đúng; 401 refresh không loop; wrapper/204 handling theo baseline; không còn contract mismatch |
 | T043 | Cross-domain integration test | P0 / Khó | 5 | Dev 3 | T012, T017, T021, T025, T029, T034, T040 | Integration suite | Login→Project→Member→Sprint→Task→Comment/Worklog→Dashboard/Report pass trên DB thật |
-| T044 | Security negative test | P0 / Khó | 4 | Dev 1 | T008, T018, T022, T030, T032, T036, T038 | Authorization evidence | Mỗi role bị chặn ở endpoint trái quyền; cross-project access bị chặn; locked/expired/revoked token cases theo decision pass |
-| T045 | NFR/API consistency sweep | P0 / Vừa | 3 | Dev 7 | T030–T040, T043 | NFR checklist | Mọi list có paging; logging đủ và không lộ secret; error contract nhất quán; 30 operations được kiểm kê |
+| T044 | Security negative test | P0 / Khó | 4 | Dev 1 | T008, T018, T022, T030, T032, T036, T038 | Authorization evidence | Mỗi role bị chặn ở endpoint trái quyền; cross-project access bị chặn; LOCKED user bị 403; expired/tampered token bị 401; stateless verify không cần DB |
+| T045 | NFR/API consistency sweep | P0 / Vừa | 3 | Dev 7 | T030–T040, T043 | NFR checklist | Mọi list có paging; logging đủ và không lộ secret; error contract nhất quán; 33 operations được kiểm kê |
 | T046 | Full E2E/regression/performance QA | P0 / Khó | 7 | Dev 8 | T041–T045 | QA report | Tất cả P0/P1 pass; không blocker/critical; defect có severity/owner; NFR-05 có evidence |
 | T047 | UAT package và release QA | P0 / Vừa | 3 | Dev 8 | T046 | UAT checklist/data/results | Scenario theo FR traceability; tài khoản/dataset theo quyết định; sign-off hoặc danh sách deviation rõ |
 | T048 | Merge gate và release build | P0 / Khó | 5 | Dev 1 | T043, T046 | Release candidate images | BE/FE build/lint/test pass; migration từ DB sạch; compose health/smoke pass; không secret hard-code |
-| T049 | Handover và release notes | P1 / Vừa | 4 | Dev 1 | T047, T048 | Runbook, release notes, known issues | Có cách cấu hình/chạy/rollback/log/backup; version và limitation rõ; tài liệu khớp 9 bảng/30 operations |
+| T049 | Handover và release notes | P1 / Vừa | 4 | Dev 1 | T047, T048 | Runbook, release notes, known issues | Có cách cấu hình/chạy/rollback/log/backup; version và limitation rõ; tài liệu khớp 8 bảng/33 operations |
 | T050 | Peer E2E verification Task-centric | P0 / Vừa | 4 | Dev 6 | T043, T046 | Independent verification | Người không sở hữu BE chạy lại luồng Task chính và lỗi quyền; kết quả đính kèm QA report; defect fix được retest |
 
 # Rủi ro
@@ -413,7 +413,7 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 | R06 | Task tham chiếu Sprint/Assignee khác Project | Trung bình | Critical | Service validation tập trung; integration negative tests | Dev 5 |
 | R07 | Timeline 5 ngày không đủ cho sửa lỗi dồn cuối | Cao | Cao | Build 2 lần/ngày; freeze ngày 4; 17,2% reserve | Dev 1 |
 | R08 | Search/Report không đạt NFR-05 | Trung bình | Cao | Dataset 10k, EXPLAIN, index chỉ thêm dựa trên evidence | Dev 5/8 |
-| R09 | Refresh/token storage yếu, lộ token qua log/browser | Trung bình | Critical | Chốt policy; không log secret; security tests | Dev 1/2 |
+| R09 | Refresh/token storage yếu, lộ token qua log/browser | Trung bình | Critical | JWT stateless; AT memory, RT localStorage; không log secret; security tests | Dev 1/2 |
 | R10 | Cascade delete xóa lịch sử nếu tự thêm delete | Thấp hiện tại | Cao | Không thêm delete API; review schema nếu PO mở scope | Dev 1 |
 | R11 | Lost update khi Task cập nhật đồng thời | Trung bình | Cao | Ghi nhận risk; PO/architect quyết định optimistic locking; test nếu duyệt | Dev 1/5 |
 | R12 | Không có UI spec gây rework | Cao | Trung bình | Dùng form/table tối giản đúng API; PO duyệt wireframe chức năng sớm | Dev 4/7 |
@@ -435,8 +435,8 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 | D09 | Sprint state machine và date relation với Project | Có thể chuyển trạng thái tùy ý | Transition hợp lệ; Sprint dates có phải nằm trong Project dates | High / ngày 1 |
 | D10 | Validation chi tiết | Dữ liệu rác/FE-BE lệch | min/max/pattern/non-blank cho string, storyPoint, estimateHour, due/work date | High / ngày 1 |
 | D11 | API success convention | FE xử lý không thống nhất | Giữ `204` hay bọc success cho logout/delete member | High / ngày 1 |
-| D12 | Refresh token policy và FE token storage | Rủi ro bảo mật | TTL, rotation, reuse/revoke, storage mechanism | High / ngày 1 |
-| D13 | Bảng `roles`/số bảng | Migration và tài liệu lệch | Xác nhận quyết định cuối là 9 bảng và sửa tuyên bố test “10 bảng” | High / ngày 1 |
+| D12 | ~~Refresh token policy và FE token storage~~ | ~~Rủi ro bảo mật~~ | **RESOLVED**: JWT hoàn toàn stateless; AT lưu memory, RT lưu localStorage; Backend chỉ verify chữ ký; logout xóa phía Client | ✅ Đã chốt |
+| D13 | ~~Bảng `roles`/số bảng~~ | ~~Migration và tài liệu lệch~~ | **RESOLVED**: 8 bảng vật lý (`roles` và `refresh_tokens` đã bỏ); System Role là `ADMIN`/`USER` CHECK trên `users` | ✅ Đã chốt |
 | D14 | Sort/pagination bounds | Kết quả list không ổn định, abuse size | Default sort, `page >= 0`, min/max size | Medium / ngày 1 |
 | D15 | Project/User status behavior | Quyền và UX chưa rõ | User LOCKED có revoke session? Project status có chặn thao tác? | High / ngày 2 |
 | D16 | Xóa member edge cases | Project có thể không còn PM/Task assignee | Có cho xóa PM cuối, chính mình hoặc member đang được assign | High / ngày 1 |
@@ -458,7 +458,7 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 Các đề xuất sau chỉ là cải thiện tài liệu/quy trình; không tự động trở thành tính năng:
 
 1. Chuyển SRS từ Draft sang Approved bằng decision log có chữ ký/owner, đặc biệt cho mọi mục `(*)`.
-2. Sửa đồng bộ Architecture và Database Design thành 9 bảng nếu quyết định bỏ `roles` được giữ nguyên.
+2. ~~Sửa đồng bộ Architecture và Database Design thành 9 bảng~~ — **DONE**: đã cập nhật về 8 bảng (bỏ `roles` và `refresh_tokens`).
 3. Bổ sung Authorization Matrix theo từng operation trong 30 API; ghi rõ data scope, không chỉ System Role.
 4. Bổ sung OpenAPI constraints, error codes, examples, sort/paging bounds và convention `204` trước khi FE/BE code song song.
 5. Viết định nghĩa metric Dashboard/Report dưới dạng ví dụ dataset → expected result để QA đối soát.
@@ -471,8 +471,8 @@ Các đề xuất sau chỉ là cải thiện tài liệu/quy trình; không t�
 ## Definition of Done cho toàn dự án
 
 - Tất cả FR đã được PO duyệt có API, UI và test tương ứng; các FR `(*)` chưa duyệt không được âm thầm triển khai.
-- 31 API operations khớp OpenAPI baseline hoặc có deviation được duyệt.
-- Migration tạo đúng 9 bảng; constraint/index được kiểm chứng trên PostgreSQL 16.
+- 33 API operations khớp OpenAPI baseline hoặc có deviation được duyệt.
+- Migration tạo đúng 8 bảng; constraint/index được kiểm chứng trên PostgreSQL 16.
 - Permission positive/negative và cross-project test pass.
 - Mọi danh sách có pagination; Task search đạt mục tiêu dưới 3 giây trên dataset khoảng 10.000 Task trong môi trường được ghi nhận.
 - Angular/Spring build, lint và test pass; Docker Compose khởi động từ môi trường sạch.
