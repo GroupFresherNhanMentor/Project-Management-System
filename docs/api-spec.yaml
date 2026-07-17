@@ -1,0 +1,1170 @@
+openapi: 3.0.3
+info:
+  title: Mini Project Management System API
+  version: "1.0"
+  description: |
+    REST API cho hệ thống Mini Project Management System (Jira-like).
+    Biên soạn dựa trên SRS-Mini-Project-Management-System.md và
+    System-Architecture-Mini-Project-Management-System.md.
+
+    ## Quy ước chung
+    - Base path: `/api`
+    - Mọi endpoint (trừ `/auth/login`, `/auth/refresh`) yêu cầu header
+      `Authorization: Bearer <accessToken>`.
+    - Response thành công luôn bọc trong `ApiResponseBase`:
+      `{ "success": true, "message": null, "data": <payload> }`.
+    - Response lỗi luôn theo `ErrorResponse`:
+      `{ "success": false, "errorCode": "...", "message": "...", "details": [] }`.
+    - Danh sách luôn hỗ trợ phân trang qua query `page` (mặc định 0) và
+      `size` (mặc định 20), bọc trong `PageResponseBase` (NFR-04).
+    - Định dạng ngày: `yyyy-MM-dd`. Định dạng thời gian: ISO-8601.
+    - Phân quyền hai lớp theo System-Architecture mục 5.2: System Role
+      (ADMIN/PM/DEV) kiểm tra ở Controller; Project Role (PM/DEV/TESTER,
+      theo từng Project) kiểm tra ở Service — được ghi chú trong mô tả
+      từng endpoint bên dưới.
+
+servers:
+  - url: /api
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: User
+  - name: Project
+  - name: ProjectMember
+  - name: Sprint
+  - name: Task
+  - name: Comment
+  - name: Activity
+  - name: Worklog
+  - name: Dashboard
+  - name: Report
+
+paths:
+  # ───────────────────────── AUTH (FR-AUTH-01) ─────────────────────────
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Đăng nhập hệ thống (FR-AUTH-01)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Đăng nhập thành công, trả JWT + thông tin User
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Làm mới Access Token bằng Refresh Token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshTokenRequest' }
+      responses:
+        '200':
+          description: Cấp Access Token mới
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/RefreshTokenResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Đăng xuất (xóa token phía Client)
+      description: Do cơ chế JWT phía Backend là stateless, đăng xuất được thực hiện chủ yếu bằng cách xóa token phía Client (localStorage/sessionStorage/cookie).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshTokenRequest' }
+      responses:
+        '204': { description: Đăng xuất thành công }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ───────────────────────── USER (FR-USER-01..05) ─────────────────────────
+  /users:
+    get:
+      tags: [User]
+      summary: Xem danh sách / tìm kiếm User (FR-USER-04, FR-USER-05)
+      description: "Yêu cầu System Role: ADMIN"
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: Tìm theo Username/Full Name/Email
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/SystemRole' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/UserStatus' }
+      responses:
+        '200': { $ref: '#/components/responses/UserPageResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [User]
+      summary: Tạo User (FR-USER-01)
+      description: "Yêu cầu System Role: ADMIN. Password được băm BCrypt trước khi lưu."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUserRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/UserResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /users/{id}:
+    get:
+      tags: [User]
+      summary: Xem chi tiết User
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [User]
+      summary: Cập nhật User (FR-USER-02)
+      description: "Yêu cầu System Role: ADMIN"
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /users/{id}/lock:
+    patch:
+      tags: [User]
+      summary: Khoá / Mở khoá User (FR-USER-03)
+      description: "Yêu cầu System Role: ADMIN"
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserStatusRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────── PROJECT (FR-PROJ-01..03) ─────────────────────────
+  /projects:
+    get:
+      tags: [Project]
+      summary: Xem danh sách Project (FR-PROJ-02*)
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ProjectStatus' }
+      responses:
+        '200': { $ref: '#/components/responses/ProjectPageResponse' }
+    post:
+      tags: [Project]
+      summary: Tạo Project (FR-PROJ-01)
+      description: "Yêu cầu System Role: ADMIN"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProjectRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ProjectResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /projects/{projectId}:
+    get:
+      tags: [Project]
+      summary: Xem chi tiết Project (FR-PROJ-03*)
+      parameters: [ { $ref: '#/components/parameters/ProjectIdPath' } ]
+      responses:
+        '200': { $ref: '#/components/responses/ProjectResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Project]
+      summary: Cập nhật Project (FR-PROJ-04*)
+      description: "Yêu cầu System Role: ADMIN. Cập nhật thông tin chi tiết dự án (không cho phép sửa projectCode để tránh ảnh hưởng Task Key)."
+      parameters: [ { $ref: '#/components/parameters/ProjectIdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProjectRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/ProjectResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────── PROJECT MEMBER (FR-MEM-01..03) ─────────────────────────
+  /projects/{projectId}/members:
+    get:
+      tags: [ProjectMember]
+      summary: Xem danh sách thành viên dự án (FR-MEM-03)
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/ProjectMemberPageResponse' }
+    post:
+      tags: [ProjectMember]
+      summary: Thêm thành viên dự án (FR-MEM-01)
+      description: "Yêu cầu System Role: ADMIN hoặc PM (Project Role PM của đúng Project)"
+      parameters: [ { $ref: '#/components/parameters/ProjectIdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddProjectMemberRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ProjectMemberResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /projects/{projectId}/members/{memberId}:
+    delete:
+      tags: [ProjectMember]
+      summary: Xoá thành viên khỏi dự án (FR-MEM-02)
+      description: "Yêu cầu System Role: ADMIN hoặc PM (Project Role PM của đúng Project). Thực hiện soft-delete (đổi status của member thành INACTIVE để bảo toàn lịch sử công việc và Worklog)."
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Xoá thành công (thực tế chuyển trạng thái thành INACTIVE) }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────── SPRINT (FR-SPR-01..03) ─────────────────────────
+  /projects/{projectId}/sprints:
+    get:
+      tags: [Sprint]
+      summary: Xem danh sách Sprint theo Project (FR-SPR-03*)
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/SprintPageResponse' }
+    post:
+      tags: [Sprint]
+      summary: Tạo Sprint (FR-SPR-01)
+      description: "Yêu cầu Project Role: PM của đúng Project"
+      parameters: [ { $ref: '#/components/parameters/ProjectIdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSprintRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/SprintResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /sprints/{id}/status:
+    patch:
+      tags: [Sprint]
+      summary: Chuyển trạng thái Sprint (FR-SPR-02)
+      description: >
+        Yêu cầu Project Role: PM của đúng Project. Ràng buộc: một Project
+        chỉ được có tối đa một Sprint ở trạng thái ACTIVE tại một thời điểm —
+        request bị từ chối (400) nếu vi phạm.
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSprintStatusRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/SprintResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ───────────────────────── TASK (FR-TASK-01..05) ─────────────────────────
+  /tasks:
+    post:
+      tags: [Task]
+      summary: Tạo Task (FR-TASK-01)
+      description: >
+        Yêu cầu Project Role: PM của đúng Project. Trạng thái mặc định khi
+        tạo là TODO. Task Key được hệ thống tự sinh theo tiền tố Project (*).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTaskRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/TaskResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /tasks/search:
+    get:
+      tags: [Task]
+      summary: Tìm kiếm Task đa điều kiện (FR-TASK-04)
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - name: project
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: sprint
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/TaskStatus' }
+        - name: priority
+          in: query
+          schema: { $ref: '#/components/schemas/TaskPriority' }
+        - name: assignee
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: keyword
+          in: query
+          schema: { type: string }
+          description: Tìm theo Task Key hoặc Summary
+      responses:
+        '200': { $ref: '#/components/responses/TaskPageResponse' }
+
+  /tasks/{id}:
+    get:
+      tags: [Task]
+      summary: Xem chi tiết Task (FR-TASK-05*)
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      responses:
+        '200': { $ref: '#/components/responses/TaskResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Task]
+      summary: Cập nhật Task (FR-TASK-02)
+      description: >
+        Quy tắc phân quyền cập nhật:
+        - Với PM của dự án: Có quyền sửa tất cả các trường và chuyển đổi trạng thái tự do (bypass workflow).
+        - Với Developer (Assignee hoặc Reporter của Task): Chỉ được phép sửa: status, description, estimateHour, dueDate. Phải tuân thủ nghiêm ngặt workflow (TODO->IN_PROGRESS->TESTING->DONE, hoặc IN_PROGRESS->TODO). Các trạng thái nhảy bậc khác bị từ chối (400).
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTaskRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /tasks/{id}/assign:
+    patch:
+      tags: [Task]
+      summary: Gán Task cho thành viên (FR-TASK-03)
+      description: >
+        Yêu cầu Project Role: PM của đúng Project. Điều kiện: assigneeId
+        phải là thành viên của cùng Project với Task — nếu không, trả 400.
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignTaskRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ───────────────────────── COMMENT (FR-CMT-01, FR-CMT-02) ─────────────────────────
+  /tasks/{taskId}/comments:
+    get:
+      tags: [Comment]
+      summary: Xem danh sách Comment của Task (FR-CMT-02)
+      parameters:
+        - { $ref: '#/components/parameters/TaskIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskCommentPageResponse' }
+    post:
+      tags: [Comment]
+      summary: Tạo Comment trên Task (FR-CMT-01)
+      description: Tự động ghi Activity "COMMENT_ADDED" (FR-ACT-01)
+      parameters: [ { $ref: '#/components/parameters/TaskIdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCommentRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/TaskCommentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  # ───────────────────────── ACTIVITY (FR-ACT-01, FR-ACT-02*) ─────────────────────────
+  /tasks/{taskId}/activities:
+    get:
+      tags: [Activity]
+      summary: Xem lịch sử thay đổi Task (FR-ACT-02*)
+      description: >
+        Danh sách được hệ thống tự động ghi nhận (FR-ACT-01) mỗi khi có
+        Task Created, Status/Priority/Assignee Changed, Comment Added.
+      parameters:
+        - { $ref: '#/components/parameters/TaskIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskActivityPageResponse' }
+
+  # ───────────────────────── WORKLOG (FR-WLOG-01) ─────────────────────────
+  /tasks/{taskId}/worklogs:
+    get:
+      tags: [Worklog]
+      summary: Xem danh sách Worklog của Task (*)
+      parameters:
+        - { $ref: '#/components/parameters/TaskIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/WorklogPageResponse' }
+    post:
+      tags: [Worklog]
+      summary: Ghi nhận Worklog (FR-WLOG-01)
+      description: "Ràng buộc: Hour > 0 và Hour <= 24 (trả 400 nếu vi phạm). Cho phép log bù bất kỳ thời gian nào trong quá khứ."
+      parameters: [ { $ref: '#/components/parameters/TaskIdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateWorklogRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/WorklogResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /worklogs/{id}:
+    put:
+      tags: [Worklog]
+      summary: Cập nhật Worklog (FR-WLOG-02*)
+      description: "Cho phép người tạo chỉnh sửa Worklog. Ràng buộc: Hour > 0 và Hour <= 24."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateWorklogRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/WorklogResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Worklog]
+      summary: Xoá bản ghi Worklog (FR-WLOG-03*)
+      description: "Cho phép người tạo xoá bản ghi Worklog."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Xoá thành công }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────── DASHBOARD (FR-DASH-01, FR-DASH-02) ─────────────────────────
+  /dashboard/me:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard cá nhân (FR-DASH-01)
+      responses:
+        '200':
+          description: Thống kê công việc của người dùng hiện tại
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DashboardPersonalResponse' }
+
+  /dashboard/project/{projectId}:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard dự án (FR-DASH-02)
+      description: "Yêu cầu Project Role: PM của đúng Project"
+      parameters: [ { $ref: '#/components/parameters/ProjectIdPath' } ]
+      responses:
+        '200':
+          description: Thống kê tổng quan tiến độ dự án
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/DashboardProjectResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ───────────────────────── REPORT (FR-RPT-01) ─────────────────────────
+  /reports/worklog:
+    get:
+      tags: [Report]
+      summary: Báo cáo Worklog (FR-RPT-01)
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - name: project
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: user
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: fromDate
+          in: query
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200': { $ref: '#/components/responses/WorklogReportPageResponse' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, default: 20 }
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    ProjectIdPath:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    TaskIdPath:
+      name: taskId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  responses:
+    BadRequest:
+      description: Dữ liệu không hợp lệ / vi phạm ràng buộc nghiệp vụ
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Chưa đăng nhập hoặc token không hợp lệ/hết hạn
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: Không đủ quyền (System Role hoặc Project Role)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Không tìm thấy tài nguyên
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    UserResponse:
+      description: Thông tin User
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserDto' }
+    UserPageResponse:
+      description: Danh sách User có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/UserDto' }
+
+    ProjectResponse:
+      description: Thông tin Project
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ProjectDto' }
+    ProjectPageResponse:
+      description: Danh sách Project có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/ProjectDto' }
+
+    ProjectMemberResponse:
+      description: Thông tin thành viên dự án
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ProjectMemberDto' }
+    ProjectMemberPageResponse:
+      description: Danh sách thành viên dự án có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/ProjectMemberDto' }
+
+    SprintResponse:
+      description: Thông tin Sprint
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/SprintDto' }
+    SprintPageResponse:
+      description: Danh sách Sprint có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/SprintDto' }
+
+    TaskResponse:
+      description: Thông tin Task
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TaskDto' }
+    TaskPageResponse:
+      description: Danh sách Task có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/TaskDto' }
+
+    TaskCommentResponse:
+      description: Thông tin Comment
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/TaskCommentDto' }
+    TaskCommentPageResponse:
+      description: Danh sách Comment có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/TaskCommentDto' }
+
+    TaskActivityPageResponse:
+      description: Danh sách Activity History có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/TaskActivityDto' }
+
+    WorklogResponse:
+      description: Thông tin Worklog
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/WorklogDto' }
+    WorklogPageResponse:
+      description: Danh sách Worklog có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/WorklogDto' }
+
+    WorklogReportPageResponse:
+      description: Báo cáo Worklog có phân trang
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          content:
+                            type: array
+                            items: { $ref: '#/components/schemas/WorklogReportItem' }
+
+  schemas:
+    # ---- Wrapper chung ----
+    ApiResponseBase:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, nullable: true }
+
+    PageResponseBase:
+      type: object
+      properties:
+        totalElements: { type: integer, example: 128 }
+        totalPages: { type: integer, example: 7 }
+        pageNumber: { type: integer, example: 0 }
+        pageSize: { type: integer, example: 20 }
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        errorCode: { type: string, example: VALIDATION_ERROR }
+        message: { type: string, example: "Hour phải lớn hơn 0 và không vượt quá 24" }
+        details:
+          type: array
+          items: { type: string }
+          nullable: true
+
+    # ---- Enum ----
+    SystemRole: { type: string, enum: [ADMIN, USER] }
+    UserStatus: { type: string, enum: [ACTIVE, LOCKED] }
+    ProjectStatus: { type: string, enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED] }
+    ProjectRole: { type: string, enum: [PM, DEV, TESTER] }
+    SprintStatus: { type: string, enum: [PLANNED, ACTIVE, CLOSED] }
+    TaskType: { type: string, enum: [STORY, TASK, BUG] }
+    TaskPriority: { type: string, enum: [LOW, MEDIUM, HIGH, CRITICAL] }
+    TaskStatus: { type: string, enum: [TODO, IN_PROGRESS, TESTING, DONE] }
+    ActivityAction:
+      type: string
+      enum: [TASK_CREATED, STATUS_CHANGED, PRIORITY_CHANGED, ASSIGNEE_CHANGED, COMMENT_ADDED]
+
+    # ---- Auth ----
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string, format: password }
+    LoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/UserDto' }
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    RefreshTokenResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+
+    # ---- User ----
+    UserDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        employeeId: { type: string }
+        username: { type: string }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/SystemRole' }
+        status: { $ref: '#/components/schemas/UserStatus' }
+    CreateUserRequest:
+      type: object
+      required: [employeeId, username, password, fullName, email, role]
+      properties:
+        employeeId: { type: string }
+        username: { type: string }
+        password: { type: string, format: password }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/SystemRole' }
+    UpdateUserRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/SystemRole' }
+    UpdateUserStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/UserStatus' }
+
+    # ---- Project ----
+    ProjectDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        projectCode: { type: string }
+        projectName: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+    CreateProjectRequest:
+      type: object
+      required: [projectCode, projectName, startDate, endDate, status]
+      properties:
+        projectCode: { type: string }
+        projectName: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+    UpdateProjectRequest:
+      type: object
+      required: [projectName, startDate, endDate, status]
+      properties:
+        projectName: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { $ref: '#/components/schemas/ProjectStatus' }
+
+    # ---- Project Member ----
+    ProjectMemberDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        projectId: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        userFullName: { type: string }
+        projectRole: { $ref: '#/components/schemas/ProjectRole' }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+    AddProjectMemberRequest:
+      type: object
+      required: [userId, projectRole]
+      properties:
+        userId: { type: integer, format: int64 }
+        projectRole: { $ref: '#/components/schemas/ProjectRole' }
+
+    # ---- Sprint ----
+    SprintDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        projectId: { type: integer, format: int64 }
+        sprintName: { type: string }
+        goal: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { $ref: '#/components/schemas/SprintStatus' }
+    CreateSprintRequest:
+      type: object
+      required: [sprintName, startDate, endDate]
+      properties:
+        sprintName: { type: string }
+        goal: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+    UpdateSprintStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/SprintStatus' }
+
+    # ---- Task ----
+    TaskDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        taskKey: { type: string, example: WEB-101 }
+        projectId: { type: integer, format: int64 }
+        sprintId: { type: integer, format: int64, nullable: true }
+        summary: { type: string }
+        description: { type: string }
+        taskType: { $ref: '#/components/schemas/TaskType' }
+        priority: { $ref: '#/components/schemas/TaskPriority' }
+        status: { $ref: '#/components/schemas/TaskStatus' }
+        assigneeId: { type: integer, format: int64, nullable: true }
+        assigneeName: { type: string, nullable: true }
+        reporterId: { type: integer, format: int64 }
+        reporterName: { type: string }
+        storyPoint: { type: number, nullable: true }
+        estimateHour: { type: number, nullable: true }
+        dueDate: { type: string, format: date, nullable: true }
+        createdAt: { type: string, format: date-time }
+    CreateTaskRequest:
+      type: object
+      required: [projectId, summary, taskType, priority, reporterId]
+      properties:
+        projectId: { type: integer, format: int64 }
+        sprintId: { type: integer, format: int64, nullable: true }
+        summary: { type: string }
+        description: { type: string }
+        taskType: { $ref: '#/components/schemas/TaskType' }
+        priority: { $ref: '#/components/schemas/TaskPriority' }
+        assigneeId: { type: integer, format: int64, nullable: true }
+        reporterId: { type: integer, format: int64 }
+        storyPoint: { type: number, nullable: true }
+        estimateHour: { type: number, nullable: true }
+        dueDate: { type: string, format: date, nullable: true }
+    UpdateTaskRequest:
+      type: object
+      description: Chỉ 4 trường này được phép cập nhật (FR-TASK-02)
+      properties:
+        status: { $ref: '#/components/schemas/TaskStatus' }
+        description: { type: string }
+        estimateHour: { type: number }
+        dueDate: { type: string, format: date }
+    AssignTaskRequest:
+      type: object
+      required: [assigneeId]
+      properties:
+        assigneeId: { type: integer, format: int64 }
+
+    # ---- Comment ----
+    TaskCommentDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        taskId: { type: integer, format: int64 }
+        content: { type: string }
+        createdBy: { type: string }
+        createdTime: { type: string, format: date-time }
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+
+    # ---- Activity ----
+    TaskActivityDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        taskId: { type: integer, format: int64 }
+        userId: { type: integer, format: int64 }
+        userName: { type: string }
+        action: { $ref: '#/components/schemas/ActivityAction' }
+        oldValue: { type: string, nullable: true }
+        newValue: { type: string, nullable: true }
+        createdTime: { type: string, format: date-time }
+
+    # ---- Worklog ----
+    WorklogDto:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        taskId: { type: integer, format: int64 }
+        workDate: { type: string, format: date }
+        hour: { type: number, example: 4 }
+        description: { type: string }
+        createdBy: { type: string }
+    CreateWorklogRequest:
+      type: object
+      required: [workDate, hour]
+      properties:
+        workDate: { type: string, format: date }
+        hour: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 24 }
+        description: { type: string }
+    UpdateWorklogRequest:
+      type: object
+      required: [workDate, hour]
+      properties:
+        workDate: { type: string, format: date }
+        hour: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 24 }
+        description: { type: string }
+
+    # ---- Dashboard ----
+    DashboardPersonalResponse:
+      type: object
+      properties:
+        myOpenTasks: { type: integer }
+        myCompletedTasks: { type: integer }
+        myOverdueTasks: { type: integer }
+        totalLoggedHours: { type: number }
+    SprintProgressDto:
+      type: object
+      properties:
+        sprintId: { type: integer, format: int64 }
+        sprintName: { type: string }
+        totalTasks: { type: integer }
+        doneTasks: { type: integer }
+        percentComplete: { type: number, example: 62.5 }
+    DashboardProjectResponse:
+      type: object
+      properties:
+        totalTasks: { type: integer }
+        taskByStatus:
+          type: object
+          additionalProperties: { type: integer }
+          example: { TODO: 12, IN_PROGRESS: 8, TESTING: 3, DONE: 20 }
+        taskByPriority:
+          type: object
+          additionalProperties: { type: integer }
+          example: { LOW: 5, MEDIUM: 15, HIGH: 18, CRITICAL: 5 }
+        totalLoggedHours: { type: number }
+        sprintProgress: { $ref: '#/components/schemas/SprintProgressDto' }
+
+    # ---- Report ----
+    WorklogReportItem:
+      type: object
+      properties:
+        userId: { type: integer, format: int64 }
+        userName: { type: string }
+        totalHours: { type: number }
+        numberOfTasks: { type: integer }
