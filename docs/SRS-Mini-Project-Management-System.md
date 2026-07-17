@@ -59,10 +59,9 @@ Hệ thống độc lập (standalone), phục vụ nội bộ tổ chức, ki�
 | Sprint Management | Quản lý sprint theo dự án |
 | Task Management | Tạo, cập nhật, gán, tìm kiếm task |
 | Comment | Trao đổi trên task |
-| Worklog | Ghi nhận thời gian làm việc |
+| Worklog | Ghi nhận thời gian làm việc và báo cáo worklog |
 | Activity History | Ghi nhận lịch sử thay đổi task |
 | Dashboard | Thống kê tiến độ cá nhân/dự án |
-| Report | Báo cáo giờ làm việc |
 
 ### 2.3 Vai trò người dùng và quyền hạn
 
@@ -75,7 +74,7 @@ Hệ thống độc lập (standalone), phục vụ nội bộ tổ chức, ki�
 
 | Thành phần | Công nghệ |
 |---|---|
-| Backend | Spring Boot, REST API, JPA/Hibernate |
+| Backend | Spring Boot, REST API, jOOQ |
 | Bảo mật | JWT, Spring Security |
 | Cơ sở dữ liệu | PostgreSQL |
 | Frontend | Angular (CRUD + Dashboard) |
@@ -125,11 +124,11 @@ Hệ thống độc lập (standalone), phục vụ nội bộ tổ chức, ki�
 | FR-WLOG-01 | Ghi nhận Worklog | UC10 | Developer | Cao |
 | FR-WLOG-02 (*) | Cập nhật Worklog | Suy diễn | Developer | Cao |
 | FR-WLOG-03 (*) | Xóa Worklog | Suy diễn | Developer | Cao |
+| FR-WLOG-04 | Báo cáo Worklog | UC14 | Tất cả | Trung bình |
 | FR-ACT-01 | Tự động ghi nhận lịch sử thay đổi Task | UC11 | Hệ thống | Trung bình |
 | FR-ACT-02 (*) | Xem lịch sử Activity của Task | UC11 | Tất cả | Trung bình |
 | FR-DASH-01 | Dashboard cá nhân | UC12 | Developer | Trung bình |
 | FR-DASH-02 | Dashboard dự án | UC13 | PM | Trung bình |
-| FR-RPT-01 | Báo cáo Worklog | UC14 | Tất cả | Trung bình |
 
 ### 3.2 Chi tiết yêu cầu chức năng
 
@@ -250,7 +249,7 @@ Hệ thống độc lập (standalone), phục vụ nội bộ tổ chức, ki�
 - **Actor:** Project Manager
 - **Hiển thị:** Total Tasks, Task By Status, Task By Priority, Total Logged Hours, Sprint Progress
 
-#### FR-RPT-01 — Báo cáo Worklog
+#### FR-WLOG-04 — Báo cáo Worklog
 - **Actor:** Tất cả người dùng (phạm vi dữ liệu theo quyền)
 - **Điều kiện tìm kiếm:** Project, User, From Date, To Date
 - **Output:** User, Total Hours, Number Of Tasks
@@ -280,7 +279,7 @@ Hệ thống độc lập (standalone), phục vụ nội bộ tổ chức, ki�
 REST API (Spring Boot) giao tiếp qua HTTP/JSON, xác thực bằng JWT Bearer Token gửi kèm header `Authorization`.
 
 ### 5.3 Giao diện dữ liệu
-Kết nối cơ sở dữ liệu quan hệ PostgreSQL qua JPA/Hibernate.
+Kết nối cơ sở dữ liệu quan hệ PostgreSQL qua jOOQ.
 
 ---
 
@@ -317,7 +316,7 @@ Kết nối cơ sở dữ liệu quan hệ PostgreSQL qua JPA/Hibernate.
 | UC11 | Theo dõi Activity History | FR-ACT-01 (+ FR-ACT-02 suy diễn) |
 | UC12 | Dashboard cá nhân | FR-DASH-01 |
 | UC13 | Dashboard dự án | FR-DASH-02 |
-| UC14 | Báo cáo Worklog | FR-RPT-01 |
+| UC14 | Báo cáo Worklog | FR-WLOG-04 |
 | UC15 | Tìm kiếm Task | FR-TASK-04 |
 
 ---
@@ -341,4 +340,4 @@ Kết nối cơ sở dữ liệu quan hệ PostgreSQL qua JPA/Hibernate.
 
 1. Quy tắc sinh `Task Key` tự động (tiền tố theo Project Code?).
 2. Ai có quyền xoá Task/Sprint/Project (tài liệu gốc chỉ mô tả Tạo/Cập nhật, chưa đề cập Xoá) — có cần bổ sung chức năng xoá (hoặc archive) không?
-3. Phạm vi dữ liệu trong Báo cáo Worklog (FR-RPT-01) đối với Developer — chỉ xem được worklog của bản thân hay của cả team trong Project mình tham gia?
+3. Phạm vi dữ liệu trong Báo cáo Worklog (FR-WLOG-04) đối với Developer — chỉ xem được worklog của bản thân hay của cả team trong Project mình tham gia?

@@ -57,8 +57,8 @@ Các layer trong tầng Backend giao tiếp một chiều từ trên xuống (Co
 |---|---|
 | **Controller** | Nhận request, validate input (Bean Validation), gọi Service, trả response theo `ApiResponse<T>` chuẩn |
 | **Service** | Xử lý nghiệp vụ, quản lý transaction boundary (`@Transactional`), gọi Repository và các service phụ trợ (vd. `ActivityLogService`) |
-| **Repository** | JPA Repository; dùng `Specification`/QueryDSL cho các truy vấn động (Task Search — FR-TASK-04) |
-| **Entity/Domain** | JPA Entity ánh xạ 10 bảng trong SRS mục 6 |
+| **Repository** | jOOQ `DSLContext`; dùng `Condition` builder cho các truy vấn động (Task Search — FR-TASK-04) |
+| **Domain** | jOOQ generated `TableRecord` classes ánh xạ 8 bảng trong SRS mục 6 |
 | **DTO/Mapper** | Tách biệt Entity khỏi API contract, tránh lộ cấu trúc DB ra ngoài |
 | **Cross-cutting** | Security Filter (JWT), `GlobalExceptionHandler`, Logging Filter, Validation |
 
@@ -78,8 +78,7 @@ com.company.pms
 ├── comment/           # Dev 7
 ├── activity/          # Dev 7
 ├── worklog/           # Dev 8
-├── dashboard/         # Dev 8
-└── report/            # Dev 8
+└── dashboard/         # Dev 8
 ```
 
 Mỗi package con theo module tự chứa `controller/`, `service/`, `repository/`, `dto/`, `entity/` riêng — giữ nguyên cách phân công nhân sự đã thống nhất trước đó (mỗi Dev sở hữu trọn 1-2 package).
@@ -109,8 +108,7 @@ src/app
      ├── sprint/
      ├── task/
      ├── worklog/
-     ├── dashboard/
-     └── report/
+     └── dashboard/
 ```
 
 ### 4.2 Quản lý state
@@ -177,7 +175,7 @@ Với timeline 5 ngày, đề xuất triển khai đơn giản bằng **Docker C
 
 | Container | Image | Port | Ghi chú |
 |---|---|---|---|
-| `pms-db` | `postgres:16` | 5432 | Volume mount để không mất data khi restart |
+| `pms-db` | `postgres:18` | 5432 | Volume mount để không mất data khi restart |
 | `pms-backend` | Spring Boot jar (build multi-stage) | 8080 | Đọc config qua biến môi trường (DB URL, JWT secret) |
 | `pms-frontend` | Angular build, serve qua Nginx | 80 | Nginx reverse-proxy `/api` sang `pms-backend:8080` |
 
@@ -223,9 +221,9 @@ Với timeline 5 ngày, đề xuất triển khai đơn giản bằng **Docker C
 | Thành phần | Lựa chọn |
 |---|---|
 | Backend Framework | Spring Boot |
-| ORM | JPA/Hibernate |
-| Query động | Spring Data JPA Specification |
-| Bảo mật | Spring Security + JJWT |
+| Data access | jOOQ |
+| Query động | jOOQ `DSL.condition()` builder |
+| Bảo mật | Spring Security + OAuth2 Resource Server (HMAC-SHA256) |
 | Validation | Jakarta Bean Validation |
 | Cơ sở dữ liệu | PostgreSQL |
 | Frontend Framework | Angular |

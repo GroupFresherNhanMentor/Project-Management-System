@@ -2,7 +2,7 @@
 
 ## Kết luận điều hành
 
-Mini Project Management System là ứng dụng quản lý công việc nội bộ kiểu Jira thu gọn, gồm Angular SPA, Spring Boot REST API và PostgreSQL 16. Phạm vi đã xác nhận gồm xác thực, User, Project, thành viên dự án, Sprint, Task, Comment, Worklog, Activity History, hai Dashboard và báo cáo Worklog. Email notification, realtime update, chat, file upload và drag-and-drop Kanban nằm ngoài phạm vi.
+Mini Project Management System là ứng dụng quản lý công việc nội bộ kiểu Jira thu gọn, gồm Angular SPA, Spring Boot REST API và PostgreSQL 18. Phạm vi đã xác nhận gồm xác thực, User, Project, thành viên dự án, Sprint, Task, Comment, Worklog, Activity History, hai Dashboard và báo cáo Worklog. Email notification, realtime update, chat, file upload và drag-and-drop Kanban nằm ngoài phạm vi.
 
 Kế hoạch 5 ngày **có thể thực hiện ở mức MVP đúng tài liệu** nếu đồng thời thỏa bốn điều kiện:
 
@@ -28,7 +28,7 @@ Tổng năng lực danh nghĩa là `8 người × 5 ngày × 8 giờ = 320 giờ
 
 - Baseline yêu cầu: `SRS-Mini-Project-Management-System.md` v1.0, trạng thái Draft.
 - Baseline API: `api-spec.yaml` OpenAPI 3.0.3, v1.0.
-- Baseline dữ liệu: `Database-Design-Mini-Project-Management-System.md`, PostgreSQL 16.
+- Baseline dữ liệu: `Database-Design-Mini-Project-Management-System.md`, PostgreSQL 18.
 - Baseline kiến trúc: monolith, layered architecture, package-by-feature, JWT stateless, Angular Service + RxJS, Docker Compose.
 - Dấu `(*)` trong SRS/API là nội dung suy diễn và chưa phải nghiệp vụ được PO xác nhận.
 - `requirements.md` được SRS viện dẫn nhưng không có trong thư mục, nên chưa thể kiểm chứng yêu cầu gốc hoặc các suy diễn của SRS.
@@ -68,7 +68,7 @@ Không có yêu cầu xóa Project/Sprint/Task, sửa nội dung Sprint, xóa/s�
 4. PM tạo Task, tùy chọn gắn Sprint/Assignee và hệ thống sinh Task Key.
 5. Assignee cập nhật đúng bốn trường được phép; trạng thái chỉ đi theo luồng đã định nghĩa.
 6. Người có quyền truy cập Task xem/thêm Comment; Developer ghi Worklog; hệ thống ghi Activity tương ứng.
-7. Dashboard và Report tổng hợp từ Task/Sprint/Worklog theo phạm vi quyền.
+7. Dashboard tổng hợp từ Task/Sprint/Worklog; Worklog Report (thuộc module Worklog) tổng hợp giờ làm việc theo phạm vi quyền.
 
 # Kiến trúc hệ thống
 
@@ -78,8 +78,8 @@ flowchart LR
     FE -->|"HTTP/JSON + Bearer JWT"| API["Spring Boot REST API"]
     API --> C["Controller + Validation"]
     C --> S["Service + Transaction + Authorization"]
-    S --> R["JPA Repository / Specification"]
-    R --> DB["PostgreSQL 16"]
+    S --> R["jOOQ Repository / DSLContext"]
+    R --> DB["PostgreSQL 18"]
     S --> A["ActivityLogService"]
     A --> DB
 ```
@@ -91,7 +91,7 @@ flowchart LR
 | Backend | Monolith, layered, package-by-feature; Controller → Service → Repository |
 | API contract | DTO/Mapper; success/error wrapper; danh sách phân trang |
 | Security | Spring Security, JWT, BCrypt; System Role ở cổng API và Project Role ở Service |
-| Query | Spring Data JPA Specification cho Task search động |
+| Query | jOOQ DSL Condition builder cho Task search động |
 | Frontend | Angular feature modules lazy-loaded; core/shared/layout |
 | State | Angular Service + RxJS `BehaviorSubject`; không dùng NgRx |
 | Deployment | Docker Compose: PostgreSQL, Spring Boot, Angular/Nginx |
@@ -104,7 +104,7 @@ flowchart LR
 | Refresh/logout | Interceptor gắn AT → `/auth/refresh` bằng RT khi AT hết hạn; logout xóa token phía Client | Backend không lưu token; stateless hoàn toàn |
 | Tạo Task | Task form → TaskService → kiểm tra Project/Member/Sprint → TaskRepository → Activity | Project Role PM, Task Key, liên kết cùng Project |
 | Cập nhật Task | Detail form → TaskService → assignee + field whitelist + state machine → Activity | Từ chối chuyển trạng thái sai và field ngoài whitelist |
-| Worklog report | Filter → ReportService → Worklog/Task/Project query → trang kết quả | Phạm vi dữ liệu theo role và khoảng ngày chưa rõ |
+| Worklog report | Filter → WorklogService → Worklog/Task/Project query → trang kết quả | Phạm vi dữ liệu theo role và khoảng ngày chưa rõ |
 
 # Danh sách Module
 
@@ -119,10 +119,9 @@ flowchart LR
 | 7 | Task | Tạo, chi tiết, cập nhật, gán, tìm kiếm | `task` | `task` |
 | 8 | Comment | Thêm/xem Comment trên Task | `comment` | trong Task detail |
 | 9 | Activity | Ghi và xem lịch sử Task | `activity` | trong Task detail |
-| 10 | Worklog | Thêm/xem thời gian trên Task | `worklog` | `worklog`/Task detail |
+| 10 | Worklog | Thêm/xem thời gian trên Task, báo cáo Worklog | `worklog` | `worklog`/Task detail |
 | 11 | Dashboard | Thống kê cá nhân và dự án | `dashboard` | `dashboard` |
-| 12 | Report | Báo cáo Worklog | `report` | `report` |
-| 13 | Deployment | Build và chạy ba container | cấu hình build | Nginx build/config |
+| 12 | Deployment | Build và chạy ba container | cấu hình build | Nginx build/config |
 
 # Quan hệ phụ thuộc giữa Module
 
@@ -141,13 +140,11 @@ flowchart TD
     TA --> DA["Dashboard"]
     SP --> DA
     WL --> DA
-    WL --> RE["Report"]
-    PR --> RE
 ```
 
 - Common/API contract và Authentication là đường găng kỹ thuật.
 - Project Member là đường găng quyền truy cập cho Sprint/Task.
-- Task là domain trung tâm; Comment, Activity, Worklog, Dashboard và Report chỉ tích hợp hoàn chỉnh sau khi Task contract ổn định.
+- Task là domain trung tâm; Comment, Activity, Worklog và Dashboard chỉ tích hợp hoàn chỉnh sau khi Task contract ổn định.
 - Frontend có thể dựng bằng mock từ OpenAPI trong khi Backend triển khai, nhưng chỉ đóng task khi chạy với API thật.
 
 # Phân tích Backend
@@ -267,7 +264,7 @@ Các route dưới đây là mapping kỹ thuật đề xuất cho chức năng 
 - Shared: data table, pagination, loading, empty state, error state, confirm dialog, toast, form error message.
 - Core: AuthService, token storage policy, AuthGuard, RoleGuard, Project access handling, HTTP interceptor.
 - Feature services dùng `HttpClient`; state cục bộ bằng Service + RxJS `BehaviorSubject`.
-- Lazy loading cho auth/user/project/sprint/task/worklog/dashboard/report như Architecture.
+- Lazy loading cho auth/user/project/sprint/task/worklog/dashboard như Architecture.
 - Interceptor gắn JWT; xử lý refresh/401 phải tránh nhiều request refresh đồng thời và vòng lặp refresh, nhưng chính sách chi tiết chưa được API mô tả.
 
 ## Thiếu sót Frontend cần chốt
@@ -286,7 +283,7 @@ Các route dưới đây là mapping kỹ thuật đề xuất cho chức năng 
 | 1. Foundation | Ngày 1 | Skeleton BE/FE, Flyway, common/security, Docker | Hai app build được, DB migrate, compose baseline | Build/lint/test smoke thành công |
 | 2. Core Management | Ngày 1–2 | Auth, User, Project, Member, Sprint | Vertical slices chạy với API thật | Role checks và CRUD giới hạn pass |
 | 3. Task Workflow | Ngày 2–3 | Task create/search/detail/update/assign | Workflow trung tâm end-to-end | State machine, assignment, Task Key và paging pass |
-| 4. Collaboration & Analytics | Ngày 3–4 | Comment, Activity, Worklog, Dashboard, Report | Tất cả module trong scope tích hợp | Aggregation đúng trên seed dataset |
+| 4. Collaboration & Analytics | Ngày 3–4 | Comment, Activity, Worklog (+ Worklog Report), Dashboard | Tất cả module trong scope tích hợp | Aggregation đúng trên seed dataset |
 | 5. Hardening & Release | Ngày 4–5 | Security, NFR, E2E, performance, Docker release | Release candidate + evidence | Không còn lỗi blocker/critical; NFR test và compose smoke pass |
 
 ## Nhịp làm việc bắt buộc
@@ -304,7 +301,7 @@ Vì tổng timeline chỉ 5 ngày, đây là bốn **mini-sprint/mốc giao hàn
 |---|---|---|---|---|---|---|
 | Sprint 0 | Ngày 1 sáng | Baseline quyết định và nền tảng | T001–T007 | Contract, skeleton, migration, FE shell, compose baseline | PO chậm quyết định; contract lệch | Build được, migration chạy, quyết định critical có owner/deadline |
 | Sprint 1 | Ngày 1 chiều–Ngày 2 | Core management và khung Task | T008–T024 | Auth/User/Project/Member/Sprint + Task BE core | Hai lớp role; API thay đổi | Vertical slice trên DB thật; unit/integration test core pass |
-| Sprint 2 | Ngày 3–Ngày 4 | Hoàn tất toàn bộ feature | T025–T040 | Task FE, Comment/Activity/Worklog, Dashboard/Report | Aggregation sai; FE chờ BE | Tất cả 30 operations được gọi từ FE/contract test phù hợp |
+| Sprint 2 | Ngày 3–Ngày 4 | Hoàn tất toàn bộ feature | T025–T040 | Task FE, Comment/Activity/Worklog (+ Worklog Report), Dashboard | Aggregation sai; FE chờ BE | Tất cả 33 operations được gọi từ FE/contract test phù hợp |
 | Sprint 3 | Ngày 5 | Ổn định và phát hành | T041–T050 | Regression, performance/security evidence, Docker release | Thiếu thời gian sửa blocker | Không blocker/critical; compose khởi động sạch; handover hoàn tất |
 
 # Phân công thành viên
@@ -320,7 +317,7 @@ Do đầu vào chỉ xác nhận “8 fullstack”, các vai trò QA/UI/UX/DevOp
 | Dev 5 | Task backend/search/performance | T022→T023/T024→T025→T041 | 32 | Project/Member/Sprint contract; Task Key decision | Search query và assignment sau Task domain core |
 | Dev 6 | FE contract + Task frontend + peer E2E | T007→T026/T027→T028→T029→T050 | 33 | Task API | List/create UI bằng mock trong khi BE phát triển |
 | Dev 7 | Comment/Activity/Worklog + UI consistency/NFR QA | T030/T032→T031/T033→T034→T035→T045 | 34 | Task detail/API | Comment và Worklog là hai nhánh song song |
-| Dev 8 | Dashboard/Report + QA lead | T036/T038→T037/T039→T040→T046→T047 | 35 | Task/Worklog/Project data | Dashboard và Report query/UI song song |
+| Dev 8 | Dashboard + QA lead | T036→T037→T040→T046→T047 | 30 | Task/Worklog/Project data | Dashboard personal/project query và UI song song |
 
 # Danh sách Task chi tiết
 
@@ -382,8 +379,8 @@ Quy ước: ưu tiên `P0` = chặn release/đường găng, `P1` = bắt buộc
 | T035 | Chuẩn hóa UI states toàn hệ thống | P1 / Vừa | 5 | Dev 7 | T011, T014, T016, T020, T026, T031, T033 | UI consistency pass | Mọi list có loading/empty/error/paging; form có field/server error; không còn raw exception |
 | T036 | Backend Dashboard cá nhân/dự án | P1 / Khó | 6 | Dev 8 | T022, T032 | 2 Dashboard APIs | Số liệu đúng seed dataset; access đúng; zero/no-active-sprint theo T001; query không N+1 |
 | T037 | Frontend Dashboard | P1 / Vừa | 5 | Dev 8 | T005, T007, T036 | 2 Dashboard screens | Hiển thị đủ metric SRS; zero/loading/error states; không thêm chart/metric ngoài scope |
-| T038 | Backend Worklog Report | P1 / Khó | 5 | Dev 8 | T013, T032 | Report API | Group user, total hours, distinct task count đúng; paging/filter/date/scope theo T001; query DB-side |
-| T039 | Frontend Worklog Report | P1 / Vừa | 5 | Dev 8 | T005, T007, T038 | Report screen | Filter/page và 4 output field đúng; date/server errors; role scope không bị bypass |
+| T038 | Backend Worklog Report (thuộc Worklog module) | P1 / Khó | 5 | Dev 7 | T013, T032 | Report API (`GET /reports/worklog`) | Group user, total hours, distinct task count đúng; paging/filter/date/scope theo T001; query DB-side |
+| T039 | Frontend Worklog Report (thuộc Worklog module) | P1 / Vừa | 5 | Dev 7 | T005, T007, T038 | Report screen | Filter/page và 4 output field đúng; date/server errors; role scope không bị bypass |
 | T040 | Test Dashboard/Report | P0 / Vừa | 4 | Dev 8 | T036–T039 | Analytics tests | Đối chiếu số liệu bằng fixture; boundary date, zero data, permission và paging pass |
 
 ## Phase 5: Hardening và Release
@@ -472,7 +469,7 @@ Các đề xuất sau chỉ là cải thiện tài liệu/quy trình; không t�
 
 - Tất cả FR đã được PO duyệt có API, UI và test tương ứng; các FR `(*)` chưa duyệt không được âm thầm triển khai.
 - 33 API operations khớp OpenAPI baseline hoặc có deviation được duyệt.
-- Migration tạo đúng 8 bảng; constraint/index được kiểm chứng trên PostgreSQL 16.
+- Migration tạo đúng 8 bảng; constraint/index được kiểm chứng trên PostgreSQL 18.
 - Permission positive/negative và cross-project test pass.
 - Mọi danh sách có pagination; Task search đạt mục tiêu dưới 3 giây trên dataset khoảng 10.000 Task trong môi trường được ghi nhận.
 - Angular/Spring build, lint và test pass; Docker Compose khởi động từ môi trường sạch.

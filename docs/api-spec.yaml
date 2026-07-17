@@ -40,7 +40,6 @@ tags:
   - name: Activity
   - name: Worklog
   - name: Dashboard
-  - name: Report
 
 paths:
   # ───────────────────────── AUTH (FR-AUTH-01) ─────────────────────────
@@ -547,11 +546,11 @@ paths:
                       data: { $ref: '#/components/schemas/DashboardProjectResponse' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  # ───────────────────────── REPORT (FR-RPT-01) ─────────────────────────
+  # ───────────────────────── WORKLOG REPORT (FR-WLOG-04) ─────────────────────────
   /reports/worklog:
     get:
-      tags: [Report]
-      summary: Báo cáo Worklog (FR-RPT-01)
+      tags: [Worklog]
+      summary: Báo cáo Worklog (FR-WLOG-04)
       parameters:
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/Size' }

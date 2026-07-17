@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: pms-db
+    environment:
+      POSTGRES_DB: mini-project-management-system
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pms-db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mini-project-management-system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pms-db-data:

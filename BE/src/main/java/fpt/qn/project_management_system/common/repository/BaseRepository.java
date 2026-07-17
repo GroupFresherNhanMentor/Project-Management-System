@@ -1,0 +1,48 @@
+package fpt.qn.project_management_system.common.repository;
+
+import org.jooq.DSLContext;
+import org.jooq.Table;
+import org.jooq.UpdatableRecord;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public abstract class BaseRepository<R extends UpdatableRecord<R>> {
+
+    protected final DSLContext dsl;
+    protected final Table<R> table;
+
+    protected BaseRepository(DSLContext dsl, Table<R> table) {
+        this.dsl = dsl;
+        this.table = table;
+    }
+
+    public Optional<R> findById(UUID id) {
+        return dsl.selectFrom(table)
+                .where(table.field("id", UUID.class).eq(id))
+                .fetchOptional();
+    }
+
+    public List<R> findAll() {
+        return dsl.selectFrom(table).fetch();
+    }
+
+    public R save(R record) {
+        record.store();
+        return record;
+    }
+
+    public void deleteById(UUID id) {
+        dsl.deleteFrom(table)
+                .where(table.field("id", UUID.class).eq(id))
+                .execute();
+    }
+
+    public boolean existsById(UUID id) {
+        return dsl.fetchExists(
+                dsl.selectFrom(table)
+                        .where(table.field("id", UUID.class).eq(id))
+        );
+    }
+}

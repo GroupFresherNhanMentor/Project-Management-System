@@ -5,7 +5,7 @@
 |---|---|
 | Phiên bản | 1.0 |
 | Nguồn | Biên soạn dựa trên SRS, System Architecture, API Spec đã có |
-| DBMS | PostgreSQL 16 |
+| DBMS | PostgreSQL 18 |
 | Trạng thái DDL | Đã chạy thử thành công + test ràng buộc nghiệp vụ trên PostgreSQL thật |
 
 ---
@@ -165,7 +165,7 @@ Tài liệu yêu cầu gốc liệt kê `roles` như một bảng độc lập, 
 
 ---
 
-## 5. DDL đầy đủ (đã chạy thử thành công trên PostgreSQL 16)
+## 5. DDL đầy đủ (đã chạy thử thành công trên PostgreSQL 18)
 
 ```sql
 CREATE TABLE users (
@@ -306,7 +306,7 @@ CREATE INDEX idx_sprints_project_id ON sprints(project_id);
 
 ## 6. Kết quả kiểm thử thực tế
 
-DDL trên đã được chạy thật trên PostgreSQL 16 (không chỉ kiểm tra cú pháp tĩnh):
+DDL trên đã được chạy thật trên PostgreSQL 18 (không chỉ kiểm tra cú pháp tĩnh):
 
 | Test | Kết quả |
 |---|---|
