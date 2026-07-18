@@ -4,7 +4,6 @@ import static fpt.qn.project_management_system.jooq.Tables.USERS;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -22,13 +21,6 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
 
     public UserRepositoryImpl(DSLContext dsl) {
         super(dsl, USERS);
-    }
-
-    @Override
-    public Optional<UsersRecord> findById(UUID id) {
-        return dsl.selectFrom(USERS)
-                .where(USERS.ID.eq(id))
-                .fetchOptional();
     }
 
     @Override
@@ -69,20 +61,6 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
         return new PaginationResult<>(total, items);
     }
 
-    @Override
-    public UsersRecord create(UsersRecord record) {
-        return dsl.insertInto(USERS)
-                .set(record)
-                .returning()
-                .fetchOne();
-    }
-
-    @Override
-    public UsersRecord update(UsersRecord record) {
-        record.store();
-        return record;
-    }
-
     private Condition buildCondition(String keyword, SysRole role, UserStatus status) {
         Condition condition = DSL.noCondition();
 
@@ -99,4 +77,5 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
 
         return condition;
     }
+
 }

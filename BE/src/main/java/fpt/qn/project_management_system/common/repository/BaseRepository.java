@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public abstract class BaseRepository<R extends UpdatableRecord<R>> {
+public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Repository<R> {
 
     protected final DSLContext dsl;
     protected final Table<R> table;
@@ -28,9 +28,22 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> {
         return dsl.selectFrom(table).fetch();
     }
 
-    public R save(R record) {
-        record.store();
-        return record;
+    public R update(R record) {
+        if (!record.changed()) {
+            return record;
+        }
+        return dsl.update(table)
+                .set(record)
+                .where(table.field("id", UUID.class).eq(record.get("id", UUID.class)))
+                .returning()
+                .fetchOne();
+    }
+
+    public R create(R record) {
+        return dsl.insertInto(table)
+                .set(record)
+                .returning()
+                .fetchOne();
     }
 
     public void deleteById(UUID id) {

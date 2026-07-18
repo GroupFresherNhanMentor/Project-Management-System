@@ -32,6 +32,7 @@ public class UserServiceImpl implements UserService {
     PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<UserDto> getUsers(String keyword, SysRole role, UserStatus status, int page, int size) {
 
         PaginationResult<UsersRecord> result = userRepository.findAll(keyword, role, status, page, size);
@@ -45,6 +46,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDto getUserById(UUID id) {
         return userRepository.findById(id)
                 .map(userMapper::toDto)
