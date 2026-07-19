@@ -1,0 +1,46 @@
+<div class="mb-4">
+  <button (click)="newSprint()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ New Sprint</button>
+</div>
+
+<div class="flex flex-col gap-3">
+  @for (sprint of sprints(); track sprint.id) {
+    <div
+      (click)="viewSprint(sprint)"
+      class="cursor-pointer rounded-[12px] border bg-white p-5 transition hover:border-primary"
+      style="border-color:#E6E8EC"
+    >
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[16px] font-extrabold" style="color:#14161C">{{ sprint.sprintName }}</span>
+            <span [class]="statusBadge(sprint.status)">{{ sprint.status }}</span>
+          </div>
+          @if (sprint.goal) {
+            <p class="mt-1 text-[13px]" style="color:#4B5160">{{ sprint.goal }}</p>
+          }
+          <p class="mt-2 text-[12px]" style="color:#9AA1AC">
+            {{ sprint.startDate }} → {{ sprint.endDate }}
+          </p>
+        </div>
+
+        <div class="flex gap-2" (click)="$event.stopPropagation()">
+          @if (sprint.status === 'PLANNED') {
+            <button (click)="startSprint(sprint, $event)"
+              class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#3B4FD9">
+              Start Sprint
+            </button>
+          }
+          @if (sprint.status === 'ACTIVE') {
+            <button (click)="closeSprint(sprint, $event)"
+              class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">
+              Close Sprint
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+  @empty {
+    <p class="py-8 text-center text-[13px]" style="color:#9AA1AC">No sprints yet.</p>
+  }
+</div>

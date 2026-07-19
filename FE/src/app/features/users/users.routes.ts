@@ -5,5 +5,12 @@ export const USERS_ROUTES: Routes = [
     path: '',
     loadComponent: () =>
       import('./pages/user-list/user-list').then(m => m.UserList),
+    data: { title: 'Users' },
+  },
+  {
+    path: 'new',
+    loadComponent: () =>
+      import('./pages/user-new/user-new').then(m => m.UserNew),
+    data: { title: 'New User' },
   },
 ];

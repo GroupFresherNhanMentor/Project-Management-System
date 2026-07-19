@@ -1,47 +1,24 @@
-<div class="p-6">
-  <div class="mb-4 flex items-center justify-between">
-    <h1 class="text-xl font-semibold text-slate-900">Projects</h1>
-    <button class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
-      New Project
-    </button>
+@if (isAdmin) {
+  <div class="mb-4">
+    <button (click)="newProject()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ New Project</button>
   </div>
+}
 
-  @if (data(); as page) {
-    <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-          <tr>
-            <th class="px-4 py-3">Code</th>
-            <th class="px-4 py-3">Name</th>
-            <th class="px-4 py-3">Start</th>
-            <th class="px-4 py-3">End</th>
-            <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          @for (project of page.items; track project.id) {
-            <tr class="hover:bg-slate-50">
-              <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ project.projectCode }}</td>
-              <td class="px-4 py-3 font-medium text-slate-900">{{ project.projectName }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ project.startDate }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ project.endDate }}</td>
-              <td class="px-4 py-3">
-                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                  {{ project.status }}
-                </span>
-              </td>
-              <td class="px-4 py-3">
-                <button class="text-xs text-slate-500 hover:text-slate-900">View</button>
-              </td>
-            </tr>
-          }
-          @empty {
-            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No projects found.</td></tr>
-          }
-        </tbody>
-      </table>
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  @for (p of projects(); track p.id) {
+    <div class="rounded-[12px] border bg-white p-5 transition hover:border-primary" style="border-color:#E6E8EC;cursor:default">
+      <div class="mb-3 flex items-start justify-between">
+        <span class="rounded-[5px] px-2 py-0.5 font-mono text-[11px] font-semibold" style="background:#EEF0F3;color:#5B6472">{{ p.projectCode }}</span>
+        <span [class]="statusBadge(p.status)">{{ statusLabel(p.status) }}</span>
+      </div>
+      <h3 class="mb-1 text-[14px] font-bold" style="color:#14161C">{{ p.projectName }}</h3>
+      @if (p.description) {
+        <p class="mb-3 text-[12px] leading-relaxed" style="color:#6B7280">{{ p.description }}</p>
+      }
+      <p class="mt-auto text-[11px]" style="color:#9AA1AC">{{ p.startDate }} — {{ p.endDate }}</p>
     </div>
-    <p class="mt-2 text-xs text-slate-400">{{ page.totalElements }} total</p>
+  }
+  @empty {
+    <div class="col-span-3 py-16 text-center text-[13px]" style="color:#9AA1AC">No projects found.</div>
   }
 </div>

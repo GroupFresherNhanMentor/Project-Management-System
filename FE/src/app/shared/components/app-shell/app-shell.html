@@ -1,66 +1,101 @@
-<div class="flex h-screen bg-slate-50">
-  <aside class="flex w-60 flex-col bg-slate-900 text-white">
-    <div class="border-b border-slate-700 p-4">
-      <span class="text-lg font-bold tracking-tight">PMS</span>
+<div class="flex h-screen font-sans" style="background:#F5F6F8">
+
+  <!-- Sidebar -->
+  <aside class="flex flex-shrink-0 flex-col bg-white border-r" style="width:236px;border-color:#E6E8EC">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2.5 px-5 py-4">
+      <div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] text-[11px] font-extrabold text-white" style="background:#3B4FD9">W</div>
+      <span class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">Waypoint</span>
     </div>
 
-    <nav class="flex-1 space-y-1 p-3">
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="bg-slate-700"
-        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
-      >
-        Dashboard
-      </a>
-
-      <ng-template [appHasRole]="'ADMIN'">
-        <a
-          routerLink="/users"
-          routerLinkActive="bg-slate-700"
-          class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+    <!-- Project switcher (non-admin) -->
+    @if (!isAdmin) {
+      <div class="px-4 pb-3">
+        <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Project</p>
+        <select
+          (change)="onProjectChange($event)"
+          class="w-full rounded-[7px] border px-2.5 py-1.5 text-[13px] font-medium outline-none focus:ring-2 focus:ring-primary/30"
+          style="border-color:#E1E4E9;color:#14161C;background:#fff"
         >
+          @for (p of projectContext.projects(); track p.id) {
+            <option [value]="p.id" [selected]="p.id === projectContext.selectedProjectId()">
+              {{ p.projectCode }} — {{ p.projectName }}
+            </option>
+          }
+          @empty {
+            <option value="" disabled selected>No projects</option>
+          }
+        </select>
+      </div>
+    }
+
+    <!-- Nav -->
+    <nav class="flex-1 space-y-0.5 px-3 py-1">
+      @if (isAdmin) {
+        <a routerLink="/dashboard" routerLinkActive="active-nav" [routerLinkActiveOptions]="{exact:true}"
+           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+           [style.background]="(pageTitle() === 'Dashboard') ? '#EAF0FE' : ''"
+           [style.color]="(pageTitle() === 'Dashboard') ? '#3B4FD9' : ''">
+          Dashboard
+        </a>
+        <a routerLink="/projects" routerLinkActive="active-nav"
+           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+           [style.background]="(pageTitle() === 'Projects') ? '#EAF0FE' : ''"
+           [style.color]="(pageTitle() === 'Projects') ? '#3B4FD9' : ''">
+          Projects
+        </a>
+        <a routerLink="/users" routerLinkActive="active-nav"
+           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+           [style.background]="(pageTitle() === 'Users') ? '#EAF0FE' : ''"
+           [style.color]="(pageTitle() === 'Users') ? '#3B4FD9' : ''">
           Users
         </a>
-      </ng-template>
-
-      <a
-        routerLink="/projects"
-        routerLinkActive="bg-slate-700"
-        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
-      >
-        Projects
-      </a>
-
-      <a
-        routerLink="/tasks"
-        routerLinkActive="bg-slate-700"
-        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
-      >
-        Tasks
-      </a>
-
-      <a
-        routerLink="/reports/worklog"
-        routerLinkActive="bg-slate-700"
-        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
-      >
-        Worklog Report
-      </a>
+      } @else {
+        @for (item of [
+          {path:'/dashboard', label:'Dashboard', title:'Dashboard'},
+          {path:'/board',     label:'Board',     title:'Board'},
+          {path:'/backlog',   label:'Backlog',   title:'Backlog'},
+          {path:'/sprints',   label:'Sprints',   title:'Sprints'},
+          {path:'/members',   label:'Members',   title:'Members'},
+          {path:'/worklog',   label:'Worklog Report', title:'Worklog Report'},
+          {path:'/projects',  label:'Projects',  title:'Projects'}
+        ]; track item.path) {
+          <a [routerLink]="item.path"
+             style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+             [style.background]="(pageTitle() === item.title) ? '#EAF0FE' : ''"
+             [style.color]="(pageTitle() === item.title) ? '#3B4FD9' : '#4B5160'">
+            {{ item.label }}
+          </a>
+        }
+      }
     </nav>
 
-    <div class="border-t border-slate-700 p-3">
-      <p class="truncate text-xs text-slate-400">{{ currentUser?.fullName }}</p>
-      <p class="truncate text-xs text-slate-500">{{ currentUser?.role }}</p>
-      <button
-        (click)="logout()"
-        class="mt-2 w-full rounded-md px-3 py-1.5 text-left text-xs text-slate-400 transition hover:bg-slate-700 hover:text-white"
-      >
-        Sign out
-      </button>
+    <!-- User card -->
+    <div class="flex items-center gap-2.5 border-t px-4 py-3" style="border-color:#E6E8EC">
+      <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
+        {{ currentUser?.fullName | initials }}
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-[13px] font-semibold" style="color:#14161C">{{ currentUser?.fullName }}</p>
+        <p class="text-[11px]" style="color:#9AA1AC">{{ roleLabel() }}</p>
+      </div>
+      <button (click)="logout()" class="flex-shrink-0 text-[12px] hover:underline" style="color:#6B7280">Exit</button>
     </div>
   </aside>
 
-  <main class="flex-1 overflow-auto">
-    <router-outlet />
-  </main>
+  <!-- Main column -->
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="flex h-[58px] flex-shrink-0 items-center justify-between border-b bg-white px-8" style="border-color:#E6E8EC">
+      <h1 class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">{{ pageTitle() }}</h1>
+      <span class="text-[13px]" style="color:#9AA1AC">{{ todayDate }}</span>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-auto" style="padding:28px 32px">
+      <router-outlet />
+    </main>
+  </div>
 </div>

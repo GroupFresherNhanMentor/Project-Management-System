@@ -1,0 +1,35 @@
+<a routerLink="/projects" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Projects</a>
+
+<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:640px">
+  <h2 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">New Project</h2>
+  <div class="flex flex-col gap-3">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Project Code *</label>
+        <input [(ngModel)]="projectCode" placeholder="e.g. WEB" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] uppercase outline-none focus:border-primary" style="border-color:#E1E4E9" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Project Name *</label>
+        <input [(ngModel)]="projectName" placeholder="Project name" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none focus:border-primary" style="border-color:#E1E4E9" />
+      </div>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Description</label>
+      <textarea [(ngModel)]="description" rows="3" placeholder="Description…" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Start Date *</label>
+        <input [(ngModel)]="startDate" type="date" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">End Date *</label>
+        <input [(ngModel)]="endDate" type="date" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      </div>
+    </div>
+    <div class="flex gap-2 pt-1">
+      <button (click)="submit()" [disabled]="submitting" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">Create</button>
+      <a routerLink="/projects" class="inline-flex items-center rounded-[8px] border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160;text-decoration:none">Cancel</a>
+    </div>
+  </div>
+</div>

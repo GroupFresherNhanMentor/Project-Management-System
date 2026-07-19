@@ -1,13 +1,11 @@
-import { CanActivateFn } from '@angular/router';
-import { inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../services/auth';
 
 export const adminGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-  const user = authService.getCurrentUser();
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) return true;
 
-  if (user?.role === 'ADMIN') return true;
-  return router.createUrlTree(['/dashboard']);
+  const user = inject(AuthService).getCurrentUser();
+  return user?.role === 'ADMIN' ? true : inject(Router).createUrlTree(['/dashboard']);
 };

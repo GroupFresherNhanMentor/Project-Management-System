@@ -1,0 +1,62 @@
+<a routerLink="/sprints" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Sprints</a>
+
+@if (sprint(); as s) {
+  <!-- Sprint header card -->
+  <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-[18px] font-extrabold" style="color:#14161C">{{ s.sprintName }}</span>
+          <span [class]="statusBadge(s.status)">{{ s.status }}</span>
+        </div>
+        @if (s.goal) { <p class="mt-1 text-[13px]" style="color:#4B5160">{{ s.goal }}</p> }
+        <p class="mt-2 text-[12px]" style="color:#9AA1AC">
+          {{ s.startDate }} → {{ s.endDate }} · {{ tasks().length }} tasks · {{ doneCount }} done
+        </p>
+      </div>
+      <div class="flex gap-2">
+        @if (s.status === 'PLANNED') {
+          <button (click)="startSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#3B4FD9">Start Sprint</button>
+        }
+        @if (s.status === 'ACTIVE') {
+          <button (click)="closeSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">Close Sprint</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Task table -->
+  <div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+    <table class="w-full">
+      <thead style="background:#FAFBFC">
+        <tr class="border-b" style="border-color:#E6E8EC">
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Key</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Summary</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Status</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Priority</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Assignee</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Points</th>
+          <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Due</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (task of tasks(); track task.id) {
+          <tr class="cursor-pointer border-b hover:bg-[#FAFBFC]" style="border-color:#F0F1F3" (click)="openTask(task.id)">
+            <td class="px-4 py-3 font-mono text-[12px]" style="color:#9AA1AC">{{ task.taskKey }}</td>
+            <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</td>
+            <td class="px-4 py-3"><span [class]="taskStatusBadge(task.status)">{{ taskStatusLabel(task.status) }}</span></td>
+            <td class="px-4 py-3 text-[13px] font-semibold" [style.color]="priorityColor(task.priority)">{{ task.priority }}</td>
+            <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.assigneeName ?? '—' }}</td>
+            <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.storyPoint ?? '—' }}</td>
+            <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.dueDate ?? '—' }}</td>
+          </tr>
+        }
+        @empty {
+          <tr><td colspan="7" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No tasks in this sprint.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p class="text-[13px]" style="color:#9AA1AC">Loading…</p>
+}

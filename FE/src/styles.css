@@ -1,12 +1,87 @@
 @import "tailwindcss";
 @source "./app";
 
+@theme {
+  --font-sans: Manrope, sans-serif;
+
+  --color-primary: #3B4FD9;
+  --color-primary-hover: #2F40C4;
+  --color-primary-tint: #EAF0FE;
+
+  --color-heading: #14161C;
+  --color-body: #4B5160;
+  --color-secondary: #6B7280;
+  --color-muted: #9AA1AC;
+
+  --color-surface: #FFFFFF;
+  --color-app-bg: #F5F6F8;
+  --color-row-hover: #FAFBFC;
+
+  --color-border: #E6E8EC;
+  --color-border-md: #E1E4E9;
+  --color-border-light: #F0F1F3;
+
+  --color-status-todo: #5B6472;
+  --color-status-todo-bg: #EEF0F3;
+  --color-status-inprogress: #2A5CD9;
+  --color-status-inprogress-bg: #EAF0FE;
+  --color-status-testing: #B0680A;
+  --color-status-testing-bg: #FDF3E3;
+  --color-status-done: #1C8A4B;
+  --color-status-done-bg: #E7F7EE;
+
+  --color-priority-low: #5B6472;
+  --color-priority-medium: #2A5CD9;
+  --color-priority-high: #C4720A;
+  --color-priority-critical: #D0342C;
+
+  --color-success: #1C8A4B;
+  --color-success-bg: #E7F7EE;
+  --color-warning: #B0680A;
+  --color-warning-bg: #FDF3E3;
+  --color-danger: #D0342C;
+  --color-danger-bg: #FDECEC;
+}
+
+/* Status pills */
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.badge-todo    { color: #5B6472; background: #EEF0F3; }
+.badge-inprogress { color: #2A5CD9; background: #EAF0FE; }
+.badge-testing { color: #B0680A; background: #FDF3E3; }
+.badge-done    { color: #1C8A4B; background: #E7F7EE; }
+.badge-active  { color: #1C8A4B; background: #E7F7EE; }
+.badge-planned { color: #5B6472; background: #EEF0F3; }
+.badge-closed  { color: #9AA1AC; background: #F5F6F8; }
+.badge-locked  { color: #D0342C; background: #FDECEC; }
+.badge-planning { color: #B0680A; background: #FDF3E3; }
+.badge-on-hold { color: #9AA1AC; background: #F5F6F8; }
+.badge-completed { color: #1C8A4B; background: #E7F7EE; }
+
+/* Priority text colors */
+.priority-low      { color: #5B6472; }
+.priority-medium   { color: #2A5CD9; }
+.priority-high     { color: #C4720A; }
+.priority-critical { color: #D0342C; }
+
+/* Status dots */
+.dot-todo       { background: #5B6472; }
+.dot-inprogress { background: #2A5CD9; }
+.dot-testing    { background: #B0680A; }
+.dot-done       { background: #1C8A4B; }
+
+/* Loading bar */
 @keyframes loading-bar {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
 }
-
 .loading-bar {
   width: 40%;
   animation: loading-bar 1.2s ease-in-out infinite;
 }
+
+/* Toast slide-up */
+@keyframes toast-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.toast-enter { animation: toast-in 0.22s ease-out forwards; }

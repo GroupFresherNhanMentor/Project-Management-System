@@ -1,0 +1,59 @@
+<!-- Toggle buttons -->
+<div class="mb-5 flex gap-2">
+  <button
+    (click)="setFilter(true)"
+    class="rounded-[8px] px-4 py-2 text-[13px] font-semibold transition"
+    [style.background]="activeOnly() ? '#3B4FD9' : '#fff'"
+    [style.color]="activeOnly() ? '#fff' : '#14161C'"
+    [style.border]="activeOnly() ? 'none' : '1px solid #E1E4E9'"
+  >Showing active sprint only</button>
+  <button
+    (click)="setFilter(false)"
+    class="rounded-[8px] px-4 py-2 text-[13px] font-semibold transition"
+    [style.background]="!activeOnly() ? '#3B4FD9' : '#fff'"
+    [style.color]="!activeOnly() ? '#fff' : '#14161C'"
+    [style.border]="!activeOnly() ? 'none' : '1px solid #E1E4E9'"
+  >Showing all tasks</button>
+</div>
+
+<!-- Kanban columns -->
+<div class="grid grid-cols-4 gap-3" style="min-height:300px">
+  @for (col of columns; track col.status) {
+    <div class="flex flex-col rounded-[10px] p-3" style="background:#F0F1F3">
+      <!-- Column header -->
+      <div class="mb-3 flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full" [class]="col.dot"></span>
+        <span class="text-[13px] font-bold" style="color:#14161C">{{ col.label }}</span>
+        <span class="text-[12px]" style="color:#9AA1AC">{{ tasksFor(col.status).length }}</span>
+      </div>
+
+      <!-- Task cards -->
+      <div class="flex flex-col gap-2">
+        @for (task of tasksFor(col.status); track task.id) {
+          <div
+            (click)="openTask(task)"
+            class="cursor-pointer rounded-[9px] border bg-white p-3 transition hover:border-primary"
+            style="border-color:#E6E8EC"
+          >
+            <!-- Type + Priority row -->
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wide" [class]="typeClass(task.taskType)">{{ task.taskType }}</span>
+              <span class="text-[11px] font-semibold" [style.color]="priorityClass(task.priority)">{{ task.priority }}</span>
+            </div>
+            <!-- Summary -->
+            <p class="mb-3 text-[13px] font-medium leading-snug" style="color:#14161C">{{ task.summary }}</p>
+            <!-- Key + assignee -->
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[11px]" style="color:#9AA1AC">{{ task.taskKey }}</span>
+              @if (task.assigneeName) {
+                <div class="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style="background:#EAF0FE;color:#3B4FD9" [title]="task.assigneeName">
+                  {{ task.assigneeName | initials }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

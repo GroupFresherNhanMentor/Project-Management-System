@@ -1,0 +1,30 @@
+<a routerLink="/worklog" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Worklog Report</a>
+
+<div class="rounded-[12px] border bg-white p-5 mb-4" style="border-color:#E6E8EC">
+  <p class="text-[18px] font-extrabold" style="color:#14161C">{{ userName }}</p>
+  <p class="mt-1 text-[13px]" style="color:#9AA1AC">Total: <span class="font-bold" style="color:#14161C">{{ totalHours }}h</span></p>
+</div>
+
+<div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+  <table class="w-full">
+    <thead style="background:#FAFBFC">
+      <tr class="border-b" style="border-color:#E6E8EC">
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Date</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Hours</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (wl of worklogs(); track wl.id) {
+        <tr class="border-b" style="border-color:#F0F1F3">
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ wl.workDate }}</td>
+          <td class="px-4 py-3 text-[13px] font-bold" style="color:#14161C">{{ wl.hour }}h</td>
+          <td class="px-4 py-3 text-[13px]" style="color:#6B7280">{{ wl.description }}</td>
+        </tr>
+      }
+      @empty {
+        <tr><td colspan="3" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No entries.</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

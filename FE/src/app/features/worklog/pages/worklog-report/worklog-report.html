@@ -1,0 +1,36 @@
+<!-- Filters -->
+<div class="mb-4 flex flex-wrap gap-2">
+  <select [(ngModel)]="userId" (ngModelChange)="load()"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+    <option value="">All Members</option>
+    @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+  </select>
+  <input [(ngModel)]="fromDate" (ngModelChange)="load()" type="date"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+  <input [(ngModel)]="toDate" (ngModelChange)="load()" type="date"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+</div>
+
+<div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+  <table class="w-full">
+    <thead style="background:#FAFBFC">
+      <tr class="border-b" style="border-color:#E6E8EC">
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">User</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Hours</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Number of Tasks</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of items(); track item.userId) {
+        <tr class="cursor-pointer border-b hover:bg-[#FAFBFC]" style="border-color:#F0F1F3" (click)="openDetail(item)">
+          <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C">{{ item.userName }}</td>
+          <td class="px-4 py-3 text-[13px] font-bold" style="color:#14161C">{{ item.totalHours }}h</td>
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ item.numberOfTasks }}</td>
+        </tr>
+      }
+      @empty {
+        <tr><td colspan="3" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No worklog data.</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

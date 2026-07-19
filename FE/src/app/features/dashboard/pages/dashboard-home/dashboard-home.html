@@ -1,24 +1,141 @@
-<div class="p-6">
-  <h1 class="mb-6 text-xl font-semibold text-slate-900">My Dashboard</h1>
-
-  @if (data(); as stats) {
+<!-- ADMIN dashboard -->
+@if (role === 'ADMIN') {
+  @if (adminStats(); as s) {
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Open Tasks</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900">{{ stats.myOpenTasks }}</p>
+      @for (card of [
+        {label:'Total Users',    value:s.totalUsers,    color:'#14161C'},
+        {label:'Locked Users',   value:s.lockedUsers,   color:'#D0342C'},
+        {label:'Total Projects', value:s.totalProjects, color:'#14161C'},
+        {label:'Active Projects',value:s.activeProjects,color:'#1C8A4B'}
+      ]; track card.label) {
+        <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+          <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">{{ card.label }}</p>
+          <p class="mt-2 text-[26px] font-extrabold" [style.color]="card.color">{{ card.value }}</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="text-[13px]" style="color:#9AA1AC">Loading…</div>
+  }
+}
+
+<!-- PM / Dev dashboard -->
+@if (role !== 'ADMIN') {
+  @if (pmData(); as pm) {
+    <!-- Stat cards (PM focus) -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Tasks</p>
+        <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pm.totalTasks }}</p>
       </div>
-      <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Completed</p>
-        <p class="mt-2 text-3xl font-bold text-green-600">{{ stats.myCompletedTasks }}</p>
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Logged Hours</p>
+        <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pm.totalLoggedHours }}h</p>
       </div>
-      <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Overdue</p>
-        <p class="mt-2 text-3xl font-bold text-red-600">{{ stats.myOverdueTasks }}</p>
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Active Sprints</p>
+        <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pm.sprintProgress ? 1 : 0 }}</p>
       </div>
-      <div class="rounded-lg border border-slate-200 bg-white p-4">
-        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Hours Logged</p>
-        <p class="mt-2 text-3xl font-bold text-slate-900">{{ stats.totalLoggedHours }}h</p>
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Members</p>
+        <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pmMembers() }}</p>
       </div>
     </div>
+
+    <!-- Status + Priority breakdown -->
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <!-- Tasks by Status -->
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Status</p>
+        @for (s of statusOrder; track s.key) {
+          <div class="mb-3 flex items-center gap-3">
+            <span class="w-24 shrink-0 text-[13px]" style="color:#4B5160">{{ s.label }}</span>
+            <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
+              <div class="absolute inset-y-0 left-0 rounded-full"
+                   [class]="s.css"
+                   [style.width.%]="pm.totalTasks ? (pm.taskByStatus[s.key] / pm.totalTasks * 100) : 0"></div>
+            </div>
+            <span class="w-4 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ pm.taskByStatus[s.key] }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Tasks by Priority -->
+      <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+        <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Priority</p>
+        @for (p of priorityOrder; track p.key) {
+          <div class="mb-3 flex items-center gap-3">
+            <span class="w-20 shrink-0 text-[13px]" style="color:#4B5160">{{ p.label }}</span>
+            <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
+              <div class="absolute inset-y-0 left-0 rounded-full"
+                   [class]="p.css.replace('priority-','dot-')"
+                   [style.width.%]="pm.totalTasks ? (pm.taskByPriority[p.key] / pm.totalTasks * 100) : 0"></div>
+            </div>
+            <span class="w-4 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ pm.taskByPriority[p.key] }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Sprint progress -->
+    @if (pm.sprintProgress; as sp) {
+      <div class="mt-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+        <div class="flex items-center justify-between">
+          <p class="text-[14px] font-bold" style="color:#14161C">Sprint Progress — {{ sp.sprintName }}</p>
+          <span class="text-[13px]" style="color:#9AA1AC">
+            {{ sp.totalTasks - sp.doneTasks }} day{{ sp.totalTasks - sp.doneTasks !== 1 ? 's' : '' }} left
+          </span>
+        </div>
+        <div class="mt-3 h-1.5 w-full rounded-full" style="background:#F0F1F3">
+          <div class="h-full rounded-full" style="background:#3B4FD9" [style.width.%]="sp.percentComplete"></div>
+        </div>
+        <p class="mt-2 text-[12px]" style="color:#9AA1AC">{{ sp.doneTasks }} of {{ sp.totalTasks }} tasks done</p>
+      </div>
+    }
+
+    <!-- Dev: My open tasks section -->
+    @if (devData(); as dev) {
+      <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+          <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">My Open Tasks</p>
+          <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ dev.myOpenTasks }}</p>
+        </div>
+        <div class="rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+          <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Completed</p>
+          <p class="mt-2 text-[26px] font-extrabold" style="color:#1C8A4B">{{ dev.myCompletedTasks }}</p>
+        </div>
+        <div class="rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+          <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Overdue</p>
+          <p class="mt-2 text-[26px] font-extrabold" [style.color]="dev.myOverdueTasks > 0 ? '#D0342C' : '#14161C'">{{ dev.myOverdueTasks }}</p>
+        </div>
+        <div class="rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+          <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Logged Hours</p>
+          <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ dev.totalLoggedHours }}h</p>
+        </div>
+      </div>
+
+      <!-- My open task list -->
+      @if (devTasks().length > 0) {
+        <div class="mt-4 rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+          <p class="border-b px-5 py-4 text-[14px] font-bold" style="color:#14161C;border-color:#E6E8EC">My Open Tasks</p>
+          <div class="divide-y" style="--tw-divide-opacity:1;border-color:#F0F1F3">
+            @for (task of devTasks(); track task.id) {
+              <div class="flex items-center gap-4 px-5 py-3">
+                <span class="w-20 flex-shrink-0 text-[12px] font-mono" style="color:#9AA1AC">{{ task.taskKey }}</span>
+                <span class="flex-1 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</span>
+                <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : task.status === 'IN_PROGRESS' ? 'badge-inprogress' : 'badge-done'">
+                  {{ task.status === 'TODO' ? 'To Do' : task.status === 'IN_PROGRESS' ? 'In Progress' : task.status }}
+                </span>
+                <span class="text-[12px] flex-shrink-0" [style.color]="isOverdue(task.dueDate) ? '#D0342C' : '#9AA1AC'">
+                  {{ task.dueDate ?? '—' }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  } @else {
+    <div class="text-[13px]" style="color:#9AA1AC">Loading dashboard…</div>
   }
-</div>
+}

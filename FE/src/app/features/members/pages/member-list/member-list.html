@@ -1,0 +1,60 @@
+<div class="mb-4">
+  <button (click)="showAddForm = !showAddForm" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ Add Member</button>
+</div>
+
+@if (showAddForm) {
+  <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+    <div class="flex flex-wrap items-end gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">User</label>
+        <select [(ngModel)]="newUserId" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;min-width:200px">
+          <option value="" disabled selected>Select user…</option>
+          @for (u of allUsers(); track u.id) { <option [value]="u.id">{{ u.fullName }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role</label>
+        <select [(ngModel)]="newRole" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+          @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+        </select>
+      </div>
+      <button (click)="addMember()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">Add</button>
+      <button (click)="showAddForm=false" class="rounded-[8px] border px-4 py-2 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
+    </div>
+  </div>
+}
+
+<div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+  <table class="w-full">
+    <thead style="background:#FAFBFC">
+      <tr class="border-b" style="border-color:#E6E8EC">
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Member</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Project Role</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Status</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (m of members(); track m.id) {
+        <tr class="border-b" style="border-color:#F0F1F3">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
+                {{ m.userFullName | initials }}
+              </div>
+              <span class="text-[13px] font-medium" style="color:#14161C">{{ m.userFullName }}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ m.projectRole }}</td>
+          <td class="px-4 py-3"><span [class]="statusBadge(m.status)">{{ m.status }}</span></td>
+          <td class="px-4 py-3 text-right">
+            <button (click)="removeMember(m)" class="text-[13px] font-medium hover:underline" style="color:#D0342C">Remove</button>
+          </td>
+        </tr>
+      }
+      @empty {
+        <tr><td colspan="4" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No members yet.</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

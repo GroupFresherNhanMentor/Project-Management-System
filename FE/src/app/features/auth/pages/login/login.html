@@ -1,47 +1,48 @@
-<div class="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-  <section class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-    <h1 class="text-2xl font-semibold text-slate-900">Sign in</h1>
-    <p class="mt-1 text-sm text-slate-500">Project Management System</p>
+<div class="flex min-h-screen items-center justify-center font-sans" style="background:#F5F6F8">
+  <section class="w-full rounded-[14px] bg-white px-8 py-8" style="max-width:400px;box-shadow:0 20px 50px -20px rgba(20,24,40,0.15)">
 
-    <form class="mt-6 space-y-4" [formRoot]="loginForm">
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="username">Username</label>
-        <input
-          id="username"
-          type="text"
-          [formField]="loginForm.username"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
-          placeholder="Enter username"
-        />
-        @if (loginForm.username().touched() && loginForm.username().invalid()) {
-          <p class="mt-1 text-xs text-rose-600">{{ loginForm.username().errors()[0]?.message }}</p>
-        }
-      </div>
+    <!-- Logo -->
+    <div class="mb-6 flex items-center gap-2.5">
+      <div class="flex h-7 w-7 items-center justify-center rounded-[6px] text-[11px] font-extrabold text-white" style="background:#3B4FD9">W</div>
+      <span class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">Waypoint</span>
+    </div>
 
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700" for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          [formField]="loginForm.password"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
-          placeholder="Password"
-        />
-        @if (loginForm.password().touched() && loginForm.password().invalid()) {
-          <p class="mt-1 text-xs text-rose-600">{{ loginForm.password().errors()[0]?.message }}</p>
-        }
-      </div>
+    <h1 class="text-[22px] font-extrabold tracking-tight" style="color:#14161C">Sign in</h1>
+    <p class="mt-1 text-[13px]" style="color:#9AA1AC">Mini Project Management System</p>
+
+    <form class="mt-6 space-y-3" (ngSubmit)="submit()">
+      <input
+        type="text"
+        [(ngModel)]="username"
+        name="username"
+        placeholder="Username"
+        class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none transition"
+        style="border-color:#E1E4E9;color:#14161C"
+      />
+
+      <input
+        type="password"
+        [(ngModel)]="password"
+        name="password"
+        placeholder="Password"
+        class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none transition"
+        style="border-color:#E1E4E9;color:#14161C"
+      />
 
       @if (errorMessage()) {
-        <p class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ errorMessage() }}</p>
+        <p class="rounded-[7px] px-3 py-2 text-[12px]" style="background:#FDECEC;color:#D0342C">{{ errorMessage() }}</p>
       }
+
+      <p class="text-[11px]" style="color:#9AA1AC">Hint: use <strong>admin</strong>, <strong>lena.pham</strong>, or <strong>huy.tran</strong> (any password)</p>
 
       <button
         type="submit"
-        [disabled]="isSubmitting()"
-        class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        class="mt-1 w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white transition"
+        style="background:#3B4FD9"
+        onmouseover="this.style.background='#2F40C4'"
+        onmouseout="this.style.background='#3B4FD9'"
       >
-        {{ isSubmitting() ? 'Signing in...' : 'Sign in' }}
+        Sign in
       </button>
     </form>
   </section>

@@ -1,0 +1,125 @@
+<!-- Filter bar -->
+<div class="mb-4 flex flex-wrap items-start gap-2">
+  <input
+    [(ngModel)]="keyword" (ngModelChange)="page=0;load()"
+    placeholder="Search tasks…"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+    style="border-color:#E1E4E9;min-width:200px;color:#14161C"
+  />
+
+  <select [(ngModel)]="sprint" (ngModelChange)="page=0;load()"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+    <option value="">All Sprints</option>
+    @for (s of sprints(); track s.id) { <option [value]="s.id">{{ s.sprintName }}</option> }
+  </select>
+
+  <select [(ngModel)]="status" (ngModelChange)="page=0;load()"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+    <option value="">All Status</option>
+    <option value="TODO">To Do</option>
+    <option value="IN_PROGRESS">In Progress</option>
+    <option value="TESTING">Testing</option>
+    <option value="DONE">Done</option>
+  </select>
+
+  <select [(ngModel)]="priority" (ngModelChange)="page=0;load()"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+    <option value="">All Priority</option>
+    <option value="LOW">Low</option>
+    <option value="MEDIUM">Medium</option>
+    <option value="HIGH">High</option>
+    <option value="CRITICAL">Critical</option>
+  </select>
+
+  <select [(ngModel)]="assignee" (ngModelChange)="page=0;load()"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+    <option value="">All Assignees</option>
+    @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+  </select>
+
+  <div class="ml-auto">
+    <button (click)="showNewForm = !showNewForm"
+      class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">
+      + New Task
+    </button>
+  </div>
+</div>
+
+<!-- Inline new task form -->
+@if (showNewForm) {
+  <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
+    <p class="mb-3 text-[13px] font-bold" style="color:#14161C">New Task</p>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <input [(ngModel)]="newTask.summary" placeholder="Summary *" class="col-span-2 rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      <textarea [(ngModel)]="newTask.description" placeholder="Description" rows="2" class="col-span-2 rounded-[8px] border px-3 py-2 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
+
+      <select [(ngModel)]="newTask.taskType" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="" disabled selected>Type *</option>
+        @for (t of taskTypes; track t) { <option [value]="t">{{ t }}</option> }
+      </select>
+
+      <select [(ngModel)]="newTask.priority" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="" disabled selected>Priority *</option>
+        @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+      </select>
+
+      <select [(ngModel)]="newTask.assigneeId" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="">Assignee</option>
+        @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+      </select>
+
+      <select [(ngModel)]="newTask.sprintId" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="">No Sprint</option>
+        @for (s of sprints(); track s.id) { <option [value]="s.id">{{ s.sprintName }}</option> }
+      </select>
+
+      <input [(ngModel)]="newTask.storyPoint" type="number" placeholder="Story Points" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      <input [(ngModel)]="newTask.estimateHour" type="number" placeholder="Estimate Hours" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      <input [(ngModel)]="newTask.dueDate" type="date" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+    </div>
+    <div class="mt-3 flex gap-2">
+      <button (click)="submitNew()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">Create</button>
+      <button (click)="submitNew()" class="rounded-[8px] border px-4 py-2 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
+    </div>
+  </div>
+}
+
+<!-- Task table -->
+<div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
+  <table class="w-full">
+    <thead style="background:#FAFBFC">
+      <tr class="border-b" style="border-color:#E6E8EC">
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Key</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Summary</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Status</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Priority</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Assignee</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Points</th>
+        <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Due</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y" style="border-color:#F0F1F3">
+      @for (task of tasks(); track task.id) {
+        <tr class="cursor-pointer hover:bg-[#FAFBFC]" (click)="openTask(task.id)">
+          <td class="px-4 py-3 font-mono text-[12px]" style="color:#9AA1AC">{{ task.taskKey }}</td>
+          <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C;max-width:280px">{{ task.summary }}</td>
+          <td class="px-4 py-3"><span [class]="statusBadge(task.status)">{{ statusLabel(task.status) }}</span></td>
+          <td class="px-4 py-3 text-[13px] font-semibold" [style.color]="priorityColor(task.priority)">{{ task.priority }}</td>
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.assigneeName ?? '—' }}</td>
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.storyPoint ?? '—' }}</td>
+          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.dueDate ?? '—' }}</td>
+        </tr>
+      }
+      @empty {
+        <tr><td colspan="7" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No tasks found.</td></tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-3 flex items-center justify-center gap-4 text-[13px]" style="color:#4B5160">
+  <button (click)="prevPage()" [disabled]="page === 0" class="rounded-[7px] border px-3 py-1.5 disabled:opacity-40" style="border-color:#E1E4E9">‹ Prev</button>
+  <span>Page {{ page + 1 }} of {{ totalPages }}</span>
+  <button (click)="nextPage()" [disabled]="page >= totalPages - 1" class="rounded-[7px] border px-3 py-1.5 disabled:opacity-40" style="border-color:#E1E4E9">Next ›</button>
+</div>
