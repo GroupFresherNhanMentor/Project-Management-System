@@ -1,88 +1,89 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 
-import { API_ENDPOINTS } from '../../configs/api-endpoints';
+import { API } from '../../configs/api-endpoints';
 import { APP_CONSTANTS } from '../../configs/constants';
+import { ApiResponse } from '../models/api.model';
+import { LoginRequest, LoginResponse, RefreshTokenRequest, RefreshTokenResponse } from '../models/auth.model';
+import { UserDto } from '../models/user.model';
 
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface RegisterPayload {
-  email: string;
-  password: string;
-  fullName: string;
-}
-
-export interface AuthResponse {
-  accessToken?: string;
-  token?: string;
-  jwt?: string;
-}
-
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
 
-  login(payload: LoginPayload): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${API_ENDPOINTS.auth}/login`, payload)
-      .pipe(tap((response) => this.storeTokenFromResponse(response)));
+  login(payload: LoginRequest): Observable<LoginResponse> {
+    return this.http.post<ApiResponse<LoginResponse>>(API.auth.login, payload).pipe(
+      map(r => r.data),
+      tap(data => {
+        this.store(APP_CONSTANTS.tokenKey, data.accessToken);
+        this.store(APP_CONSTANTS.refreshTokenKey, data.refreshToken);
+        this.store(APP_CONSTANTS.userKey, JSON.stringify(data.user));
+      }),
+    );
   }
 
-  register(payload: RegisterPayload): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${API_ENDPOINTS.auth}/register`, payload)
-      .pipe(tap((response) => this.storeTokenFromResponse(response)));
+  refresh(refreshToken: string): Observable<RefreshTokenResponse> {
+    const payload: RefreshTokenRequest = { refreshToken };
+    return this.http.post<ApiResponse<RefreshTokenResponse>>(API.auth.refresh, payload).pipe(
+      map(r => r.data),
+      tap(data => {
+        this.store(APP_CONSTANTS.tokenKey, data.accessToken);
+        this.store(APP_CONSTANTS.refreshTokenKey, data.refreshToken);
+      }),
+    );
   }
 
   logout(): void {
-    this.clearToken();
+    this.clearAll();
     void this.router.navigateByUrl('/login');
   }
 
   getToken(): string | null {
-    if (!this.canUseStorage()) {
-      return null;
-    }
-
-    return globalThis.localStorage.getItem(APP_CONSTANTS.tokenKey);
+    return this.load(APP_CONSTANTS.tokenKey);
   }
 
-  clearToken(): void {
-    if (!this.canUseStorage()) {
-      return;
-    }
+  getRefreshToken(): string | null {
+    return this.load(APP_CONSTANTS.refreshTokenKey);
+  }
 
-    globalThis.localStorage.removeItem(APP_CONSTANTS.tokenKey);
+  getCurrentUser(): UserDto | null {
+    const raw = this.load(APP_CONSTANTS.userKey);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as UserDto;
+    } catch {
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {
     return !!this.getToken();
   }
 
-  private storeTokenFromResponse(response: AuthResponse): void {
-    const token = response.accessToken ?? response.token ?? response.jwt;
-
-    if (!token || !this.canUseStorage()) {
-      return;
-    }
-
-    globalThis.localStorage.setItem(APP_CONSTANTS.tokenKey, token);
+  clearAll(): void {
+    this.remove(APP_CONSTANTS.tokenKey);
+    this.remove(APP_CONSTANTS.refreshTokenKey);
+    this.remove(APP_CONSTANTS.userKey);
   }
 
-  private canUseStorage(): boolean {
-    return (
-      isPlatformBrowser(this.platformId) &&
-      typeof globalThis.localStorage !== 'undefined'
-    );
+  private store(key: string, value: string): void {
+    if (this.isBrowser()) globalThis.localStorage.setItem(key, value);
+  }
+
+  private load(key: string): string | null {
+    return this.isBrowser() ? globalThis.localStorage.getItem(key) : null;
+  }
+
+  private remove(key: string): void {
+    if (this.isBrowser()) globalThis.localStorage.removeItem(key);
+  }
+
+  private isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId) && typeof globalThis.localStorage !== 'undefined';
   }
 }

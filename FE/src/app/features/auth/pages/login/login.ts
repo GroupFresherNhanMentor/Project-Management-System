@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { AuthService } from '../../../../core/services/auth';
 
 const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Please enter a valid email.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginModel = z.infer<typeof loginSchema>;
@@ -17,7 +17,6 @@ type LoginModel = z.infer<typeof loginSchema>;
   selector: 'app-login',
   imports: [FormField, FormRoot],
   templateUrl: './login.html',
-  styleUrl: './login.css',
 })
 export class Login {
   private readonly authService = inject(AuthService);
@@ -26,12 +25,10 @@ export class Login {
   readonly errorMessage = signal('');
   readonly isSubmitting = signal(false);
 
-  readonly model = signal<LoginModel>({ email: '', password: '' });
+  readonly model = signal<LoginModel>({ username: '', password: '' });
   readonly loginForm = form(
     this.model,
-    (f) => {
-      validateStandardSchema(f, loginSchema);
-    },
+    f => { validateStandardSchema(f, loginSchema); },
     {
       submission: {
         action: async () => {
@@ -39,18 +36,16 @@ export class Login {
           this.errorMessage.set('');
           try {
             await firstValueFrom(this.authService.login(this.model()));
-            void this.router.navigateByUrl('/products');
+            void this.router.navigateByUrl('/dashboard');
             return null;
           } catch {
-            this.errorMessage.set('Login failed. Please check your credentials.');
+            this.errorMessage.set('Invalid username or password.');
             return null;
           } finally {
             this.isSubmitting.set(false);
           }
         },
-        onInvalid: () => {
-          this.isSubmitting.set(false);
-        },
+        onInvalid: () => { this.isSubmitting.set(false); },
       },
     },
   );

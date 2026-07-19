@@ -1,1 +1,66 @@
-<p>app-shell works!</p>
+<div class="flex h-screen bg-slate-50">
+  <aside class="flex w-60 flex-col bg-slate-900 text-white">
+    <div class="border-b border-slate-700 p-4">
+      <span class="text-lg font-bold tracking-tight">PMS</span>
+    </div>
+
+    <nav class="flex-1 space-y-1 p-3">
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="bg-slate-700"
+        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+      >
+        Dashboard
+      </a>
+
+      <ng-template [appHasRole]="'ADMIN'">
+        <a
+          routerLink="/users"
+          routerLinkActive="bg-slate-700"
+          class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+        >
+          Users
+        </a>
+      </ng-template>
+
+      <a
+        routerLink="/projects"
+        routerLinkActive="bg-slate-700"
+        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+      >
+        Projects
+      </a>
+
+      <a
+        routerLink="/tasks"
+        routerLinkActive="bg-slate-700"
+        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+      >
+        Tasks
+      </a>
+
+      <a
+        routerLink="/reports/worklog"
+        routerLinkActive="bg-slate-700"
+        class="flex items-center rounded-md px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-700 hover:text-white"
+      >
+        Worklog Report
+      </a>
+    </nav>
+
+    <div class="border-t border-slate-700 p-3">
+      <p class="truncate text-xs text-slate-400">{{ currentUser?.fullName }}</p>
+      <p class="truncate text-xs text-slate-500">{{ currentUser?.role }}</p>
+      <button
+        (click)="logout()"
+        class="mt-2 w-full rounded-md px-3 py-1.5 text-left text-xs text-slate-400 transition hover:bg-slate-700 hover:text-white"
+      >
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <main class="flex-1 overflow-auto">
+    <router-outlet />
+  </main>
+</div>

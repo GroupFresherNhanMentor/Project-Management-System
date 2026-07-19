@@ -1,31 +1,47 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { adminGuard } from './core/guards/admin-guard';
+import { AppShell } from './shared/components/app-shell/app-shell';
 
 export const routes: Routes = [
-	{
-		path: 'login',
-		loadComponent: () =>
-			import('./features/auth/pages/login/login').then((m) => m.Login),
-	},
-	{
-		path: 'products',
-		canActivate: [authGuard],
-		loadChildren: () =>
-			import('./features/products/products.routes').then((m) => m.PRODUCTS_ROUTES),
-	},
-	{
-		path: 'dashboard',
-		canActivate: [authGuard],
-		loadChildren: () =>
-			import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
-	},
-	{
-		path: '',
-		pathMatch: 'full',
-		redirectTo: 'products',
-	},
-	{
-		path: '**',
-		redirectTo: 'products',
-	},
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/pages/login/login').then(m => m.Login),
+  },
+  {
+    path: '',
+    component: AppShell,
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadChildren: () =>
+          import('./features/dashboard/dashboard.routes').then(m => m.DASHBOARD_ROUTES),
+      },
+      {
+        path: 'users',
+        canActivate: [adminGuard],
+        loadChildren: () =>
+          import('./features/users/users.routes').then(m => m.USERS_ROUTES),
+      },
+      {
+        path: 'projects',
+        loadChildren: () =>
+          import('./features/projects/projects.routes').then(m => m.PROJECTS_ROUTES),
+      },
+      {
+        path: 'tasks',
+        loadChildren: () =>
+          import('./features/tasks/tasks.routes').then(m => m.TASKS_ROUTES),
+      },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES),
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+    ],
+  },
+  { path: '**', redirectTo: '/dashboard' },
 ];

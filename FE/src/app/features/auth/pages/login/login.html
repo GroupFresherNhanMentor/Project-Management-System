@@ -1,46 +1,48 @@
-<section class="mx-auto mt-12 w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-	<h1 class="text-2xl font-semibold text-slate-900">Sign in</h1>
-	<p class="mt-1 text-sm text-slate-500">Use your account to continue.</p>
+<div class="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+  <section class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+    <h1 class="text-2xl font-semibold text-slate-900">Sign in</h1>
+    <p class="mt-1 text-sm text-slate-500">Project Management System</p>
 
-	<form class="mt-6 space-y-4" [formRoot]="loginForm">
-		<div>
-			<label class="mb-1 block text-sm font-medium text-slate-700" for="email">Email</label>
-			<input
-				id="email"
-				type="email"
-				[formField]="loginForm.email"
-				class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
-				placeholder="you@example.com"
-			/>
-			@if (loginForm.email().touched() && loginForm.email().invalid()) {
-				<p class="mt-1 text-xs text-rose-600">{{ loginForm.email().errors()[0]?.message }}</p>
-			}
-		</div>
+    <form class="mt-6 space-y-4" [formRoot]="loginForm">
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="username">Username</label>
+        <input
+          id="username"
+          type="text"
+          [formField]="loginForm.username"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
+          placeholder="Enter username"
+        />
+        @if (loginForm.username().touched() && loginForm.username().invalid()) {
+          <p class="mt-1 text-xs text-rose-600">{{ loginForm.username().errors()[0]?.message }}</p>
+        }
+      </div>
 
-		<div>
-			<label class="mb-1 block text-sm font-medium text-slate-700" for="password">Password</label>
-			<input
-				id="password"
-				type="password"
-				[formField]="loginForm.password"
-				class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
-				placeholder="Minimum 6 characters"
-			/>
-			@if (loginForm.password().touched() && loginForm.password().invalid()) {
-				<p class="mt-1 text-xs text-rose-600">{{ loginForm.password().errors()[0]?.message }}</p>
-			}
-		</div>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-slate-700" for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          [formField]="loginForm.password"
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none ring-sky-200 transition focus:ring"
+          placeholder="Password"
+        />
+        @if (loginForm.password().touched() && loginForm.password().invalid()) {
+          <p class="mt-1 text-xs text-rose-600">{{ loginForm.password().errors()[0]?.message }}</p>
+        }
+      </div>
 
-		@if (errorMessage()) {
-			<p class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ errorMessage() }}</p>
-		}
+      @if (errorMessage()) {
+        <p class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ errorMessage() }}</p>
+      }
 
-		<button
-			type="submit"
-			[disabled]="isSubmitting()"
-			class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-		>
-			{{ isSubmitting() ? 'Signing in...' : 'Sign in' }}
-		</button>
-	</form>
-</section>
+      <button
+        type="submit"
+        [disabled]="isSubmitting()"
+        class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+      >
+        {{ isSubmitting() ? 'Signing in...' : 'Sign in' }}
+      </button>
+    </form>
+  </section>
+</div>
