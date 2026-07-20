@@ -51,6 +51,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id), null));
     }
