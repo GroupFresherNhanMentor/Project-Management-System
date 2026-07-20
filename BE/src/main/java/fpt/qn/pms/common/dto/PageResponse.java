@@ -22,6 +22,17 @@ public class PageResponse<T> {
     int pageSize;
     List<T> items;
 
+    public static <T> PageResponse<T> of(List<T> items, int pageNumber, int pageSize, long totalElements) {
+        int totalPages = pageSize > 0 ? (int) Math.ceil((double) totalElements / pageSize) : 0;
+        return PageResponse.<T>builder()
+                .items(items)
+                .pageNumber(pageNumber)
+                .pageSize(pageSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .build();
+    }
+
     public <U> PageResponse<U> map(Function<T, U> mapper) {
         return PageResponse.<U>builder()
                 .items(items.stream().map(mapper).toList())

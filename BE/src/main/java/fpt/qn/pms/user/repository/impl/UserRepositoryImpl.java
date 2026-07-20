@@ -1,9 +1,10 @@
-package fpt.qn.pms.user.repository;
+package fpt.qn.pms.user.repository.impl;
 
 import static fpt.qn.pms.jooq.Tables.USERS;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -15,6 +16,7 @@ import fpt.qn.pms.common.repository.BaseRepository;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.user.repository.UserRepository;
 
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements UserRepository {
@@ -38,6 +40,11 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
     @Override
     public boolean existsByEmail(String email) {
         return dsl.fetchExists(USERS, USERS.EMAIL.eq(email));
+    }
+
+    @Override
+    public boolean existsByEmailAndIdNot(String email, UUID id) {
+        return dsl.fetchExists(USERS, USERS.EMAIL.eq(email).and(USERS.ID.ne(id)));
     }
 
     @Override
@@ -77,5 +84,4 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
 
         return condition;
     }
-
 }

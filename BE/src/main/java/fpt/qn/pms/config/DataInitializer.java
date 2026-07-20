@@ -24,7 +24,10 @@ import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     public static final UUID ADMIN_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -52,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (!dsl.fetchExists(USERS, USERS.ID.eq(ADMIN_USER_ID))) {
+        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("admin"))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, ADMIN_USER_ID)
                     .set(USERS.USERNAME, "admin")
@@ -65,7 +68,7 @@ public class DataInitializer implements CommandLineRunner {
                     .execute();
         }
 
-        if (!dsl.fetchExists(USERS, USERS.ID.eq(DEV_USER_ID))) {
+        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("dev1"))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, DEV_USER_ID)
                     .set(USERS.USERNAME, "dev1")
@@ -79,7 +82,24 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private UUID getAdminUserId() {
+        return dsl.select(USERS.ID)
+                .from(USERS)
+                .where(USERS.USERNAME.eq("admin"))
+                .fetchOptional(USERS.ID)
+                .orElse(ADMIN_USER_ID);
+    }
+
+    private UUID getDevUserId() {
+        return dsl.select(USERS.ID)
+                .from(USERS)
+                .where(USERS.USERNAME.eq("dev1"))
+                .fetchOptional(USERS.ID)
+                .orElse(DEV_USER_ID);
+    }
+
     private void seedProjects() {
+        UUID adminId = getAdminUserId();
         if (!dsl.fetchExists(PROJECTS, PROJECTS.ID.eq(PROJECT_ID))) {
             dsl.insertInto(PROJECTS)
                     .set(PROJECTS.ID, PROJECT_ID)
@@ -89,23 +109,26 @@ public class DataInitializer implements CommandLineRunner {
                     .set(PROJECTS.START_DATE, LocalDate.now())
                     .set(PROJECTS.END_DATE, LocalDate.now().plusMonths(3))
                     .set(PROJECTS.STATUS, ProjectStatus.ACTIVE)
-                    .set(PROJECTS.CREATED_BY, ADMIN_USER_ID)
-                    .set(PROJECTS.UPDATED_BY, ADMIN_USER_ID)
+                    .set(PROJECTS.CREATED_BY, adminId)
+                    .set(PROJECTS.UPDATED_BY, adminId)
                     .execute();
         }
     }
 
     private void seedProjectMembers() {
+        UUID adminId = getAdminUserId();
+        UUID devId = getDevUserId();
+
         // Admin as PM
         boolean pmExists = dsl.fetchExists(
                 PROJECT_MEMBERS,
-                PROJECT_MEMBERS.PROJECT_ID.eq(PROJECT_ID).and(PROJECT_MEMBERS.USER_ID.eq(ADMIN_USER_ID))
+                PROJECT_MEMBERS.PROJECT_ID.eq(PROJECT_ID).and(PROJECT_MEMBERS.USER_ID.eq(adminId))
         );
         if (!pmExists) {
             dsl.insertInto(PROJECT_MEMBERS)
                     .set(PROJECT_MEMBERS.ID, UUID.randomUUID())
                     .set(PROJECT_MEMBERS.PROJECT_ID, PROJECT_ID)
-                    .set(PROJECT_MEMBERS.USER_ID, ADMIN_USER_ID)
+                    .set(PROJECT_MEMBERS.USER_ID, adminId)
                     .set(PROJECT_MEMBERS.PROJECT_ROLE, ProjectRole.PM)
                     .set(PROJECT_MEMBERS.STATUS, ProjectMemberStatus.ACTIVE)
                     .execute();
@@ -114,13 +137,13 @@ public class DataInitializer implements CommandLineRunner {
         // Dev1 as DEV
         boolean devExists = dsl.fetchExists(
                 PROJECT_MEMBERS,
-                PROJECT_MEMBERS.PROJECT_ID.eq(PROJECT_ID).and(PROJECT_MEMBERS.USER_ID.eq(DEV_USER_ID))
+                PROJECT_MEMBERS.PROJECT_ID.eq(PROJECT_ID).and(PROJECT_MEMBERS.USER_ID.eq(devId))
         );
         if (!devExists) {
             dsl.insertInto(PROJECT_MEMBERS)
                     .set(PROJECT_MEMBERS.ID, UUID.randomUUID())
                     .set(PROJECT_MEMBERS.PROJECT_ID, PROJECT_ID)
-                    .set(PROJECT_MEMBERS.USER_ID, DEV_USER_ID)
+                    .set(PROJECT_MEMBERS.USER_ID, devId)
                     .set(PROJECT_MEMBERS.PROJECT_ROLE, ProjectRole.DEV)
                     .set(PROJECT_MEMBERS.STATUS, ProjectMemberStatus.ACTIVE)
                     .execute();
@@ -128,6 +151,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedSprints() {
+        UUID adminId = getAdminUserId();
         if (!dsl.fetchExists(SPRINTS, SPRINTS.ID.eq(SPRINT_ID))) {
             dsl.insertInto(SPRINTS)
                     .set(SPRINTS.ID, SPRINT_ID)
@@ -137,13 +161,15 @@ public class DataInitializer implements CommandLineRunner {
                     .set(SPRINTS.START_DATE, LocalDate.now())
                     .set(SPRINTS.END_DATE, LocalDate.now().plusWeeks(2))
                     .set(SPRINTS.STATUS, SprintStatus.ACTIVE)
-                    .set(SPRINTS.CREATED_BY, ADMIN_USER_ID)
-                    .set(SPRINTS.UPDATED_BY, ADMIN_USER_ID)
+                    .set(SPRINTS.CREATED_BY, adminId)
+                    .set(SPRINTS.UPDATED_BY, adminId)
                     .execute();
         }
     }
 
     private void seedTasks() {
+        UUID adminId = getAdminUserId();
+        UUID devId = getDevUserId();
         if (!dsl.fetchExists(TASKS, TASKS.ID.eq(TASK_ID))) {
             dsl.insertInto(TASKS)
                     .set(TASKS.ID, TASK_ID)
@@ -155,10 +181,10 @@ public class DataInitializer implements CommandLineRunner {
                     .set(TASKS.TASK_TYPE, TaskType.TASK)
                     .set(TASKS.PRIORITY, TaskPriority.HIGH)
                     .set(TASKS.STATUS, TaskStatus.TODO)
-                    .set(TASKS.ASSIGNEE_ID, DEV_USER_ID)
-                    .set(TASKS.REPORTER_ID, ADMIN_USER_ID)
-                    .set(TASKS.CREATED_BY, ADMIN_USER_ID)
-                    .set(TASKS.UPDATED_BY, ADMIN_USER_ID)
+                    .set(TASKS.ASSIGNEE_ID, devId)
+                    .set(TASKS.REPORTER_ID, adminId)
+                    .set(TASKS.CREATED_BY, adminId)
+                    .set(TASKS.UPDATED_BY, adminId)
                     .execute();
         }
     }

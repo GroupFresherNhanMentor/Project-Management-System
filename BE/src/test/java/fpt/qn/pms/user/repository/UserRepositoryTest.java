@@ -8,60 +8,50 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+import fpt.qn.pms.ProjectManagementSystemApplication;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.config.TestRedisConfig;
 
-@SpringBootTest
-@Testcontainers
+import org.springframework.test.context.ActiveProfiles;
+
+@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class UserRepositoryTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine");
 
     @Autowired
     UserRepository userRepository;
 
-    // ── create ────────────────────────────────────────────────────────────────
-
     @Test
     void create_shouldPersistAndReturnRecord() {
-        UsersRecord saved = userRepository.create(buildUser("001"));
+        UsersRecord saved = userRepository.create(buildUser("101"));
 
         assertThat(saved.getId()).isNotNull();
-        assertThat(saved.getUsername()).isEqualTo("user001");
-        assertThat(saved.getEmail()).isEqualTo("user001@test.com");
+        assertThat(saved.getUsername()).isEqualTo("user101");
+        assertThat(saved.getEmail()).isEqualTo("user101@test.com");
         assertThat(saved.getRole()).isEqualTo(SysRole.USER);
         assertThat(saved.getStatus()).isEqualTo(UserStatus.ACTIVE);
     }
 
-    // ── findById ──────────────────────────────────────────────────────────────
-
     @Test
     void findById_shouldReturnRecord_whenExists() {
-        UsersRecord created = userRepository.create(buildUser("002"));
+        UsersRecord created = userRepository.create(buildUser("102"));
 
         Optional<UsersRecord> found = userRepository.findById(created.getId());
 
         assertThat(found).isPresent();
-        assertThat(found.get().getUsername()).isEqualTo("user002");
+        assertThat(found.get().getUsername()).isEqualTo("user102");
     }
 
     @Test
     void findById_shouldReturnEmpty_whenNotExists() {
         assertThat(userRepository.findById(UUID.randomUUID())).isEmpty();
     }
-
-    // ── findByUsername ────────────────────────────────────────────────────────
 
     @Test
     void findByUsername_shouldReturnRecord_whenExists() {
@@ -77,8 +67,6 @@ class UserRepositoryTest {
     void findByUsername_shouldReturnEmpty_whenNotExists() {
         assertThat(userRepository.findByUsername("nonexistent")).isEmpty();
     }
-
-    // ── exists ────────────────────────────────────────────────────────────────
 
     @Test
     void existsByUsername_shouldReturnTrue_whenExists() {
@@ -102,8 +90,6 @@ class UserRepositoryTest {
         userRepository.create(buildUser("006"));
         assertThat(userRepository.existsByEmployeeId("EMP006")).isTrue();
     }
-
-    // ── findAll ───────────────────────────────────────────────────────────────
 
     @Test
     void findAll_shouldReturnAllUsers_whenNoFilter() {
@@ -165,8 +151,6 @@ class UserRepositoryTest {
         assertThat(result.getTotal()).isGreaterThanOrEqualTo(3);
     }
 
-    // ── update ────────────────────────────────────────────────────────────────
-
     @Test
     void update_shouldModifyFields() {
         UsersRecord created = userRepository.create(buildUser("015"));
@@ -180,8 +164,6 @@ class UserRepositoryTest {
         assertThat(updated.getFullName()).isEqualTo("Updated Name");
         assertThat(updated.getStatus()).isEqualTo(UserStatus.LOCKED);
     }
-
-    // ── helpers ───────────────────────────────────────────────────────────────
 
     private UsersRecord buildUser(String suffix) {
         UsersRecord record = new UsersRecord();

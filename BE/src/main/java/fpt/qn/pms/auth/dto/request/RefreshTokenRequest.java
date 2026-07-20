@@ -1,27 +1,22 @@
-package fpt.qn.pms.user.dto;
+package fpt.qn.pms.auth.dto.request;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserDto {
-    UUID id;
-    String employeeId;
-    String username;
-    String fullName;
-    String email;
-    String role;
-    String status;
-    OffsetDateTime createdAt;
+public class RefreshTokenRequest {
+
+    @NotBlank
+    String refreshToken;
 }
