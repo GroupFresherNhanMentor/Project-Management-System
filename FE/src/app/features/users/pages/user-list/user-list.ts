@@ -1,10 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ToastService } from '../../../../core/services/toast';
-import { inject } from '@angular/core';
-import { UserDto } from '../../../../core/models/user.model';
-import { SystemRole } from '../../../../core/models/api.model';
+import type { UserDto } from '../../../../core/models/user.model';
+import type { SystemRole, UserStatus } from '../../../../core/models/api.model';
 
 const MOCK_USERS: UserDto[] = [
   { id: 'u1', employeeId: 'EMP001', username: 'admin',     fullName: 'Admin User',   email: 'admin@waypoint.io',   role: 'ADMIN', status: 'ACTIVE' },
@@ -23,85 +22,67 @@ const MOCK_USERS: UserDto[] = [
 export class UserList {
   private readonly toast = inject(ToastService);
 
-  private readonly _users = signal<UserDto[]>(MOCK_USERS);
+  private readonly source = signal<UserDto[]>(MOCK_USERS);
 
-  keyword  = '';
-  page     = 0;
-  size     = 10;
-
-  private filteredUsers(): UserDto[] {
-    const kw = this.keyword.toLowerCase();
-    return this._users().filter(u =>
-      !kw || u.fullName.toLowerCase().includes(kw) || u.username.toLowerCase().includes(kw) || u.email.toLowerCase().includes(kw),
-    );
-  }
-  get total(): number { return this.filteredUsers().length; }
-  get totalPages(): number { return Math.ceil(this.total / this.size) || 1; }
-  users(): UserDto[] {
-    return this.filteredUsers().slice(this.page * this.size, (this.page + 1) * this.size);
-  }
-  load(): void { /* filtering is live via users() */ }
-
-  showNewForm = false;
-  newEmpId    = '';
-  newUsername = '';
-  newFullName = '';
-  newEmail    = '';
-  newRole: SystemRole = 'USER';
+  keyword = '';
+  page = 0;
+  readonly size = 10;
 
   editTarget: UserDto | null = null;
   editFullName = '';
-  editEmail    = '';
+  editEmail = '';
   editRole: SystemRole = 'USER';
 
   readonly roles: SystemRole[] = ['ADMIN', 'USER'];
 
+  get filtered(): UserDto[] {
+    const kw = this.keyword.toLowerCase().trim();
+    if (!kw) return this.source();
+    return this.source().filter(u =>
+      u.fullName.toLowerCase().includes(kw) ||
+      u.username.toLowerCase().includes(kw) ||
+      u.email.toLowerCase().includes(kw) ||
+      u.employeeId.toLowerCase().includes(kw)
+    );
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filtered.length / this.size) || 1;
+  }
+
+  get paged(): UserDto[] {
+    return this.filtered.slice(this.page * this.size, (this.page + 1) * this.size);
+  }
+
+  get showingFrom(): number { return this.filtered.length ? this.page * this.size + 1 : 0; }
+  get showingTo(): number { return Math.min((this.page + 1) * this.size, this.filtered.length); }
+
+  onSearch(): void { this.page = 0; }
+
   prevPage(): void { if (this.page > 0) this.page--; }
   nextPage(): void { if (this.page < this.totalPages - 1) this.page++; }
 
-  createUser(): void {
-    if (!this.newUsername || !this.newFullName || !this.newEmail) { this.toast.error('Fill required fields.'); return; }
-    const u: UserDto = {
-      id: crypto.randomUUID(), employeeId: this.newEmpId,
-      username: this.newUsername, fullName: this.newFullName,
-      email: this.newEmail, role: this.newRole, status: 'ACTIVE',
-    };
-    this._users.update(list => [...list, u]);
-    this.toast.success('User created.');
-    this.showNewForm = false;
-    this.resetNew();
-  }
-
   openEdit(u: UserDto): void {
-    this.editTarget   = u;
+    this.editTarget = u;
     this.editFullName = u.fullName;
-    this.editEmail    = u.email;
-    this.editRole     = u.role;
+    this.editEmail = u.email;
+    this.editRole = u.role;
   }
 
   saveEdit(): void {
     if (!this.editTarget) return;
-    this._users.update(list => list.map(u =>
+    this.source.update(list => list.map(u =>
       u.id === this.editTarget!.id
         ? { ...u, fullName: this.editFullName, email: this.editEmail, role: this.editRole }
-        : u,
+        : u
     ));
     this.toast.success('User updated.');
     this.editTarget = null;
   }
 
   toggleLock(u: UserDto): void {
-    const newStatus = u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
-    this._users.update(list => list.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
+    const newStatus: UserStatus = u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
+    this.source.update(list => list.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
     this.toast.success(newStatus === 'LOCKED' ? 'User locked.' : 'User unlocked.');
-  }
-
-  resetNew(): void {
-    this.newEmpId = ''; this.newUsername = ''; this.newFullName = '';
-    this.newEmail = ''; this.newRole = 'USER';
-  }
-
-  statusBadge(s: string): string {
-    return s === 'ACTIVE' ? 'badge badge-active' : 'badge badge-locked';
   }
 }
