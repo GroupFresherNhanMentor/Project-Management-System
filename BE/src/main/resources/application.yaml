@@ -35,5 +35,5 @@ app:
 
 logging:
   level:
-    fpt.qn.project_management_system: DEBUG
+    fpt.qn.pms: DEBUG
     org.springframework.security: INFO

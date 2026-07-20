@@ -1,4 +1,4 @@
-package fpt.qn.project_management_system.user.repository;
+package fpt.qn.pms.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,10 +14,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import fpt.qn.project_management_system.common.dto.PaginationResult;
-import fpt.qn.project_management_system.jooq.enums.SysRole;
-import fpt.qn.project_management_system.jooq.enums.UserStatus;
-import fpt.qn.project_management_system.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.common.dto.PaginationResult;
+import fpt.qn.pms.jooq.enums.SysRole;
+import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.jooq.tables.records.UsersRecord;
 
 @SpringBootTest
 @Testcontainers

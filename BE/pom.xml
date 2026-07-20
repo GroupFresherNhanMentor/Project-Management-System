@@ -207,7 +207,7 @@
                             <fluentSetters>true</fluentSetters>
                         </generate>
                         <target>
-                            <packageName>fpt.qn.project_management_system.jooq</packageName>
+                            <packageName>fpt.qn.pms.jooq</packageName>
                             <directory>target/generated-sources/jooq</directory>
                         </target>
                     </generator>
