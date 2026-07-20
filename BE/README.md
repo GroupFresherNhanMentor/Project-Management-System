@@ -23,7 +23,7 @@ Dự án được cấu trúc theo giải pháp **Package-by-Feature** nhằm t�
 ### Cấu trúc thư mục chi tiết
 
 ```text
-fpt.qn.project_management_system
+fpt.qn.pms
 ├── common/                  # Các lớp tiện ích dùng chung
 │   ├── ApiResponse.java     # Cấu trúc dữ liệu phản hồi API tiêu chuẩn
 │   ├── PageResponse.java    # Cấu trúc dữ liệu phân trang

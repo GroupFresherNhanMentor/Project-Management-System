@@ -1,4 +1,4 @@
-package fpt.qn.project_management_system.user.service;
+package fpt.qn.pms.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,14 +14,14 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import fpt.qn.project_management_system.common.dto.PageResponse;
-import fpt.qn.project_management_system.common.exception.AppException;
-import fpt.qn.project_management_system.jooq.enums.SysRole;
-import fpt.qn.project_management_system.jooq.enums.UserStatus;
-import fpt.qn.project_management_system.user.dto.CreateUserRequest;
-import fpt.qn.project_management_system.user.dto.UpdateUserRequest;
-import fpt.qn.project_management_system.user.dto.UpdateUserStatusRequest;
-import fpt.qn.project_management_system.user.dto.UserDto;
+import fpt.qn.pms.common.dto.PageResponse;
+import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.jooq.enums.SysRole;
+import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.user.dto.CreateUserRequest;
+import fpt.qn.pms.user.dto.UpdateUserRequest;
+import fpt.qn.pms.user.dto.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.UserDto;
 
 @SpringBootTest
 @Testcontainers
