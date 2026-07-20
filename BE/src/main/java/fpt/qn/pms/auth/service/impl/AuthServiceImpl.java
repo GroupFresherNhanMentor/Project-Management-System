@@ -1,7 +1,7 @@
 package fpt.qn.pms.auth.service.impl;
 
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
+import fpt.qn.pms.auth.exception.AccountLockedException;
+import fpt.qn.pms.auth.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -14,8 +14,8 @@ import fpt.qn.pms.auth.dto.request.RefreshTokenRequest;
 import fpt.qn.pms.auth.dto.response.LoginResponse;
 import fpt.qn.pms.auth.dto.response.RefreshTokenResponse;
 import fpt.qn.pms.auth.service.AuthService;
-import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.JwtTokenProvider;
 import fpt.qn.pms.user.dto.response.UserDto;
@@ -43,14 +43,14 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
         UsersRecord user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+                .orElseThrow(() -> new InvalidCredentialsException());
 
         if (user.getStatus() == UserStatus.LOCKED) {
-            throw new DisabledException("User account is locked");
+            throw new AccountLockedException();
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid username or password");
+            throw new InvalidCredentialsException();
         }
 
         String accessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), user.getRole().getLiteral());
@@ -72,20 +72,20 @@ public class AuthServiceImpl implements AuthService {
 
             String tokenId = jwt.getId();
             if (tokenId != null && redisTokenBlacklistService.isBlacklisted(tokenId)) {
-                throw new BadCredentialsException("Refresh token has been revoked/blacklisted");
+                throw new InvalidCredentialsException("Refresh token has been revoked/blacklisted");
             }
 
             String tokenType = jwt.getClaimAsString("type");
             if (!"refresh".equals(tokenType)) {
-                throw new BadCredentialsException("Invalid refresh token");
+                throw new InvalidCredentialsException("Invalid refresh token");
             }
 
             String username = jwt.getSubject();
             UsersRecord user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new AppException("User not found"));
+                    .orElseThrow(() -> new UserNotFoundException());
 
             if (user.getStatus() == UserStatus.LOCKED) {
-                throw new DisabledException("Account is locked or disabled");
+                throw new AccountLockedException();
             }
 
             String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUsername(), user.getRole().getLiteral());
@@ -97,7 +97,7 @@ public class AuthServiceImpl implements AuthService {
                     .build();
 
         } catch (JwtException ex) {
-            throw new BadCredentialsException("Invalid or expired refresh token");
+            throw new InvalidCredentialsException("Invalid or expired refresh token");
         }
     }
 

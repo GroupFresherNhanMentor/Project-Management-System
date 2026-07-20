@@ -12,13 +12,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
+import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
@@ -32,14 +26,7 @@ import fpt.qn.pms.sprint.dto.SprintDto;
 import fpt.qn.pms.sprint.dto.UpdateSprintRequest;
 import fpt.qn.pms.sprint.dto.UpdateSprintStatusRequest;
 
-@SpringBootTest
-@Testcontainers
-@Transactional
-class SprintServiceTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine");
+class SprintServiceTest extends BaseIntegrationTest {
 
     @Autowired
     SprintService sprintService;
@@ -111,7 +98,7 @@ class SprintServiceTest {
         req.setEndDate(LocalDate.of(2026, 7, 1));
 
         assertThatThrownBy(() -> sprintService.createSprint(req))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("end_date");
     }
 
@@ -250,7 +237,7 @@ class SprintServiceTest {
         req.setStatus(SprintStatus.CLOSED);
 
         assertThatThrownBy(() -> sprintService.updateSprintStatus(created.getId(), req))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 
@@ -268,7 +255,7 @@ class SprintServiceTest {
         reactivateReq.setStatus(SprintStatus.ACTIVE);
 
         assertThatThrownBy(() -> sprintService.updateSprintStatus(created.getId(), reactivateReq))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("Invalid status transition");
     }
 

@@ -7,10 +7,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
-
-import fpt.qn.pms.ProjectManagementSystemApplication;
+import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
@@ -19,14 +16,8 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
-import fpt.qn.pms.config.TestRedisConfig;
 
-import org.springframework.test.context.ActiveProfiles;
-
-@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
-@ActiveProfiles("test")
-@Transactional
-class UserServiceTest {
+class UserServiceTest extends BaseIntegrationTest {
 
     @Autowired
     UserService userService;

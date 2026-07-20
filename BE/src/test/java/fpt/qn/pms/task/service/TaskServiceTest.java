@@ -2,17 +2,12 @@ package fpt.qn.pms.task.service;
 
 import static fpt.qn.pms.jooq.Tables.PROJECTS;
 import static fpt.qn.pms.jooq.Tables.PROJECT_MEMBERS;
-import static fpt.qn.pms.jooq.Tables.TASKS;
-import static fpt.qn.pms.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.jooq.enums.ProjectRole;
+import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.TaskPriority;
 import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
@@ -169,13 +164,13 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("getTaskById - Should throw IllegalArgumentException when Task not found")
+    @DisplayName("getTaskById - Should throw AppException when Task not found")
     void getTaskById_notFound_shouldThrowException() {
         UUID nonExistingId = UUID.randomUUID();
         when(taskRepository.findById(nonExistingId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> taskService.getTaskById(nonExistingId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessage("Task not found");
     }
 
@@ -232,7 +227,7 @@ class TaskServiceTest {
 
     @Test
     @Disabled("Tạm bỏ qua do lỗi ép kiểu Mockito với jOOQ")
-    @DisplayName("assignTask - Should throw IllegalArgumentException when Assignee is not a project member")
+    @DisplayName("assignTask - Should throw AppException when Assignee is not a project member")
     void assignTask_nonMember_shouldThrowException() {
         AssignTaskRequest request = new AssignTaskRequest();
         request.setAssigneeId(UUID.randomUUID());
@@ -242,7 +237,7 @@ class TaskServiceTest {
         when(dsl.fetchExists(eq(PROJECT_MEMBERS), any(Condition.class))).thenReturn(false);
 
         assertThatThrownBy(() -> taskService.assignTask(taskId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessage("Assignee must be a member of the project");
     }
 }
