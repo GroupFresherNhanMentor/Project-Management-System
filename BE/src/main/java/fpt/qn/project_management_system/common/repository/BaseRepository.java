@@ -29,14 +29,8 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Re
     }
 
     public R update(R record) {
-        if (!record.changed()) {
-            return record;
-        }
-        return dsl.update(table)
-                .set(record)
-                .where(table.field("id", UUID.class).eq(record.get("id", UUID.class)))
-                .returning()
-                .fetchOne();
+        record.store();
+        return record;
     }
 
     public R create(R record) {
@@ -55,7 +49,6 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Re
     public boolean existsById(UUID id) {
         return dsl.fetchExists(
                 dsl.selectFrom(table)
-                        .where(table.field("id", UUID.class).eq(id))
-        );
+                        .where(table.field("id", UUID.class).eq(id)));
     }
 }
