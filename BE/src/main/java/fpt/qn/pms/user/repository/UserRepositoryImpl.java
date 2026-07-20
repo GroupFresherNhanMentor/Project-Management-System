@@ -4,6 +4,7 @@ import static fpt.qn.pms.jooq.Tables.USERS;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -38,6 +39,11 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
     @Override
     public boolean existsByEmail(String email) {
         return dsl.fetchExists(USERS, USERS.EMAIL.eq(email));
+    }
+
+    @Override
+    public boolean existsByEmailAndIdNot(String email, UUID id) {
+        return dsl.fetchExists(USERS, USERS.EMAIL.eq(email).and(USERS.ID.ne(id)));
     }
 
     @Override

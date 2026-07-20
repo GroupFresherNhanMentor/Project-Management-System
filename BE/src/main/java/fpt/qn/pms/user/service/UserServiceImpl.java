@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
         UsersRecord record = userRepository.findById(id)
                 .orElseThrow(() -> new AppException("User not found"));
 
-        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
+        if (request.getEmail() != null && userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
             throw new AppException("Email already exists");
         }
 
