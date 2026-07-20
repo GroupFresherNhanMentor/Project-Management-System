@@ -6,6 +6,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
+import fpt.qn.pms.jooq.enums.SysRole;
+import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -14,8 +16,6 @@ import fpt.qn.pms.user.dto.response.UserDto;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    @Mapping(target = "role", expression = "java(record.getRole().getLiteral())")
-    @Mapping(target = "status", expression = "java(record.getStatus().getLiteral())")
     UserDto toDto(UsersRecord record);
 
     java.util.List<UserDto> toDtoList(java.util.List<UsersRecord> records);
@@ -37,7 +37,15 @@ public interface UserMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateRecord(@MappingTarget UsersRecord record, UpdateUserRequest request);
 
-    default java.time.LocalDateTime map(java.time.OffsetDateTime value) {
+    default String mapSysRole(SysRole role) {
+        return role != null ? role.getLiteral() : null;
+    }
+
+    default String mapUserStatus(UserStatus status) {
+        return status != null ? status.getLiteral() : null;
+    }
+
+    default java.time.LocalDateTime mapOffsetDateTime(java.time.OffsetDateTime value) {
         return value == null ? null : value.toLocalDateTime();
     }
 }
