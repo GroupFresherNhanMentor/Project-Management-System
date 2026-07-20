@@ -15,10 +15,10 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
-import fpt.qn.pms.user.dto.CreateUserRequest;
-import fpt.qn.pms.user.dto.UpdateUserRequest;
-import fpt.qn.pms.user.dto.UpdateUserStatusRequest;
-import fpt.qn.pms.user.dto.UserDto;
+import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.UserDto;
 
 @SpringBootTest(classes = ProjectManagementSystemApplication.class)
 @Transactional

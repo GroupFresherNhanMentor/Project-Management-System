@@ -1,4 +1,4 @@
-package fpt.qn.pms.auth.dto;
+package fpt.qn.pms.auth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
@@ -6,15 +6,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RefreshTokenRequest {
+public class LoginRequest {
 
-    @NotBlank(message = "Refresh token is required")
-    String refreshToken;
+    @NotBlank
+    String username;
+
+    @NotBlank
+    String password;
 }

@@ -20,8 +20,8 @@ import org.springframework.web.context.WebApplicationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fpt.qn.pms.ProjectManagementSystemApplication;
-import fpt.qn.pms.auth.dto.LoginRequest;
-import fpt.qn.pms.auth.dto.RefreshTokenRequest;
+import fpt.qn.pms.auth.dto.request.LoginRequest;
+import fpt.qn.pms.auth.dto.request.RefreshTokenRequest;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;

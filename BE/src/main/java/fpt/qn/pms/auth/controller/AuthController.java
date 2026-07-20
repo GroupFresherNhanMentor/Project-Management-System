@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import fpt.qn.pms.auth.dto.LoginRequest;
-import fpt.qn.pms.auth.dto.LoginResponse;
-import fpt.qn.pms.auth.dto.RefreshTokenRequest;
-import fpt.qn.pms.auth.dto.RefreshTokenResponse;
+import fpt.qn.pms.auth.dto.request.LoginRequest;
+import fpt.qn.pms.auth.dto.request.RefreshTokenRequest;
+import fpt.qn.pms.auth.dto.response.LoginResponse;
+import fpt.qn.pms.auth.dto.response.RefreshTokenResponse;
 import fpt.qn.pms.auth.service.AuthService;
 import fpt.qn.pms.common.dto.ApiResponse;
 import jakarta.validation.Valid;

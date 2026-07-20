@@ -1,23 +1,23 @@
-package fpt.qn.pms.auth.dto;
+package fpt.qn.pms.auth.dto.response;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginRequest {
+public class RefreshTokenResponse {
 
-    @NotBlank(message = "Username is required")
-    String username;
-
-    @NotBlank(message = "Password is required")
-    String password;
+    String accessToken;
+    String refreshToken;
+    @Builder.Default
+    String tokenType = "Bearer";
 }

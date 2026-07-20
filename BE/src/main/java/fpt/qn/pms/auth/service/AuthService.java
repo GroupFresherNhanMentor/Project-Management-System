@@ -1,9 +1,9 @@
 package fpt.qn.pms.auth.service;
 
-import fpt.qn.pms.auth.dto.LoginRequest;
-import fpt.qn.pms.auth.dto.LoginResponse;
-import fpt.qn.pms.auth.dto.RefreshTokenRequest;
-import fpt.qn.pms.auth.dto.RefreshTokenResponse;
+import fpt.qn.pms.auth.dto.request.LoginRequest;
+import fpt.qn.pms.auth.dto.request.RefreshTokenRequest;
+import fpt.qn.pms.auth.dto.response.LoginResponse;
+import fpt.qn.pms.auth.dto.response.RefreshTokenResponse;
 
 public interface AuthService {
 
