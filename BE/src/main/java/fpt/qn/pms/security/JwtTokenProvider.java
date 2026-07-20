@@ -28,28 +28,32 @@ public class JwtTokenProvider {
 
     final JwtEncoder jwtEncoder;
 
-    public String generateAccessToken(String username) {
-        return buildToken(username, accessTokenExpiration, "access");
+    public String generateAccessToken(String username, String role) {
+        return buildToken(username, role, accessTokenExpiration, "access");
     }
 
     public String generateRefreshToken(String username) {
-        return buildToken(username, refreshTokenExpiration, "refresh");
+        return buildToken(username, null, refreshTokenExpiration, "refresh");
     }
 
     public boolean isRefreshToken(Jwt jwt) {
         return "refresh".equals(jwt.getClaim("type"));
     }
 
-    private String buildToken(String username, long expirationMs, String tokenType) {
+    private String buildToken(String username, String role, long expirationMs, String tokenType) {
         Instant now = Instant.now();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .subject(username)
                 .issuedAt(now)
                 .expiresAt(now.plusMillis(expirationMs))
-                .claim("type", tokenType)
-                .build();
+                .claim("type", tokenType);
+
+        if (role != null) {
+            claimsBuilder.claim("role", role);
+        }
+
         return jwtEncoder.encode(
-                JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)
+                JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claimsBuilder.build())
         ).getTokenValue();
     }
 }
