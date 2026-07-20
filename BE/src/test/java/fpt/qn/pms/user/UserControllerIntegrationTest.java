@@ -26,9 +26,9 @@ import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.JwtTokenProvider;
-import fpt.qn.pms.user.dto.CreateUserRequest;
-import fpt.qn.pms.user.dto.UpdateUserRequest;
-import fpt.qn.pms.user.dto.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.repository.UserRepository;
 
 @SpringBootTest(classes = ProjectManagementSystemApplication.class)

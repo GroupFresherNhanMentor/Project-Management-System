@@ -1,7 +1,6 @@
-package fpt.qn.pms.user.dto;
+package fpt.qn.pms.auth.dto.request;
 
-import fpt.qn.pms.jooq.enums.UserStatus;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,8 +15,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateUserStatusRequest {
+public class RefreshTokenRequest {
 
-    @NotNull
-    UserStatus status;
+    @NotBlank
+    String refreshToken;
 }
