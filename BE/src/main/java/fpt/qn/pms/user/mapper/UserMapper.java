@@ -1,5 +1,9 @@
 package fpt.qn.pms.user.mapper;
 
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.List;
+
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -19,7 +23,7 @@ public interface UserMapper {
 
     UserDto toDto(UsersRecord record);
 
-    java.util.List<UserDto> toDtoList(java.util.List<UsersRecord> records);
+    List<UserDto> toDtoList(List<UsersRecord> records);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
@@ -46,7 +50,7 @@ public interface UserMapper {
         return status != null ? status.getLiteral() : null;
     }
 
-    default java.time.LocalDateTime mapOffsetDateTime(java.time.OffsetDateTime value) {
+    default LocalDateTime mapOffsetDateTime(OffsetDateTime value) {
         return value == null ? null : value.toLocalDateTime();
     }
 }
