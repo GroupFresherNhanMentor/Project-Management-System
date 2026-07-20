@@ -37,3 +37,16 @@ logging:
   level:
     fpt.qn.pms: DEBUG
     org.springframework.security: INFO
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  group-configs:
+    - group: tasks
+      paths-to-match: /api/tasks/**
+      packages-to-scan: fpt.qn.pms.task
+
