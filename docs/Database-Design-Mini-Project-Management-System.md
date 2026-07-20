@@ -34,6 +34,8 @@ erDiagram
 
 Tài liệu yêu cầu gốc liệt kê `roles` như một bảng độc lập, nhưng SRS mục 8.2 đã đánh dấu đây là điểm cần xác nhận. API Spec đã chốt `role` cấp hệ thống (System Role) là **enum cố định 2 giá trị** (`ADMIN`/`USER`).
 
+test
+
 **Quyết định:** Không tạo bảng `roles` riêng, dùng cột `role VARCHAR + CHECK constraint` ngay trên bảng `users` (`ADMIN` hoặc `USER`) — tránh JOIN không cần thiết, đơn giản hơn cho timeline 5 ngày. Các quyền cụ thể của người dùng trong dự án sẽ được quyết định bởi **Project Role** (`PM`/`DEV`/`TESTER`) lưu trực tiếp trên bảng `project_members`.
 
 Đồng thời, cơ chế xác thực JWT là hoàn toàn **stateless** phía Backend. Backend chỉ đảm nhận việc verify token, không cần lưu trữ hay quản lý trạng thái token trong DB. Vì vậy, bảng `refresh_tokens` được loại bỏ hoàn toàn. Tổng số bảng trong Database thực tế giảm còn **8 bảng**.
