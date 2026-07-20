@@ -30,8 +30,9 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.repository.UserRepository;
+import fpt.qn.pms.config.TestRedisConfig;
 
-@SpringBootTest(classes = ProjectManagementSystemApplication.class)
+@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
 @Transactional
 class UserControllerIntegrationTest {
 

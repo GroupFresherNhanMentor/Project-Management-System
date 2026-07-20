@@ -28,7 +28,9 @@ import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.JwtTokenProvider;
 import fpt.qn.pms.user.repository.UserRepository;
 
-@SpringBootTest(classes = ProjectManagementSystemApplication.class)
+import fpt.qn.pms.config.TestRedisConfig;
+
+@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
 @Transactional
 class AuthIntegrationTest {
 

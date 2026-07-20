@@ -25,6 +25,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import fpt.qn.pms.security.RedisTokenBlacklistService;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -35,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     JwtTokenProvider jwtTokenProvider;
     JwtDecoder jwtDecoder;
     UserMapper userMapper;
+    RedisTokenBlacklistService redisTokenBlacklistService;
 
     @Override
     @Transactional(readOnly = true)
@@ -66,6 +69,12 @@ public class AuthServiceImpl implements AuthService {
     public RefreshTokenResponse refresh(RefreshTokenRequest request) {
         try {
             Jwt jwt = jwtDecoder.decode(request.getRefreshToken());
+
+            String tokenId = jwt.getId();
+            if (tokenId != null && redisTokenBlacklistService.isBlacklisted(tokenId)) {
+                throw new BadCredentialsException("Refresh token has been revoked/blacklisted");
+            }
+
             String tokenType = jwt.getClaimAsString("type");
             if (!"refresh".equals(tokenType)) {
                 throw new BadCredentialsException("Invalid refresh token");
@@ -93,7 +102,30 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout(RefreshTokenRequest request) {
-        // Stateless logout: tokens are managed client-side
+    public void logout(RefreshTokenRequest request, String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+            try {
+                Jwt jwt = jwtDecoder.decode(accessToken);
+                String tokenId = jwtTokenProvider.getTokenId(jwt);
+                long remainingMs = jwtTokenProvider.getRemainingExpirationMs(jwt);
+                redisTokenBlacklistService.blacklistToken(tokenId, remainingMs);
+            } catch (JwtException ignored) {
+                // Ignore expired or invalid access token
+            }
+        }
+
+        if (request != null && request.getRefreshToken() != null && !request.getRefreshToken().isBlank()) {
+            try {
+                Jwt jwt = jwtDecoder.decode(request.getRefreshToken());
+                if (jwtTokenProvider.isRefreshToken(jwt)) {
+                    String tokenId = jwtTokenProvider.getTokenId(jwt);
+                    long remainingMs = jwtTokenProvider.getRemainingExpirationMs(jwt);
+                    redisTokenBlacklistService.blacklistToken(tokenId, remainingMs);
+                }
+            } catch (JwtException ignored) {
+                // Ignore expired or invalid refresh token
+            }
+        }
     }
 }
