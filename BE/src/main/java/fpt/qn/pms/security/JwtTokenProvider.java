@@ -1,14 +1,16 @@
 package fpt.qn.pms.security;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.stereotype.Component;
 
 import lombok.AccessLevel;
@@ -27,29 +29,51 @@ public class JwtTokenProvider {
     long refreshTokenExpiration;
 
     final JwtEncoder jwtEncoder;
+    final JwtDecoder jwtDecoder;
 
-    public String generateAccessToken(String username) {
-        return buildToken(username, accessTokenExpiration, "access");
+    public String generateAccessToken(String username, String role) {
+        return buildToken(username, role, accessTokenExpiration, "access");
     }
 
     public String generateRefreshToken(String username) {
-        return buildToken(username, refreshTokenExpiration, "refresh");
+        return buildToken(username, null, refreshTokenExpiration, "refresh");
     }
 
     public boolean isRefreshToken(Jwt jwt) {
         return "refresh".equals(jwt.getClaim("type"));
     }
 
-    private String buildToken(String username, long expirationMs, String tokenType) {
+    public Jwt decode(String token) {
+        return jwtDecoder.decode(token);
+    }
+
+    public String getTokenId(Jwt jwt) {
+        return jwt != null ? jwt.getId() : null;
+    }
+
+    public long getRemainingExpirationMs(Jwt jwt) {
+        if (jwt == null || jwt.getExpiresAt() == null) {
+            return 0;
+        }
+        long remaining = jwt.getExpiresAt().toEpochMilli() - System.currentTimeMillis();
+        return Math.max(remaining, 0);
+    }
+
+    private String buildToken(String username, String role, long expirationMs, String tokenType) {
         Instant now = Instant.now();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(username)
                 .issuedAt(now)
                 .expiresAt(now.plusMillis(expirationMs))
-                .claim("type", tokenType)
-                .build();
+                .claim("type", tokenType);
+
+        if (role != null) {
+            claimsBuilder.claim("role", role);
+        }
+
         return jwtEncoder.encode(
-                JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims)
+                JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claimsBuilder.build())
         ).getTokenValue();
     }
 }

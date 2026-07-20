@@ -29,7 +29,7 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Re
     }
 
     public R update(R record) {
-        record.store();
+        record.update();
         return record;
     }
 
