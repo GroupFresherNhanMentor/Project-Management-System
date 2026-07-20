@@ -194,9 +194,7 @@ class TaskServiceTest {
 
         PaginationResult<TasksRecord> paginationResult = new PaginationResult<>(1L, List.of(mockTaskRecord));
 
-        when(taskRepository.findAll(
-                eq(projectId), eq(sprintId), eq(TaskStatus.TODO), eq(TaskPriority.HIGH),
-                any(), any(), eq(0), eq(10))).thenReturn(paginationResult);
+        when(taskRepository.findAll(request)).thenReturn(paginationResult);
         when(taskMapper.toDto(mockTaskRecord)).thenReturn(mockTaskDto);
 
         PageResponse<TaskDto> response = taskService.searchTasks(request);

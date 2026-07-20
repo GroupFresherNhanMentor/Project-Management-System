@@ -119,16 +119,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<TaskDto> searchTasks(TaskSearchRequest request) {
-        PaginationResult<TasksRecord> result = taskRepository.findAll(
-                request.getProject(),
-                request.getSprint(),
-                request.getStatus(),
-                request.getPriority(),
-                request.getAssignee(),
-                request.getKeyword(),
-                request.getPage(),
-                request.getSize()
-        );
+        PaginationResult<TasksRecord> result = taskRepository.findAll(request);
         return PageResponse.<TaskDto>builder()
                 .items(result.getItems().stream().map(this::toDtoWithUserNames).toList())
                 .totalElements(result.getTotal())

@@ -12,12 +12,11 @@ import org.springframework.stereotype.Repository;
 
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.repository.BaseRepository;
-import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
+import fpt.qn.pms.task.dto.TaskSearchRequest;
 
 @Repository
-    public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements TaskRepository {
+public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements TaskRepository {
 
     public TaskRepositoryImpl(DSLContext dsl) {
         super(dsl, TASKS);
@@ -33,28 +32,26 @@ import fpt.qn.pms.jooq.tables.records.TasksRecord;
     }
 
     @Override
-    public PaginationResult<TasksRecord> findAll(UUID projectId, UUID sprintId, TaskStatus status,
-                                                 TaskPriority priority, UUID assigneeId, String keyword,
-                                                 int page, int size) {
+    public PaginationResult<TasksRecord> findAll(TaskSearchRequest request) {
         Condition condition = DSL.noCondition();
 
-        if (projectId != null) {
-            condition = condition.and(TASKS.PROJECT_ID.eq(projectId));
+        if (request.getProject() != null) {
+            condition = condition.and(TASKS.PROJECT_ID.eq(request.getProject()));
         }
-        if (sprintId != null) {
-            condition = condition.and(TASKS.SPRINT_ID.eq(sprintId));
+        if (request.getSprint() != null) {
+            condition = condition.and(TASKS.SPRINT_ID.eq(request.getSprint()));
         }
-        if (status != null) {
-            condition = condition.and(TASKS.STATUS.eq(status));
+        if (request.getStatus() != null) {
+            condition = condition.and(TASKS.STATUS.eq(request.getStatus()));
         }
-        if (priority != null) {
-            condition = condition.and(TASKS.PRIORITY.eq(priority));
+        if (request.getPriority() != null) {
+            condition = condition.and(TASKS.PRIORITY.eq(request.getPriority()));
         }
-        if (assigneeId != null) {
-            condition = condition.and(TASKS.ASSIGNEE_ID.eq(assigneeId));
+        if (request.getAssignee() != null) {
+            condition = condition.and(TASKS.ASSIGNEE_ID.eq(request.getAssignee()));
         }
-        if (keyword != null && !keyword.isBlank()) {
-            String pattern = "%" + keyword.toLowerCase() + "%";
+        if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
+            String pattern = "%" + request.getKeyword().toLowerCase() + "%";
             condition = condition.and(
                     TASKS.TASK_KEY.likeIgnoreCase(pattern)
                             .or(TASKS.SUMMARY.likeIgnoreCase(pattern))
@@ -62,6 +59,9 @@ import fpt.qn.pms.jooq.tables.records.TasksRecord;
         }
 
         long total = dsl.fetchCount(TASKS, condition);
+
+        int page = request.getPage();
+        int size = request.getSize();
 
         List<TasksRecord> items = dsl.selectFrom(TASKS)
                 .where(condition)
