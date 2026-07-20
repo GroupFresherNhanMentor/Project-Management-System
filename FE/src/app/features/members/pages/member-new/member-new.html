@@ -1,0 +1,27 @@
+<a (click)="cancel()" class="mb-5 inline-flex cursor-pointer items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9">‹ Back to Members</a>
+
+<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:480px">
+  <h2 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">Add Member</h2>
+
+  <div class="flex flex-col gap-3">
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">User *</label>
+      <select [(ngModel)]="userId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="" disabled selected>Select user…</option>
+        @for (u of availableUsers; track u.id) { <option [value]="u.id">{{ u.fullName }}</option> }
+      </select>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role *</label>
+      <select [(ngModel)]="role" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+        @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+      </select>
+    </div>
+
+    <div class="flex gap-2 pt-1">
+      <button (click)="submit()" [disabled]="submitting || !userId" class="rounded-lg px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">Add Member</button>
+      <button (click)="cancel()" class="rounded-lg border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
+    </div>
+  </div>
+</div>

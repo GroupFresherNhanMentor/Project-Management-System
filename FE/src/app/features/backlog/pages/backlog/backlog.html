@@ -3,7 +3,7 @@
   <input
     [(ngModel)]="keyword" (ngModelChange)="page=0;load()"
     placeholder="Search tasks…"
-    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+    class="rounded-[8px] border px-3 py-2 text-[13px] outline-none"
     style="border-color:#E1E4E9;min-width:200px;color:#14161C"
   />
 
@@ -38,51 +38,11 @@
   </select>
 
   <div class="ml-auto">
-    <button (click)="showNewForm = !showNewForm"
-      class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">
+    <button (click)="newTask()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">
       + New Task
     </button>
   </div>
 </div>
-
-<!-- Inline new task form -->
-@if (showNewForm) {
-  <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
-    <p class="mb-3 text-[13px] font-bold" style="color:#14161C">New Task</p>
-    <div class="grid gap-3 sm:grid-cols-2">
-      <input [(ngModel)]="newTask.summary" placeholder="Summary *" class="col-span-2 rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-      <textarea [(ngModel)]="newTask.description" placeholder="Description" rows="2" class="col-span-2 rounded-[8px] border px-3 py-2 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
-
-      <select [(ngModel)]="newTask.taskType" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-        <option value="" disabled selected>Type *</option>
-        @for (t of taskTypes; track t) { <option [value]="t">{{ t }}</option> }
-      </select>
-
-      <select [(ngModel)]="newTask.priority" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-        <option value="" disabled selected>Priority *</option>
-        @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
-      </select>
-
-      <select [(ngModel)]="newTask.assigneeId" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-        <option value="">Assignee</option>
-        @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
-      </select>
-
-      <select [(ngModel)]="newTask.sprintId" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-        <option value="">No Sprint</option>
-        @for (s of sprints(); track s.id) { <option [value]="s.id">{{ s.sprintName }}</option> }
-      </select>
-
-      <input [(ngModel)]="newTask.storyPoint" type="number" placeholder="Story Points" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-      <input [(ngModel)]="newTask.estimateHour" type="number" placeholder="Estimate Hours" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-      <input [(ngModel)]="newTask.dueDate" type="date" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-    </div>
-    <div class="mt-3 flex gap-2">
-      <button (click)="submitNew()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">Create</button>
-      <button (click)="submitNew()" class="rounded-[8px] border px-4 py-2 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
-    </div>
-  </div>
-}
 
 <!-- Task table -->
 <div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">

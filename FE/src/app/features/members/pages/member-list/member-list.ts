@@ -1,7 +1,6 @@
-import { Component, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, signal, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { ProjectMemberDto } from '../../../../core/models/project-member.model';
-import { ProjectRole } from '../../../../core/models/api.model';
 import { InitialsPipe } from '../../../../shared/pipes/initials.pipe';
 
 const MOCK_MEMBERS: ProjectMemberDto[] = [
@@ -13,21 +12,15 @@ const MOCK_MEMBERS: ProjectMemberDto[] = [
 
 @Component({
   selector: 'app-member-list',
-  imports: [FormsModule, InitialsPipe],
+  imports: [InitialsPipe],
   templateUrl: './member-list.html',
 })
 export class MemberList {
-  readonly members  = signal<ProjectMemberDto[]>(MOCK_MEMBERS);
-  readonly allUsers = signal([
-    { id: 'u6', fullName: 'New User' },
-  ]);
+  private readonly router = inject(Router);
 
-  showAddForm = false;
-  newUserId   = '';
-  newRole: ProjectRole = 'DEV';
-  readonly roles: ProjectRole[] = ['PM', 'DEV', 'TESTER'];
+  readonly members = signal<ProjectMemberDto[]>(MOCK_MEMBERS);
 
-  addMember(): void { this.showAddForm = false; this.newUserId = ''; }
+  newMember(): void { void this.router.navigate(['/members/new']); }
 
   removeMember(member: ProjectMemberDto): void {
     this.members.update(list => list.filter(m => m.id !== member.id));

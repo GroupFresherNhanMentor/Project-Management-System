@@ -1,0 +1,80 @@
+<a (click)="cancel()" class="mb-5 inline-flex cursor-pointer items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9">‹ Back to Backlog</a>
+
+<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:720px">
+  <h2 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">New Task</h2>
+
+  <div class="flex flex-col gap-3">
+    <!-- Summary -->
+    <input
+      [(ngModel)]="summary"
+      placeholder="Summary *"
+      class="rounded-lg border px-3 py-2.5 text-[13px] outline-none"
+      style="border-color:#E1E4E9"
+    />
+
+    <!-- Description -->
+    <textarea
+      [(ngModel)]="description"
+      placeholder="Description"
+      rows="3"
+      class="resize-none rounded-lg border px-3 py-2.5 text-[13px] outline-none"
+      style="border-color:#E1E4E9"
+    ></textarea>
+
+    <!-- Type + Priority -->
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Type *</label>
+        <select [(ngModel)]="taskType" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          @for (t of taskTypes; track t) { <option [value]="t">{{ t }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Priority *</label>
+        <select [(ngModel)]="priority" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          @for (p of priorities; track p) { <option [value]="p">{{ p }}</option> }
+        </select>
+      </div>
+    </div>
+
+    <!-- Assignee + Sprint -->
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
+        <select [(ngModel)]="assigneeId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          <option value="">Unassigned</option>
+          @for (m of members; track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Sprint</label>
+        <select [(ngModel)]="sprintId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          <option value="">No Sprint</option>
+          @for (s of sprints; track s.id) { <option [value]="s.id">{{ s.sprintName }}</option> }
+        </select>
+      </div>
+    </div>
+
+    <!-- Story Points + Estimate + Due Date -->
+    <div class="grid grid-cols-3 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Story Points</label>
+        <input [(ngModel)]="storyPoint" type="number" min="0" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Estimate (h)</label>
+        <input [(ngModel)]="estimateHour" type="number" min="0" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Due Date</label>
+        <input [(ngModel)]="dueDate" type="date" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-2 pt-1">
+      <button (click)="submit()" [disabled]="submitting || !summary.trim()" class="rounded-lg px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">Create Task</button>
+      <button (click)="cancel()" class="rounded-lg border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
+    </div>
+  </div>
+</div>

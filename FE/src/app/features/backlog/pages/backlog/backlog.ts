@@ -1,11 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TaskDto } from '../../../../core/models/task.model';
 import { SprintDto } from '../../../../core/models/sprint.model';
 import { ProjectMemberDto } from '../../../../core/models/project-member.model';
-import { TaskType, TaskPriority } from '../../../../core/models/api.model';
 
 const MOCK_TASKS: TaskDto[] = [
   { id: 't1', taskKey: 'WEB-101', projectId: 'p1', sprintId: 's1', summary: 'Redesign checkout flow',               description: null, taskType: 'STORY', priority: 'HIGH',     status: 'IN_PROGRESS', assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 8,    estimateHour: 40,   dueDate: '2026-07-18', createdAt: '2026-07-01' },
@@ -29,17 +27,6 @@ const MOCK_MEMBERS: ProjectMemberDto[] = [
   { id: 'm4', projectId: 'p1', userId: 'u5', userFullName: 'Khoa Nguyen', projectRole: 'TESTER', status: 'ACTIVE' },
 ];
 
-type NewTaskForm = {
-  summary: string; description: string; taskType: TaskType; priority: TaskPriority;
-  assigneeId: string; sprintId: string; storyPoint: number | null;
-  estimateHour: number | null; dueDate: string;
-};
-
-const EMPTY_FORM: NewTaskForm = {
-  summary: '', description: '', taskType: 'TASK', priority: 'MEDIUM',
-  assigneeId: '', sprintId: '', storyPoint: null, estimateHour: null, dueDate: '',
-};
-
 @Component({
   selector: 'app-backlog',
   imports: [FormsModule],
@@ -48,12 +35,12 @@ const EMPTY_FORM: NewTaskForm = {
 export class Backlog {
   private readonly router = inject(Router);
 
+  readonly sprints = signal(MOCK_SPRINTS);
+  readonly members = signal(MOCK_MEMBERS);
+
   keyword = ''; sprint = ''; status = ''; priority = ''; assignee = '';
   page = 0; size = 20;
   get totalPages() { return Math.ceil(this.tasks().length / this.size) || 1; }
-
-  readonly sprints = signal(MOCK_SPRINTS);
-  readonly members = signal(MOCK_MEMBERS);
 
   tasks(): TaskDto[] {
     return MOCK_TASKS.filter(t =>
@@ -67,16 +54,11 @@ export class Backlog {
 
   load(): void { /* filtering is reactive via tasks() */ }
 
-  showNewForm = false;
-  newTask: NewTaskForm = { ...EMPTY_FORM };
-
-  readonly taskTypes: TaskType[]      = ['STORY', 'TASK', 'BUG'];
-  readonly priorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-
   prevPage(): void { if (this.page > 0) this.page--; }
   nextPage(): void { if (this.page < this.totalPages - 1) this.page++; }
+
   openTask(id: string): void { void this.router.navigate(['/tasks', id]); }
-  submitNew(): void { this.showNewForm = false; this.newTask = { ...EMPTY_FORM }; }
+  newTask(): void          { void this.router.navigate(['/tasks/new']); }
 
   statusLabel(s: string): string {
     return ({ TODO: 'To Do', IN_PROGRESS: 'In Progress', TESTING: 'Testing', DONE: 'Done' })[s] ?? s;
