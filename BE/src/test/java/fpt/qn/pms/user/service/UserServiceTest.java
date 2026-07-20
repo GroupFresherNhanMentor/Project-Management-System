@@ -8,12 +8,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+import fpt.qn.pms.ProjectManagementSystemApplication;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
@@ -23,14 +20,9 @@ import fpt.qn.pms.user.dto.UpdateUserRequest;
 import fpt.qn.pms.user.dto.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.UserDto;
 
-@SpringBootTest
-@Testcontainers
+@SpringBootTest(classes = ProjectManagementSystemApplication.class)
 @Transactional
 class UserServiceTest {
-
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine");
 
     @Autowired
     UserService userService;
@@ -39,13 +31,13 @@ class UserServiceTest {
 
     @Test
     void createUser_shouldReturnMappedDto() {
-        UserDto dto = userService.createUser(buildRequest("001"));
+        UserDto dto = userService.createUser(buildRequest("101"));
 
         assertThat(dto.getId()).isNotNull();
-        assertThat(dto.getEmployeeId()).isEqualTo("EMP001");
-        assertThat(dto.getUsername()).isEqualTo("user001");
-        assertThat(dto.getFullName()).isEqualTo("Test User 001");
-        assertThat(dto.getEmail()).isEqualTo("user001@test.com");
+        assertThat(dto.getEmployeeId()).isEqualTo("EMP101");
+        assertThat(dto.getUsername()).isEqualTo("user101");
+        assertThat(dto.getFullName()).isEqualTo("Test User 101");
+        assertThat(dto.getEmail()).isEqualTo("user101@test.com");
         assertThat(dto.getRole()).isEqualTo("USER");
         assertThat(dto.getStatus()).isEqualTo("ACTIVE");
         assertThat(dto.getCreatedAt()).isNotNull();
@@ -53,10 +45,7 @@ class UserServiceTest {
 
     @Test
     void createUser_shouldEncodePassword() {
-        // password is not exposed in UserDto — verify via repo that it's hashed
         UserDto dto = userService.createUser(buildRequest("002"));
-        // If creation succeeded without error, the BCrypt encode path was hit.
-        // We verify the raw password is NOT stored by checking the dto has no password field.
         assertThat(dto).isNotNull();
     }
 
@@ -65,7 +54,7 @@ class UserServiceTest {
         userService.createUser(buildRequest("003"));
 
         CreateUserRequest duplicate = buildRequest("003x");
-        duplicate.setUsername("user003"); // same username, different employee/email
+        duplicate.setUsername("user003");
 
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
@@ -77,7 +66,7 @@ class UserServiceTest {
         userService.createUser(buildRequest("004"));
 
         CreateUserRequest duplicate = buildRequest("004x");
-        duplicate.setEmail("user004@test.com"); // same email
+        duplicate.setEmail("user004@test.com");
 
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
@@ -89,7 +78,7 @@ class UserServiceTest {
         userService.createUser(buildRequest("005"));
 
         CreateUserRequest duplicate = buildRequest("005x");
-        duplicate.setEmployeeId("EMP005"); // same employee ID
+        duplicate.setEmployeeId("EMP005");
 
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
@@ -197,8 +186,8 @@ class UserServiceTest {
 
         assertThat(updated.getFullName()).isEqualTo("Updated Name 015");
         assertThat(updated.getRole()).isEqualTo("ADMIN");
-        assertThat(updated.getUsername()).isEqualTo("user015"); // unchanged
-        assertThat(updated.getEmail()).isEqualTo("user015@test.com"); // unchanged
+        assertThat(updated.getUsername()).isEqualTo("user015");
+        assertThat(updated.getEmail()).isEqualTo("user015@test.com");
     }
 
     @Test
@@ -206,7 +195,6 @@ class UserServiceTest {
         UserDto created = userService.createUser(buildRequest("016"));
 
         UpdateUserRequest req = new UpdateUserRequest();
-        // all fields null — should not change anything
 
         UserDto updated = userService.updateUser(created.getId(), req);
 
@@ -231,7 +219,7 @@ class UserServiceTest {
         UserDto second = userService.createUser(buildRequest("018"));
 
         UpdateUserRequest req = new UpdateUserRequest();
-        req.setEmail("user017@test.com"); // email already owned by user017
+        req.setEmail("user017@test.com");
 
         assertThatThrownBy(() -> userService.updateUser(second.getId(), req))
                 .isInstanceOf(AppException.class)
@@ -277,8 +265,6 @@ class UserServiceTest {
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("User not found");
     }
-
-    // ── helpers ───────────────────────────────────────────────────────────────
 
     private CreateUserRequest buildRequest(String suffix) {
         CreateUserRequest req = new CreateUserRequest();
