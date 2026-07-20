@@ -17,8 +17,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.common.exception.InternalServerErrorException;
 import fpt.qn.pms.jooq.enums.ProjectRole;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.security.annotation.RequireProjectRoles;
@@ -47,7 +48,7 @@ public class ProjectRoleAspect {
     private void validateRoles(JoinPoint joinPoint, RequireProjectRole[] roleAnnotations) {
         UUID projectId = extractProjectId(joinPoint);
         if (projectId == null) {
-            throw new IllegalArgumentException("Unable to determine Project ID for authorization check");
+            throw new InternalServerErrorException( "Unable to determine Project ID for authorization check");
         }
 
         UsersRecord currentUser = getCurrentUser();
@@ -76,7 +77,7 @@ public class ProjectRoleAspect {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             UsersRecord mockUser = dsl.selectFrom(USERS).limit(1).fetchOne();
             if (mockUser == null) {
-                throw new AppException("No users found in database to mock authentication");
+                throw new InternalServerErrorException( "No users found in database to mock authentication");
             }
             return mockUser;
         }
@@ -84,7 +85,7 @@ public class ProjectRoleAspect {
         return dsl.selectFrom(USERS)
                 .where(USERS.USERNAME.eq(username))
                 .fetchOptional()
-                .orElseThrow(() -> new AppException("Current user not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
     private UUID extractProjectId(JoinPoint joinPoint) {
