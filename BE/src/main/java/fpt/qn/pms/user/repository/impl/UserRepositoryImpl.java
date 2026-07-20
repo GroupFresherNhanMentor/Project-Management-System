@@ -1,4 +1,4 @@
-package fpt.qn.pms.user.repository;
+package fpt.qn.pms.user.repository.impl;
 
 import static fpt.qn.pms.jooq.Tables.USERS;
 
@@ -16,6 +16,7 @@ import fpt.qn.pms.common.repository.BaseRepository;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.user.repository.UserRepository;
 
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements UserRepository {
@@ -83,5 +84,4 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
 
         return condition;
     }
-
 }
