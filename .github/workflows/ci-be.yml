@@ -2,7 +2,7 @@ name: CI / Backend
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - 'BE/**'
       - '.github/workflows/ci-be.yml'
@@ -42,11 +42,7 @@ jobs:
           cache: maven
 
       - name: Apply database migrations for jOOQ codegen
-        run: |
-          sudo apt-get install -y --no-install-recommends postgresql-client
-          for f in $(ls src/main/resources/db/migration/V*.sql | sort); do
-            PGPASSWORD=postgres psql -h localhost -U postgres -d mini-project-management-system -f "$f"
-          done
+        run: mvn -B flyway:migrate -Ddb.url=jdbc:postgresql://localhost:5432/mini-project-management-system
 
       - name: Build and test
         run: mvn -B test
