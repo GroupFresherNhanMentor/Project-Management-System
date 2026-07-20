@@ -30,7 +30,10 @@ import fpt.qn.pms.user.repository.UserRepository;
 
 import fpt.qn.pms.config.TestRedisConfig;
 
+import org.springframework.test.context.ActiveProfiles;
+
 @SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class AuthIntegrationTest {
 

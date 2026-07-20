@@ -32,7 +32,10 @@ import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.config.TestRedisConfig;
 
+import org.springframework.test.context.ActiveProfiles;
+
 @SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class UserControllerIntegrationTest {
 
@@ -62,27 +65,44 @@ class UserControllerIntegrationTest {
                 .apply(springSecurity())
                 .build();
 
-        if (!userRepository.existsByUsername("admin")) {
-            UsersRecord admin = new UsersRecord();
-            admin.setEmployeeId("EMP001");
-            admin.setUsername("admin");
-            admin.setFullName("System Administrator");
-            admin.setEmail("admin@pms.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole(SysRole.ADMIN);
-            admin.setStatus(UserStatus.ACTIVE);
-            userRepository.create(admin);
-        }
+        userRepository.findByUsername("admin").ifPresentOrElse(
+                admin -> {
+                    admin.setPassword(passwordEncoder.encode("admin123"));
+                    admin.setStatus(UserStatus.ACTIVE);
+                    userRepository.update(admin);
+                },
+                () -> {
+                    UsersRecord admin = new UsersRecord();
+                    admin.setEmployeeId("EMP_TEST_001");
+                    admin.setUsername("admin");
+                    admin.setFullName("System Administrator");
+                    admin.setEmail("admin@pms.com");
+                    admin.setPassword(passwordEncoder.encode("admin123"));
+                    admin.setRole(SysRole.ADMIN);
+                    admin.setStatus(UserStatus.ACTIVE);
+                    userRepository.create(admin);
+                }
+        );
 
-        testUser = new UsersRecord();
-        testUser.setEmployeeId("EMP002");
-        testUser.setUsername("regularuser");
-        testUser.setFullName("Regular User");
-        testUser.setEmail("regular@pms.com");
-        testUser.setPassword(passwordEncoder.encode("password123"));
-        testUser.setRole(SysRole.USER);
-        testUser.setStatus(UserStatus.ACTIVE);
-        testUser = userRepository.create(testUser);
+        userRepository.findByUsername("regularuser").ifPresentOrElse(
+                user -> {
+                    user.setPassword(passwordEncoder.encode("password123"));
+                    user.setStatus(UserStatus.ACTIVE);
+                    userRepository.update(user);
+                    testUser = user;
+                },
+                () -> {
+                    testUser = new UsersRecord();
+                    testUser.setEmployeeId("EMP_TEST_002");
+                    testUser.setUsername("regularuser");
+                    testUser.setFullName("Regular User");
+                    testUser.setEmail("regular@pms.com");
+                    testUser.setPassword(passwordEncoder.encode("password123"));
+                    testUser.setRole(SysRole.USER);
+                    testUser.setStatus(UserStatus.ACTIVE);
+                    testUser = userRepository.create(testUser);
+                }
+        );
 
         adminToken = jwtTokenProvider.generateAccessToken("admin", SysRole.ADMIN.getLiteral());
         userToken = jwtTokenProvider.generateAccessToken("regularuser", SysRole.USER.getLiteral());

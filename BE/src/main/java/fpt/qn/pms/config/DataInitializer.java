@@ -24,7 +24,10 @@ import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     public static final UUID ADMIN_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -52,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (!dsl.fetchExists(USERS, USERS.ID.eq(ADMIN_USER_ID))) {
+        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("admin"))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, ADMIN_USER_ID)
                     .set(USERS.USERNAME, "admin")
@@ -65,7 +68,7 @@ public class DataInitializer implements CommandLineRunner {
                     .execute();
         }
 
-        if (!dsl.fetchExists(USERS, USERS.ID.eq(DEV_USER_ID))) {
+        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("dev1"))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, DEV_USER_ID)
                     .set(USERS.USERNAME, "dev1")

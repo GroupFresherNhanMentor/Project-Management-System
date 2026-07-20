@@ -15,8 +15,12 @@ import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.config.TestRedisConfig;
 
-@SpringBootTest(classes = ProjectManagementSystemApplication.class)
+import org.springframework.test.context.ActiveProfiles;
+
+@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class UserRepositoryTest {
 

@@ -19,8 +19,12 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
+import fpt.qn.pms.config.TestRedisConfig;
 
-@SpringBootTest(classes = ProjectManagementSystemApplication.class)
+import org.springframework.test.context.ActiveProfiles;
+
+@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
+@ActiveProfiles("test")
 @Transactional
 class UserServiceTest {
 
