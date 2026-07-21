@@ -20,6 +20,7 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
@@ -36,6 +37,18 @@ import lombok.experimental.FieldDefaults;
 public class UserController {
 
     UserService userService;
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
+        return ResponseEntity.ok(ApiResponse.success(userService.getCurrentUser(), null));
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserDto>> updateCurrentUser(@Valid @RequestBody UpdateCurrentUserRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userService.updateCurrentUser(request), null));
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
