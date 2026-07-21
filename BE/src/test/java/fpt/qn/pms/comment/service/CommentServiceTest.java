@@ -7,13 +7,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.comment.dto.CommentDto;
@@ -78,6 +82,13 @@ class CommentServiceTest extends BaseIntegrationTest {
         TasksRecord savedTask = dsl.insertInto(TASKS).set(task).returning().fetchOne();
 
         taskId = savedTask.getId();
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(savedUser.getUsername(), null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     // ── 1. Create Comment ───────────────────────────────────────────────────────
@@ -107,6 +118,19 @@ class CommentServiceTest extends BaseIntegrationTest {
         CommentDto dto = commentService.createComment(taskId, req);
 
         assertThat(dto.getContent()).isEqualTo("  Content with spaces  ");
+    }
+
+    @Test
+    @DisplayName("createComment - Should throw when request is unauthenticated")
+    void createComment_shouldThrow_whenUnauthenticated() {
+        SecurityContextHolder.clearContext();
+
+        CreateCommentRequest req = new CreateCommentRequest();
+        req.setContent("This is a test comment");
+
+        assertThatThrownBy(() -> commentService.createComment(taskId, req))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("User not found");
     }
 
     // ── 2. Get Comments By Task Id (pagination) ──────────────────────────────────

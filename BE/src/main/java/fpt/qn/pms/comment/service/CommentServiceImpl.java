@@ -23,7 +23,6 @@ import fpt.qn.pms.comment.mapper.CommentMapper;
 import fpt.qn.pms.comment.repository.CommentRepository;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.InternalServerErrorException;
 import fpt.qn.pms.jooq.enums.ActivityAction;
 import fpt.qn.pms.jooq.tables.records.TaskActivitiesRecord;
 import fpt.qn.pms.jooq.tables.records.TaskCommentsRecord;
@@ -47,12 +46,7 @@ public class CommentServiceImpl implements CommentService {
     private UsersRecord getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            // Fallback: mock first user from database (same pattern as TaskServiceImpl/SprintServiceImpl)
-            UsersRecord mockUser = dsl.selectFrom(USERS).limit(1).fetchOne();
-            if (mockUser == null) {
-                throw new InternalServerErrorException("No users found in database to mock authentication");
-            }
-            return mockUser;
+            throw new UserNotFoundException();
         }
         String username = auth.getName();
         return userRepository.findByUsername(username)
