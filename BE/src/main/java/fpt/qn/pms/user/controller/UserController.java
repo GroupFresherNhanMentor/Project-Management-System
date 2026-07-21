@@ -23,6 +23,7 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.service.UserService;
 import jakarta.validation.Valid;
@@ -71,9 +72,9 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserDto created = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "User created successfully"));
+    public ResponseEntity<ApiResponse<CreateUserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        CreateUserResponse response = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "User created successfully"));
     }
 
     @PutMapping("/{id}")

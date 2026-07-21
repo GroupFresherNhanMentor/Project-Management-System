@@ -29,14 +29,14 @@ public class UserCreationTransactionHelper {
     UsernameGenerator usernameGenerator;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public UserDto executeAttempt(CreateUserRequest request) {
+    public UserDto executeAttempt(CreateUserRequest request, String tempPassword) {
         String username = usernameGenerator.generate(request.getFullName());
         UUID id = UUID.randomUUID();
 
         UsersRecord record = userMapper.toRecord(request);
         record.setId(id);
         record.setUsername(username);
-        record.setPassword(passwordEncoder.encode(request.getPassword()));
+        record.setPassword(passwordEncoder.encode(tempPassword));
         record.setEmployeeId("EMP-" + id);
         record.setStatus(UserStatus.ACTIVE);
 

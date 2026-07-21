@@ -9,6 +9,7 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 
 public interface UserService {
@@ -17,7 +18,7 @@ public interface UserService {
 
     UserDto getUserById(UUID id);
 
-    UserDto createUser(CreateUserRequest request);
+    CreateUserResponse createUser(CreateUserRequest request);
 
     UserDto updateUser(UUID id, UpdateUserRequest request);
 

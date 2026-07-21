@@ -3,6 +3,7 @@ package fpt.qn.pms.user.service.impl;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
+import fpt.qn.pms.user.util.PasswordGenerator;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
@@ -17,6 +19,7 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
@@ -29,8 +32,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import org.springframework.dao.DataAccessException;
-
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -40,17 +41,24 @@ public class UserServiceImpl implements UserService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     UserCreationTransactionHelper userCreationTransactionHelper;
+    PasswordGenerator passwordGenerator;
 
     @Override
-    public UserDto createUser(CreateUserRequest request) {
+    public CreateUserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
 
+        String tempPassword = passwordGenerator.generateSecurePassword();
+
         int maxRetries = 10;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                return userCreationTransactionHelper.executeAttempt(request);
+                UserDto userDto = userCreationTransactionHelper.executeAttempt(request, tempPassword);
+                return CreateUserResponse.builder()
+                        .user(userDto)
+                        .generatedPassword(tempPassword)
+                        .build();
             } catch (DataAccessException e) {
                 if (isDuplicateEmailConstraint(e)) {
                     throw new EmailAlreadyExistsException();
