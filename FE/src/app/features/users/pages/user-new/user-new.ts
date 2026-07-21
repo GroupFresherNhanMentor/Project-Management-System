@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { finalize } from 'rxjs';
 
 import { ToastService } from '../../../../core/services/toast';
 import { UserService } from '../../../../core/services/user';
 import type { SystemRole } from '../../../../core/models/api.model';
+import type { CreateUserResponse } from '../../../../core/models/user.model';
 
 @Component({
   selector: 'app-user-new',
@@ -16,47 +17,49 @@ import type { SystemRole } from '../../../../core/models/api.model';
 export class UserNew {
   private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
-  private readonly router = inject(Router);
 
-  employeeId = '';
-  username = '';
   fullName = '';
   email = '';
-  password = '';
   role: SystemRole = 'USER';
   submitting = signal(false);
+  result = signal<CreateUserResponse | null>(null);
 
   readonly roles: SystemRole[] = ['ADMIN', 'USER'];
 
   submit(): void {
-    if (!this.username || !this.fullName || !this.email || !this.password) {
-      this.toast.error('Username, full name, email and password are required.');
-      return;
-    }
-    if (this.password.length < 8) {
-      this.toast.error('Password must be at least 8 characters.');
+    if (!this.fullName || !this.email) {
+      this.toast.error('Full name and email are required.');
       return;
     }
 
     this.submitting.set(true);
 
     this.userService.createUser({
-      employeeId: this.employeeId,
-      username: this.username,
       fullName: this.fullName,
       email: this.email,
-      password: this.password,
       role: this.role,
     })
     .pipe(finalize(() => this.submitting.set(false)))
     .subscribe({
-      next: () => {
-        this.toast.success('User created successfully.');
-        void this.router.navigate(['/users']);
+      next: (res) => {
+        this.result.set(res);
       },
       error: (err: HttpErrorResponse) => {
         this.toast.error(err.error?.message ?? 'Failed to create user.');
       },
+    });
+  }
+
+  closeResult(): void {
+    this.result.set(null);
+    this.fullName = '';
+    this.email = '';
+    this.role = 'USER';
+  }
+
+  copy(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success('Copied!');
     });
   }
 }
