@@ -2,6 +2,9 @@ package fpt.qn.pms.comment.repository;
 
 import static fpt.qn.pms.jooq.Tables.TASK_COMMENTS;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +16,13 @@ public class CommentRepositoryImpl extends BaseRepository<TaskCommentsRecord> im
 
     public CommentRepositoryImpl(DSLContext dsl) {
         super(dsl, TASK_COMMENTS);
+    }
+
+    @Override
+    public List<TaskCommentsRecord> findByTaskId(UUID taskId) {
+        return dsl.selectFrom(TASK_COMMENTS)
+                .where(TASK_COMMENTS.TASK_ID.eq(taskId))
+                .orderBy(TASK_COMMENTS.CREATED_AT.asc())
+                .fetch();
     }
 }
