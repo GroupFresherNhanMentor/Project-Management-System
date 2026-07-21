@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 
 import { API } from '../../configs/api-endpoints';
 import { ApiResponse, PageResponse } from '../models/api.model';
-import { UserDto, CreateUserRequest, UpdateUserRequest, UpdateUserStatusRequest, UserListParams } from '../models/user.model';
+import { UserDto, CreateUserRequest, UpdateUserRequest, UpdateUserStatusRequest, UpdateCurrentUserRequest, UserListParams } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -36,5 +36,13 @@ export class UserService {
 
   updateUserStatus(id: string, body: UpdateUserStatusRequest): Observable<UserDto> {
     return this.http.patch<ApiResponse<UserDto>>(API.users.lock(id), body).pipe(map(r => r.data));
+  }
+
+  getCurrentUser(): Observable<UserDto> {
+    return this.http.get<ApiResponse<UserDto>>(API.users.me).pipe(map(r => r.data));
+  }
+
+  updateCurrentUser(body: UpdateCurrentUserRequest): Observable<UserDto> {
+    return this.http.put<ApiResponse<UserDto>>(API.users.me, body).pipe(map(r => r.data));
   }
 }

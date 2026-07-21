@@ -1,0 +1,69 @@
+<div class="max-w-2xl">
+  <h2 class="mb-6 text-[18px] font-extrabold" style="color:#14161C">My Profile</h2>
+
+  <!-- Profile Info -->
+  <div class="mb-6 rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC">
+    <h3 class="mb-4 text-[14px] font-bold" style="color:#14161C">Account Information</h3>
+
+    <div class="mb-4 grid grid-cols-2 gap-4">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Username</label>
+        <p class="rounded-[8px] bg-gray-50 px-3 py-2.5 text-[13px]" style="color:#4B5160">{{ user()?.username }}</p>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Employee ID</label>
+        <p class="rounded-[8px] bg-gray-50 px-3 py-2.5 text-[13px]" style="color:#4B5160">{{ user()?.employeeId }}</p>
+      </div>
+    </div>
+
+    <div class="mb-4 grid grid-cols-2 gap-4">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role</label>
+        <p class="rounded-[8px] bg-gray-50 px-3 py-2.5 text-[13px]" style="color:#4B5160">{{ user()?.role }}</p>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status</label>
+        <p class="rounded-[8px] bg-gray-50 px-3 py-2.5 text-[13px]" style="color:#4B5160">{{ user()?.status }}</p>
+      </div>
+    </div>
+
+    <div class="mb-4 grid grid-cols-2 gap-4">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Full Name</label>
+        <input [(ngModel)]="fullName" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Email</label>
+        <input [(ngModel)]="email" type="email" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
+      </div>
+    </div>
+
+    <button (click)="saveProfile()" [disabled]="saving()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">
+      {{ saving() ? 'Saving…' : 'Save Changes' }}
+    </button>
+  </div>
+
+  <!-- Change Password -->
+  <div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC">
+    <h3 class="mb-4 text-[14px] font-bold" style="color:#14161C">Change Password</h3>
+
+    <div class="flex flex-col gap-4" style="max-width:400px">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Current Password</label>
+        <input [(ngModel)]="currentPassword" type="password" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">New Password</label>
+        <input [(ngModel)]="newPassword" type="password" placeholder="Min 8 characters" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Confirm New Password</label>
+        <input [(ngModel)]="confirmPassword" type="password" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
+      </div>
+
+      <button (click)="changePassword()" [disabled]="changingPass()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">
+        {{ changingPass() ? 'Updating…' : 'Update Password' }}
+      </button>
+    </div>
+  </div>
+</div>
