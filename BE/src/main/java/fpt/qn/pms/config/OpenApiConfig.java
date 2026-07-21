@@ -30,30 +30,5 @@ public class OpenApiConfig {
                                         .bearerFormat("JWT")));
     }
 
-//     @Bean
-//     public GroupedOpenApi taskApiGroup() {
-//         return GroupedOpenApi.builder()
-//                 .group("tasks")
-//                 .pathsToMatch("/api/tasks/**")
-//                 .packagesToScan("fpt.qn.pms.task")
-//                 .build();
-//     }
 
-//     @Bean
-//     public GroupedOpenApi worklogApiGroup() {
-//         return GroupedOpenApi.builder()
-//                 .group("worklogs")
-//                 .pathsToMatch("/api/worklogs/**", "/api/tasks/*/worklogs")
-//                 .packagesToScan("fpt.qn.pms.worklog")
-//                 .build();
-//     }
-
-//     @Bean
-//     public GroupedOpenApi reportApiGroup() {
-//         return GroupedOpenApi.builder()
-//                 .group("reports")
-//                 .pathsToMatch("/api/reports/**")
-//                 .packagesToScan("fpt.qn.pms.worklog")
-//                 .build();
-//     }
 }

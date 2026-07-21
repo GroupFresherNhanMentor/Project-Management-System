@@ -68,15 +68,15 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
         int size = filter.getSize();
 
         List<WorklogReportItem> items = dsl.select(
-                        WORKLOGS.ID,
-                        WORKLOGS.TASK_ID,
-                        TASKS.TASK_KEY,
+                        WORKLOGS.ID.as("id"),
+                        WORKLOGS.TASK_ID.as("taskId"),
+                        TASKS.TASK_KEY.as("taskKey"),
                         TASKS.SUMMARY.as("taskSummary"),
-                        WORKLOGS.USER_ID,
-                        USERS.FULL_NAME.as("userName"),
-                        WORKLOGS.WORK_DATE,
+                        WORKLOGS.USER_ID.as("userId"),
+                        USERS.USERNAME.as("userName"),
+                        WORKLOGS.WORK_DATE.as("workDate"),
                         WORKLOGS.HOURS.as("hour"),
-                        WORKLOGS.DESCRIPTION
+                        WORKLOGS.DESCRIPTION.as("description")
                 )
                 .from(WORKLOGS)
                 .join(TASKS).on(WORKLOGS.TASK_ID.eq(TASKS.ID))
@@ -85,17 +85,7 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
                 .orderBy(WORKLOGS.WORK_DATE.desc(), WORKLOGS.CREATED_AT.desc())
                 .limit(size)
                 .offset((long) page * size)
-                .fetch(record -> WorklogReportItem.builder()
-                        .id(record.get(WORKLOGS.ID))
-                        .taskId(record.get(WORKLOGS.TASK_ID))
-                        .taskKey(record.get(TASKS.TASK_KEY))
-                        .taskSummary(record.get(TASKS.SUMMARY.as("taskSummary")))
-                        .userId(record.get(WORKLOGS.USER_ID))
-                        .userName(record.get(USERS.FULL_NAME.as("userName")))
-                        .workDate(record.get(WORKLOGS.WORK_DATE))
-                        .hour(record.get(WORKLOGS.HOURS.as("hour")))
-                        .description(record.get(WORKLOGS.DESCRIPTION))
-                        .build());
+                .fetchInto(WorklogReportItem.class);
 
         return new PaginationResult<>(total, items);
     }

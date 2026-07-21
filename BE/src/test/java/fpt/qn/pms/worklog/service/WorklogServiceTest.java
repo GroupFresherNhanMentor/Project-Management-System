@@ -1,7 +1,6 @@
 package fpt.qn.pms.worklog.service;
 
 import static fpt.qn.pms.jooq.Tables.USERS;
-import static fpt.qn.pms.jooq.Tables.WORKLOGS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -15,6 +14,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
+import org.jooq.SelectLimitPercentStep;
+import org.jooq.SelectWhereStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,12 @@ class WorklogServiceTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     DSLContext dsl;
 
+    @Mock
+    SelectWhereStep<UsersRecord> selectWhereStep;
+
+    @Mock
+    SelectLimitPercentStep<UsersRecord> selectLimitStep;
+
     @InjectMocks
     WorklogServiceImpl worklogService;
 
@@ -99,6 +106,12 @@ class WorklogServiceTest {
                 .build();
     }
 
+    private void mockCurrentUser(UsersRecord user) {
+        when(dsl.selectFrom(USERS)).thenReturn(selectWhereStep);
+        when(selectWhereStep.limit(1)).thenReturn(selectLimitStep);
+        when(selectLimitStep.fetchOne()).thenReturn(user);
+    }
+
     // ── 1. Create Worklog ──────────────────────────────────────────────────────
 
     @Test
@@ -110,7 +123,7 @@ class WorklogServiceTest {
         request.setDescription("Implemented core logic");
 
         when(taskRepository.existsById(taskId)).thenReturn(true);
-        when(dsl.selectFrom(USERS).limit(1).fetchOne()).thenReturn(currentUser);
+        mockCurrentUser(currentUser);
         when(worklogMapper.toRecord(request)).thenReturn(new WorklogsRecord());
         when(worklogRepository.create(any(WorklogsRecord.class))).thenReturn(mockWorklogRecord);
         when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
@@ -147,7 +160,7 @@ class WorklogServiceTest {
         request.setDescription("Updated description");
 
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        when(dsl.selectFrom(USERS).limit(1).fetchOne()).thenReturn(currentUser);
+        mockCurrentUser(currentUser);
         when(worklogRepository.update(mockWorklogRecord)).thenReturn(mockWorklogRecord);
         when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
 
@@ -166,7 +179,7 @@ class WorklogServiceTest {
         notCreator.setId(otherUserId);
 
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        when(dsl.selectFrom(USERS).limit(1).fetchOne()).thenReturn(notCreator);
+        mockCurrentUser(notCreator);
 
         assertThatThrownBy(() -> worklogService.updateWorklog(worklogId, request))
                 .isInstanceOf(AccessDeniedException.class)
@@ -179,7 +192,7 @@ class WorklogServiceTest {
     @DisplayName("deleteWorklog - Should delete worklog when user is creator")
     void deleteWorklog_success() {
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        when(dsl.selectFrom(USERS).limit(1).fetchOne()).thenReturn(currentUser);
+        mockCurrentUser(currentUser);
 
         worklogService.deleteWorklog(worklogId);
 
@@ -193,7 +206,7 @@ class WorklogServiceTest {
         notCreator.setId(otherUserId);
 
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        when(dsl.selectFrom(USERS).limit(1).fetchOne()).thenReturn(notCreator);
+        mockCurrentUser(notCreator);
 
         assertThatThrownBy(() -> worklogService.deleteWorklog(worklogId))
                 .isInstanceOf(AccessDeniedException.class)

@@ -548,24 +548,14 @@ paths:
 
   # ───────────────────────── WORKLOG REPORT (FR-WLOG-04) ─────────────────────────
   /reports/worklog:
-    get:
+    post:
       tags: [Worklog]
       summary: Báo cáo Worklog (FR-WLOG-04)
-      parameters:
-        - { $ref: '#/components/parameters/Page' }
-        - { $ref: '#/components/parameters/Size' }
-        - name: project
-          in: query
-          schema: { type: integer, format: int64 }
-        - name: user
-          in: query
-          schema: { type: integer, format: int64 }
-        - name: fromDate
-          in: query
-          schema: { type: string, format: date }
-        - name: toDate
-          in: query
-          schema: { type: string, format: date }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WorklogReportFilterDto' }
       responses:
         '200': { $ref: '#/components/responses/WorklogReportPageResponse' }
 

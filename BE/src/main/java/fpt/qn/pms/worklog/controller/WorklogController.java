@@ -1,5 +1,6 @@
 package fpt.qn.pms.worklog.controller;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,8 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.worklog.dto.CreateWorklogRequest;
 import fpt.qn.pms.worklog.dto.UpdateWorklogRequest;
 import fpt.qn.pms.worklog.dto.WorklogDto;
+import fpt.qn.pms.worklog.dto.WorklogReportFilterDto;
+import fpt.qn.pms.worklog.dto.WorklogReportItem;
 import fpt.qn.pms.worklog.service.WorklogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,5 +71,13 @@ public class WorklogController {
     public ResponseEntity<ApiResponse<Void>> deleteWorklog(@PathVariable UUID id) {
         worklogService.deleteWorklog(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Worklog deleted successfully"));
+    }
+
+    @PostMapping("/api/reports/worklog")
+    @Operation(summary = "Get Worklog Report (FR-WLOG-04)")
+    public ResponseEntity<ApiResponse<PageResponse<WorklogReportItem>>> getWorklogReport(
+            @Valid @RequestBody WorklogReportFilterDto filter) {
+        PageResponse<WorklogReportItem> result = worklogService.getWorklogReport(filter);
+        return ResponseEntity.ok(ApiResponse.success(result, null));
     }
 }
