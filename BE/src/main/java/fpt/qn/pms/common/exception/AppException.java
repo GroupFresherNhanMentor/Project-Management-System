@@ -1,14 +1,17 @@
 package fpt.qn.pms.common.exception;
 
+import org.springframework.http.HttpStatus;
+
 public class AppException extends RuntimeException {
 
-    private static final long serialVersionUID = -5549322336940535680L;
+    private final HttpStatus status;
 
-    public AppException() {
-        super("Conflict occurred");
+    public AppException(HttpStatus status, String message) {
+        super(message);
+        this.status = status;
     }
 
-    public AppException(String message) {
-        super(message);
+    public HttpStatus getStatus() {
+        return status;
     }
 }

@@ -11,17 +11,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fpt.qn.pms.ProjectManagementSystemApplication;
+import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
@@ -30,14 +28,8 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.repository.UserRepository;
-import fpt.qn.pms.config.TestRedisConfig;
 
-import org.springframework.test.context.ActiveProfiles;
-
-@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
-@ActiveProfiles("test")
-@Transactional
-class UserControllerIntegrationTest {
+class UserControllerIntegrationTest extends BaseIntegrationTest {
 
     MockMvc mockMvc;
 
