@@ -1,4 +1,4 @@
-package fpt.qn.pms.task.service;
+package fpt.qn.pms.task.service.impl;
 
 import static fpt.qn.pms.jooq.Tables.PROJECTS;
 import static fpt.qn.pms.jooq.Tables.PROJECT_MEMBERS;
@@ -32,6 +32,7 @@ import fpt.qn.pms.task.dto.TaskSearchRequest;
 import fpt.qn.pms.task.dto.UpdateTaskRequest;
 import fpt.qn.pms.task.mapper.TaskMapper;
 import fpt.qn.pms.task.repository.TaskRepository;
+import fpt.qn.pms.task.service.TaskService;
 import fpt.qn.pms.user.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -157,10 +158,10 @@ public class TaskServiceImpl implements TaskService {
                 TaskStatus oldStatus = task.getStatus();
                 TaskStatus newStatus = request.getStatus();
                 boolean validTransition = false;
-                if (oldStatus == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS) validTransition = true;
-                else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TESTING) validTransition = true;
-                else if (oldStatus == TaskStatus.TESTING && newStatus == TaskStatus.DONE) validTransition = true;
-                else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TODO) validTransition = true;
+                // if (oldStatus == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS) validTransition = true;
+                // else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TESTING) validTransition = true;
+                // else if (oldStatus == TaskStatus.TESTING && newStatus == TaskStatus.DONE) validTransition = true;
+                // else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TODO) validTransition = true;
 
                 if (!validTransition) {
                     throw new IllegalArgumentException("Invalid status transition for developer: " + oldStatus + " -> " + newStatus);

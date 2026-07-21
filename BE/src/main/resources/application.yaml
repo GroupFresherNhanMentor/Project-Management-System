@@ -49,4 +49,10 @@ springdoc:
     - group: tasks
       paths-to-match: /api/tasks/**
       packages-to-scan: fpt.qn.pms.task
+    - group: worklogs
+      paths-to-match: /api/worklogs/**, /api/tasks/*/worklogs
+      packages-to-scan: fpt.qn.pms.worklog
+    - group: reports
+      paths-to-match: /api/reports/**
+      packages-to-scan: fpt.qn.pms.worklog
 
