@@ -139,6 +139,28 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /users/me:
+    get:
+      tags: [User]
+      summary: Xem thông tin cá nhân (current user)
+      description: "Yêu cầu đã đăng nhập (bất kỳ System Role nào). Trả về thông tin user của token hiện tại."
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [User]
+      summary: Cập nhật thông tin cá nhân (current user)
+      description: "Yêu cầu đã đăng nhập (bất kỳ System Role nào). Cho phép cập nhật fullName, email, password. Không cho phép thay đổi role."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCurrentUserRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /users/{id}:
     get:
       tags: [User]
@@ -301,7 +323,35 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  /sprints/{id}/status:
+  /projects/{projectId}/sprints/{id}:
+    get:
+      tags: [Sprint]
+      summary: Xem chi tiết Sprint (FR-SPR-03*)
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - { $ref: '#/components/parameters/IdPath' }
+      responses:
+        '200': { $ref: '#/components/responses/SprintResponse' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Sprint]
+      summary: Cập nhật Sprint (FR-SPR-01)
+      description: "Yêu cầu Project Role: PM của đúng Project. Partial update — null fields được giữ nguyên."
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - { $ref: '#/components/parameters/IdPath' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSprintRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/SprintResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /projects/{projectId}/sprints/{id}/status:
     patch:
       tags: [Sprint]
       summary: Chuyển trạng thái Sprint (FR-SPR-02)
@@ -309,7 +359,9 @@ paths:
         Yêu cầu Project Role: PM của đúng Project. Ràng buộc: một Project
         chỉ được có tối đa một Sprint ở trạng thái ACTIVE tại một thời điểm —
         request bị từ chối (400) nếu vi phạm.
-      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - { $ref: '#/components/parameters/IdPath' }
       requestBody:
         required: true
         content:
@@ -416,16 +468,27 @@ paths:
     get:
       tags: [Comment]
       summary: Xem danh sách Comment của Task (FR-CMT-02)
+      description: >
+        Trả về comments của task (sorted by created_at ASC) có phân trang. Mặc định page=0, size=20.
       parameters:
         - { $ref: '#/components/parameters/TaskIdPath' }
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/Size' }
       responses:
-        '200': { $ref: '#/components/responses/TaskCommentPageResponse' }
+        '200':
+          description: Danh sách Comment (phân trang)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponseBase'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CommentPageResponse' }
     post:
       tags: [Comment]
       summary: Tạo Comment trên Task (FR-CMT-01)
-      description: Tự động ghi Activity "COMMENT_ADDED" (FR-ACT-01)
+      description: Tự động ghi Activity "COMMENT_ADDED" (FR-ACT-01). createdBy lấy từ JWT token, không cần gửi lên.
       parameters: [ { $ref: '#/components/parameters/TaskIdPath' } ]
       requestBody:
         required: true
@@ -433,8 +496,35 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/CreateCommentRequest' }
       responses:
-        '201': { $ref: '#/components/responses/TaskCommentResponse' }
+        '201': { $ref: '#/components/responses/CommentResponse' }
         '400': { $ref: '#/components/responses/BadRequest' }
+
+  /comments/{id}:
+    put:
+      tags: [Comment]
+      summary: Cập nhật nội dung Comment
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCommentRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/CommentResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Comment]
+      summary: Xoá Comment
+      parameters: [ { $ref: '#/components/parameters/IdPath' } ]
+      responses:
+        '200':
+          description: Xoá thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBase'
+        '404': { $ref: '#/components/responses/NotFound' }
 
   # ───────────────────────── ACTIVITY (FR-ACT-01, FR-ACT-02*) ─────────────────────────
   /tasks/{taskId}/activities:
@@ -763,7 +853,7 @@ components:
                             type: array
                             items: { $ref: '#/components/schemas/TaskDto' }
 
-    TaskCommentResponse:
+    CommentResponse:
       description: Thông tin Comment
       content:
         application/json:
@@ -772,9 +862,9 @@ components:
               - $ref: '#/components/schemas/ApiResponseBase'
               - type: object
                 properties:
-                  data: { $ref: '#/components/schemas/TaskCommentDto' }
-    TaskCommentPageResponse:
-      description: Danh sách Comment có phân trang
+                  data: { $ref: '#/components/schemas/CommentDto' }
+    CommentPageResponse:
+      description: Danh sách Comment có phân trang. Field chứa danh sách là 'items' (khớp với response thực tế từ Java PageResponse).
       content:
         application/json:
           schema:
@@ -787,9 +877,9 @@ components:
                       - $ref: '#/components/schemas/PageResponseBase'
                       - type: object
                         properties:
-                          content:
+                          items:
                             type: array
-                            items: { $ref: '#/components/schemas/TaskCommentDto' }
+                            items: { $ref: '#/components/schemas/CommentDto' }
 
     TaskActivityPageResponse:
       description: Danh sách Activity History có phân trang
@@ -940,6 +1030,12 @@ components:
         fullName: { type: string }
         email: { type: string, format: email }
         role: { $ref: '#/components/schemas/SystemRole' }
+    UpdateCurrentUserRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 6 }
     UpdateUserRequest:
       type: object
       properties:
@@ -1076,19 +1172,25 @@ components:
         assigneeId: { type: integer, format: int64 }
 
     # ---- Comment ----
-    TaskCommentDto:
+    CommentDto:
       type: object
       properties:
-        id: { type: integer, format: int64 }
-        taskId: { type: integer, format: int64 }
-        content: { type: string }
-        createdBy: { type: string }
-        createdTime: { type: string, format: date-time }
+        id: { type: string, format: uuid, example: a1b2c3d4-e5f6-7890-abcd-ef1234567890 }
+        taskId: { type: string, format: uuid, example: b2c3d4e5-f6a7-8901-bcde-f12345678901 }
+        content: { type: string, example: "This task is blocked by dependency X" }
+        createdBy: { type: string, format: uuid, example: c3d4e5f6-a7b8-9012-cdef-123456789012 }
+        createdByName: { type: string, example: "John Doe", nullable: true }
+        createdAt: { type: string, format: date-time, example: "2026-07-20T10:30:00+07:00" }
     CreateCommentRequest:
       type: object
       required: [content]
       properties:
-        content: { type: string }
+        content: { type: string, example: "This is a comment content" }
+    UpdateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, example: "Updated comment content" }
 
     # ---- Activity ----
     TaskActivityDto:
