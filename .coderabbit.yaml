@@ -1,0 +1,10 @@
+---
+reviews:
+  auto_review:
+    enabled: true
+    # Remove or adjust target_branches restrictions if present,
+    # or explicitly specify branches/wildcards:
+    target_branches:
+      - "main" # Matches any target branch
+      - "release"
+      - "develop"
