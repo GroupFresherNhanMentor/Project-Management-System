@@ -3,6 +3,7 @@ package fpt.qn.pms.user.service.impl;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
@@ -97,5 +99,42 @@ public class UserServiceImpl implements UserService {
         record.setStatus(request.getStatus());
         userRepository.update(record);
         return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDto getCurrentUser() {
+        UsersRecord record = getCurrentUserRecord();
+        return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public UserDto updateCurrentUser(UpdateCurrentUserRequest request) {
+        UsersRecord record = getCurrentUserRecord();
+
+        if (request.getEmail() != null
+                && userRepository.existsByEmailAndIdNot(request.getEmail(), record.getId())) {
+            throw new EmailAlreadyExistsException();
+        }
+
+        if (request.getFullName() != null) {
+            record.setFullName(request.getFullName());
+        }
+        if (request.getEmail() != null) {
+            record.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null) {
+            record.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        userRepository.update(record);
+        return userMapper.toDto(record);
+    }
+
+    private UsersRecord getCurrentUserRecord() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException());
     }
 }
