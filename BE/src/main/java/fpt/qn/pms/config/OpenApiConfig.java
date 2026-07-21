@@ -1,6 +1,5 @@
 package fpt.qn.pms.config;
 
-import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,36 +14,11 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Project Management System API")
-                        .version("1.0.0")
-                        .description("Backend API documentation for Jira-like Project Management System"))
+        return new OpenAPI().info(new Info().title("Project Management System API").version("1.0.0")
+                .description("Backend API documentation for Jira-like Project Management System"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .components(new Components()
-                        .addSecuritySchemes("bearerAuth",
-                                new SecurityScheme()
-                                        .name("bearerAuth")
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")));
-    }
-
-    @Bean
-    public GroupedOpenApi sprintApiGroup() {
-        return GroupedOpenApi.builder()
-                .group("sprints")
-                .pathsToMatch("/api/projects/{projectId}/sprints/**")
-                .packagesToScan("fpt.qn.pms.sprint")
-                .build();
-    }
-
-    @Bean
-    public GroupedOpenApi taskApiGroup() {
-        return GroupedOpenApi.builder()
-                .group("tasks")
-                .pathsToMatch("/api/tasks/**")
-                .packagesToScan("fpt.qn.pms.task")
-                .build();
+                .components(new Components().addSecuritySchemes("bearerAuth",
+                        new SecurityScheme().name("bearerAuth").type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer").bearerFormat("JWT")));
     }
 }

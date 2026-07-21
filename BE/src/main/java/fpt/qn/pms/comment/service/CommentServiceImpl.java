@@ -129,7 +129,7 @@ public class CommentServiceImpl implements CommentService {
     public void deleteComment(UUID id) {
         commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException());
-        commentRepository.deleteById(id);
+        commentRepository.hardDeleteById(id);
     }
 
     private CommentDto toDtoWithUserName(TaskCommentsRecord record) {

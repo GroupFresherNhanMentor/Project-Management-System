@@ -5,7 +5,11 @@ import { Observable, map } from 'rxjs';
 import { API } from '../../configs/api-endpoints';
 import { ApiResponse, PageResponse } from '../models/api.model';
 import { ProjectDto, CreateProjectRequest, UpdateProjectRequest, ProjectListParams } from '../models/project.model';
-import { ProjectMemberDto, AddProjectMemberRequest } from '../models/project-member.model';
+import {
+  ProjectMemberDto,
+  ProjectMemberCandidateDto,
+  AddProjectMemberRequest,
+} from '../models/project-member.model';
 import { SprintDto, CreateSprintRequest, UpdateSprintStatusRequest } from '../models/sprint.model';
 
 @Injectable({ providedIn: 'root' })
@@ -39,6 +43,20 @@ export class ProjectService {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http
       .get<ApiResponse<PageResponse<ProjectMemberDto>>>(API.projects.members(projectId), { params })
+      .pipe(map(r => r.data));
+  }
+
+  getMemberCandidates(
+    projectId: string,
+    page = 0,
+    size = 100,
+  ): Observable<PageResponse<ProjectMemberCandidateDto>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http
+      .get<ApiResponse<PageResponse<ProjectMemberCandidateDto>>>(
+        API.projects.memberCandidates(projectId),
+        { params },
+      )
       .pipe(map(r => r.data));
   }
 

@@ -6,6 +6,7 @@ export const API = {
   },
   users: {
     base: '/api/users',
+    me: '/api/users/me',
     byId: (id: string) => `/api/users/${id}`,
     lock: (id: string) => `/api/users/${id}/lock`,
   },
@@ -13,6 +14,7 @@ export const API = {
     base: '/api/projects',
     byId: (id: string) => `/api/projects/${id}`,
     members: (projectId: string) => `/api/projects/${projectId}/members`,
+    memberCandidates: (projectId: string) => `/api/projects/${projectId}/members/candidates`,
     memberById: (projectId: string, memberId: string) => `/api/projects/${projectId}/members/${memberId}`,
     sprints: (projectId: string) => `/api/projects/${projectId}/sprints`,
   },

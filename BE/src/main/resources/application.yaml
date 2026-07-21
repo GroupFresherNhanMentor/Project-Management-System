@@ -51,6 +51,17 @@ springdoc:
     operations-sorter: alpha
   group-configs:
     - group: tasks
-      paths-to-match: /api/tasks/**
+      paths-to-match:
+        - /api/tasks/**
+        - /api/projects/{projectId}/task-statuses/**
       packages-to-scan: fpt.qn.pms.task
+    - group: sprints
+      paths-to-match: /api/projects/{projectId}/sprints/**
+      packages-to-scan: fpt.qn.pms.sprint
+    - group: worklogs
+      paths-to-match: /api/worklogs/**, /api/tasks/*/worklogs, /api/reports/worklog
+      packages-to-scan: fpt.qn.pms.worklog
+    - group: reports
+      paths-to-match: /api/reports/**
+      packages-to-scan: fpt.qn.pms.worklog
 

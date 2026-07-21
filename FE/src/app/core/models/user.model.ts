@@ -36,3 +36,9 @@ export interface UserListParams {
   page?: number;
   size?: number;
 }
+
+export interface UpdateCurrentUserRequest {
+  fullName?: string;
+  email?: string;
+  password?: string;
+}

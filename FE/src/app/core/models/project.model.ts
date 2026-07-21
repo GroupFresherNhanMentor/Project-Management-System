@@ -8,6 +8,8 @@ export interface ProjectDto {
   startDate: string;
   endDate: string;
   status: ProjectStatus;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateProjectRequest {

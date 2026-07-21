@@ -40,7 +40,7 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Re
                 .fetchOne();
     }
 
-    public void deleteById(UUID id) {
+    public void hardDeleteById(UUID id) {
         dsl.deleteFrom(table)
                 .where(table.field("id", UUID.class).eq(id))
                 .execute();
