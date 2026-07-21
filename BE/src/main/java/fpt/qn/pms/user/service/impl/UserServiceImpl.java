@@ -20,15 +20,16 @@ import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
+import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
+import fpt.qn.pms.user.helper.UserCreationTransactionHelper;
 import fpt.qn.pms.user.mapper.UserMapper;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.user.service.UserService;
-import fpt.qn.pms.user.util.UsernameGenerator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import org.jooq.exception.DataAccessException;
+import org.springframework.dao.DataAccessException;
 
 @Service
 @RequiredArgsConstructor
@@ -38,42 +39,53 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
-    UsernameGenerator usernameGenerator;
+    UserCreationTransactionHelper userCreationTransactionHelper;
 
     @Override
-    @Transactional
     public UserDto createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
 
-        int maxRetries = 3;
+        int maxRetries = 10;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                String username = usernameGenerator.generate(request.getFullName());
-
-                UsersRecord record = userMapper.toRecord(request);
-                record.setUsername(username);
-                record.setPassword(passwordEncoder.encode(request.getPassword()));
-                record.setEmployeeId("EMP-");
-                record.setStatus(UserStatus.ACTIVE);
-
-                UsersRecord saved = userRepository.create(record);
-                saved.setEmployeeId("EMP-" + saved.getId());
-                userRepository.update(saved);
-                return userMapper.toDto(saved);
+                return userCreationTransactionHelper.executeAttempt(request);
             } catch (DataAccessException e) {
-                if (attempt == maxRetries || !isDuplicateUsernameException(e)) {
+                if (isDuplicateEmailConstraint(e)) {
+                    throw new EmailAlreadyExistsException();
+                }
+                if (!isDuplicateUsernameConstraint(e)) {
                     throw e;
+                }
+                if (attempt == maxRetries) {
+                    throw new UsernameAlreadyExistsException();
                 }
             }
         }
-        throw new IllegalStateException("Failed to generate unique username after max retries");
+        throw new UsernameAlreadyExistsException();
     }
 
-    private boolean isDuplicateUsernameException(DataAccessException e) {
-        String msg = e.getMessage();
-        return msg != null && (msg.toLowerCase().contains("username") || msg.contains("23505"));
+    private boolean isDuplicateUsernameConstraint(DataAccessException e) {
+        String fullMsg = getFullExceptionMessage(e).toLowerCase();
+        return fullMsg.contains("users_username_key");
+    }
+
+    private boolean isDuplicateEmailConstraint(DataAccessException e) {
+        String fullMsg = getFullExceptionMessage(e).toLowerCase();
+        return fullMsg.contains("users_email_key");
+    }
+
+    private String getFullExceptionMessage(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        Throwable curr = t;
+        while (curr != null) {
+            if (curr.getMessage() != null) {
+                sb.append(curr.getMessage()).append(" ");
+            }
+            curr = curr.getCause();
+        }
+        return sb.toString();
     }
 
     @Override

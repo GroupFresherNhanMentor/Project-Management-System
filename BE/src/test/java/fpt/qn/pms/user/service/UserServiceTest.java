@@ -3,8 +3,17 @@ package fpt.qn.pms.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
@@ -24,6 +35,7 @@ import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
+import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.repository.UserRepository;
 
 class UserServiceTest extends BaseIntegrationTest {
@@ -83,41 +95,49 @@ class UserServiceTest extends BaseIntegrationTest {
     @Test
     void createUser_shouldAppendCollisionSuffix_whenSameNameCreatedMultipleTimes() {
         CreateUserRequest req1 = buildRequest("003d1");
-        req1.setFullName("Lê An");
+        req1.setFullName("Lê An Alpha");
         UserDto dto1 = userService.createUser(req1);
 
         CreateUserRequest req2 = buildRequest("003d2");
-        req2.setFullName("Lê An");
+        req2.setFullName("Lê An Alpha");
         UserDto dto2 = userService.createUser(req2);
 
         CreateUserRequest req3 = buildRequest("003d3");
-        req3.setFullName("Lê An");
+        req3.setFullName("Lê An Alpha");
         UserDto dto3 = userService.createUser(req3);
 
-        assertThat(dto1.getUsername()).isEqualTo("anl");
-        assertThat(dto2.getUsername()).isEqualTo("anl2");
-        assertThat(dto3.getUsername()).isEqualTo("anl3");
+        assertThat(dto1.getUsername()).isEqualTo("alphala");
+        assertThat(dto2.getUsername()).isEqualTo("alphala2");
+        assertThat(dto3.getUsername()).isEqualTo("alphala3");
     }
 
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void createUser_shouldReturnBareBase_whenNumericSuffixExistsButBareBaseDeleted() {
         CreateUserRequest req1 = buildRequest("003e1");
-        req1.setFullName("Lê An");
+        req1.setFullName("Lê An Beta");
         UserDto dto1 = userService.createUser(req1);
 
         CreateUserRequest req2 = buildRequest("003e2");
-        req2.setFullName("Lê An");
+        req2.setFullName("Lê An Beta");
         UserDto dto2 = userService.createUser(req2);
 
-        UsersRecord record = userRepository.findById(dto1.getId()).orElseThrow();
-        record.setUsername("anl_deleted");
-        userRepository.update(record);
+        UserDto dto3 = null;
+        try {
+            UsersRecord record = userRepository.findById(dto1.getId()).orElseThrow();
+            record.setUsername("betala_deleted");
+            userRepository.update(record);
 
-        CreateUserRequest req3 = buildRequest("003e3");
-        req3.setFullName("Lê An");
-        UserDto dto3 = userService.createUser(req3);
+            CreateUserRequest req3 = buildRequest("003e3");
+            req3.setFullName("Lê An Beta");
+            dto3 = userService.createUser(req3);
 
-        assertThat(dto3.getUsername()).isEqualTo("anl");
+            assertThat(dto3.getUsername()).isEqualTo("betala");
+        } finally {
+            if (dto1.getId() != null) userRepository.deleteById(dto1.getId());
+            if (dto2.getId() != null) userRepository.deleteById(dto2.getId());
+            if (dto3 != null && dto3.getId() != null) userRepository.deleteById(dto3.getId());
+        }
     }
 
     @Test
@@ -130,6 +150,122 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Email already exists");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void createUser_shouldHandleConcurrentSameNameCreation() throws Exception {
+        int numThreads = 5;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+        List<Future<UserDto>> futures = new ArrayList<>();
+
+        for (int i = 0; i < numThreads; i++) {
+            final int idx = i;
+            futures.add(executor.submit(() -> {
+                startLatch.await();
+                try {
+                    CreateUserRequest req = buildRequest("conc_name_" + idx);
+                    req.setFullName("Lê An Gamma");
+                    return userService.createUser(req);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        try {
+            startLatch.countDown();
+            boolean completed = doneLatch.await(15, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            assertThat(completed).isTrue();
+
+            Set<String> generatedUsernames = new HashSet<>();
+            for (Future<UserDto> future : futures) {
+                UserDto dto = future.get();
+                assertThat(dto).isNotNull();
+                generatedUsernames.add(dto.getUsername());
+            }
+
+            assertThat(generatedUsernames)
+                    .containsExactlyInAnyOrder("gammala", "gammala2", "gammala3", "gammala4", "gammala5");
+        } finally {
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null && dto.getId() != null) {
+                        userRepository.deleteById(dto.getId());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void createUser_shouldFailOnDuplicateEmail_withoutRetryingAsUsernameCollision() throws Exception {
+        int numThreads = 5;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+        String sharedEmail = "concurrent-dup-email@test.com";
+        List<Future<UserDto>> futures = new ArrayList<>();
+
+        for (int i = 0; i < numThreads; i++) {
+            final int idx = i;
+            futures.add(executor.submit(() -> {
+                startLatch.await();
+                try {
+                    CreateUserRequest req = buildRequest("conc_email_" + idx);
+                    req.setEmail(sharedEmail);
+                    return userService.createUser(req);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        try {
+            startLatch.countDown();
+            boolean completed = doneLatch.await(15, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            assertThat(completed).isTrue();
+
+            int successCount = 0;
+            int duplicateEmailExceptionCount = 0;
+
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null) {
+                        successCount++;
+                    }
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof EmailAlreadyExistsException) {
+                        duplicateEmailExceptionCount++;
+                    }
+                }
+            }
+
+            assertThat(successCount).isEqualTo(1);
+            assertThat(duplicateEmailExceptionCount).isEqualTo(numThreads - 1);
+        } finally {
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null && dto.getId() != null) {
+                        userRepository.deleteById(dto.getId());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 
     // ── getUserById ───────────────────────────────────────────────────────────
