@@ -139,6 +139,28 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /users/me:
+    get:
+      tags: [User]
+      summary: Xem thông tin cá nhân (current user)
+      description: "Yêu cầu đã đăng nhập (bất kỳ System Role nào). Trả về thông tin user của token hiện tại."
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [User]
+      summary: Cập nhật thông tin cá nhân (current user)
+      description: "Yêu cầu đã đăng nhập (bất kỳ System Role nào). Cho phép cập nhật fullName, email, password. Không cho phép thay đổi role."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCurrentUserRequest' }
+      responses:
+        '200': { $ref: '#/components/responses/UserResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /users/{id}:
     get:
       tags: [User]
@@ -940,6 +962,12 @@ components:
         fullName: { type: string }
         email: { type: string, format: email }
         role: { $ref: '#/components/schemas/SystemRole' }
+    UpdateCurrentUserRequest:
+      type: object
+      properties:
+        fullName: { type: string }
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 6 }
     UpdateUserRequest:
       type: object
       properties:
