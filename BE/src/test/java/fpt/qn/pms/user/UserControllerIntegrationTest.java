@@ -141,7 +141,8 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.username").value("newuser"));
+                .andExpect(jsonPath("$.data.username").value("newuser"))
+                .andExpect(jsonPath("$.data.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
     }
 
     @Test

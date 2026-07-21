@@ -36,7 +36,7 @@ class UserServiceTest extends BaseIntegrationTest {
         UserDto dto = userService.createUser(buildRequest("101"));
 
         assertThat(dto.getId()).isNotNull();
-        assertThat(dto.getEmployeeId()).startsWith("EMP-");
+        assertThat(dto.getEmployeeId()).isEqualTo("EMP-" + dto.getId());
         assertThat(dto.getUsername()).isEqualTo("user101");
         assertThat(dto.getFullName()).isEqualTo("Test User 101");
         assertThat(dto.getEmail()).isEqualTo("user101@test.com");
