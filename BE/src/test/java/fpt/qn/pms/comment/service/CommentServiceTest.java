@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
@@ -18,8 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.comment.dto.CommentDto;
+import fpt.qn.pms.comment.dto.CommentSearchRequest;
 import fpt.qn.pms.comment.dto.CreateCommentRequest;
 import fpt.qn.pms.comment.dto.UpdateCommentRequest;
+import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
@@ -108,50 +109,105 @@ class CommentServiceTest extends BaseIntegrationTest {
         assertThat(dto.getContent()).isEqualTo("  Content with spaces  ");
     }
 
-    // ── 2. Get Comments By Task Id ──────────────────────────────────────────────
+    // ── 2. Get Comments By Task Id (pagination) ──────────────────────────────────
 
     @Test
-    @DisplayName("getCommentsByTaskId - Should return comments in creation order")
-    void getCommentsByTaskId_shouldReturnCommentsInOrder() {
+    @DisplayName("getCommentsByTaskId - Should return paginated comments in creation order")
+    void getCommentsByTaskId_shouldReturnPaginated() {
         createComment("First comment");
         createComment("Second comment");
         createComment("Third comment");
 
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
+        CommentSearchRequest req = new CommentSearchRequest();
 
-        assertThat(comments).hasSize(3);
-        assertThat(comments.get(0).getContent()).isEqualTo("First comment");
-        assertThat(comments.get(1).getContent()).isEqualTo("Second comment");
-        assertThat(comments.get(2).getContent()).isEqualTo("Third comment");
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
+
+        assertThat(page.getItems()).hasSize(3);
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getPageNumber()).isZero();
+        assertThat(page.getPageSize()).isEqualTo(20);
+        assertThat(page.getTotalPages()).isEqualTo(1);
+        assertThat(page.getItems().get(0).getContent()).isEqualTo("First comment");
+        assertThat(page.getItems().get(1).getContent()).isEqualTo("Second comment");
+        assertThat(page.getItems().get(2).getContent()).isEqualTo("Third comment");
+    }
+
+    @Test
+    @DisplayName("getCommentsByTaskId - Should respect page size")
+    void getCommentsByTaskId_shouldRespectPageSize() {
+        createComment("Comment 1");
+        createComment("Comment 2");
+        createComment("Comment 3");
+        createComment("Comment 4");
+
+        CommentSearchRequest req = new CommentSearchRequest();
+        req.setPage(0);
+        req.setSize(2);
+
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
+
+        assertThat(page.getItems()).hasSize(2);
+        assertThat(page.getTotalElements()).isEqualTo(4);
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        assertThat(page.getItems().get(0).getContent()).isEqualTo("Comment 1");
+        assertThat(page.getItems().get(1).getContent()).isEqualTo("Comment 2");
+    }
+
+    @Test
+    @DisplayName("getCommentsByTaskId - Should return second page")
+    void getCommentsByTaskId_shouldReturnSecondPage() {
+        createComment("Comment 1");
+        createComment("Comment 2");
+        createComment("Comment 3");
+
+        CommentSearchRequest req = new CommentSearchRequest();
+        req.setPage(1);
+        req.setSize(2);
+
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
+
+        assertThat(page.getItems()).hasSize(1);
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getPageNumber()).isEqualTo(1);
+        assertThat(page.getItems().get(0).getContent()).isEqualTo("Comment 3");
     }
 
     @Test
     @DisplayName("getCommentsByTaskId - Should scope to task")
     void getCommentsByTaskId_shouldScopeToTask() {
+        // Uses @BeforeEach's taskId (CMT-1)
+        createComment("Comment for task 1");
+
+        // Create a second task and comment on it
         UUID secondTaskId = createAdditionalTask();
-        createComment(taskId, "Comment for task 1");
         createComment(secondTaskId, "Comment for task 2");
 
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
+        CommentSearchRequest req = new CommentSearchRequest();
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
 
-        assertThat(comments).hasSize(1);
-        assertThat(comments.get(0).getContent()).isEqualTo("Comment for task 1");
+        assertThat(page.getItems()).hasSize(1);
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getItems().get(0).getContent()).isEqualTo("Comment for task 1");
     }
 
     @Test
-    @DisplayName("getCommentsByTaskId - Should return empty list when no comments")
+    @DisplayName("getCommentsByTaskId - Should return empty page when no comments")
     void getCommentsByTaskId_shouldReturnEmpty_whenNoComments() {
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
+        CommentSearchRequest req = new CommentSearchRequest();
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
 
-        assertThat(comments).isEmpty();
+        assertThat(page.getItems()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
     }
 
     @Test
-    @DisplayName("getCommentsByTaskId - Should return empty list for non-existent task")
+    @DisplayName("getCommentsByTaskId - Should return empty page for non-existent task")
     void getCommentsByTaskId_shouldReturnEmpty_whenTaskNotExists() {
-        List<CommentDto> comments = commentService.getCommentsByTaskId(UUID.randomUUID());
+        CommentSearchRequest req = new CommentSearchRequest();
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(UUID.randomUUID(), req);
 
-        assertThat(comments).isEmpty();
+        assertThat(page.getItems()).isEmpty();
+        assertThat(page.getTotalElements()).isZero();
     }
 
     // ── 3. Update Comment ────────────────────────────────────────────────────────
@@ -191,8 +247,9 @@ class CommentServiceTest extends BaseIntegrationTest {
 
         commentService.deleteComment(created.getId());
 
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
-        assertThat(comments).isEmpty();
+        CommentSearchRequest req = new CommentSearchRequest();
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
+        assertThat(page.getItems()).isEmpty();
     }
 
     @Test
@@ -203,9 +260,10 @@ class CommentServiceTest extends BaseIntegrationTest {
 
         commentService.deleteComment(comment1.getId());
 
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
-        assertThat(comments).hasSize(1);
-        assertThat(comments.get(0).getContent()).isEqualTo("Keep this too");
+        CommentSearchRequest req = new CommentSearchRequest();
+        PageResponse<CommentDto> page = commentService.getCommentsByTaskId(taskId, req);
+        assertThat(page.getItems()).hasSize(1);
+        assertThat(page.getItems().get(0).getContent()).isEqualTo("Keep this too");
     }
 
     @Test

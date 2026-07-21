@@ -468,11 +468,15 @@ paths:
     get:
       tags: [Comment]
       summary: Xem danh sách Comment của Task (FR-CMT-02)
-      description: Trả về mảng CommentDto, sắp xếp theo created_at tăng dần.
-      parameters: [ { $ref: '#/components/parameters/TaskIdPath' } ]
+      description: >
+        Trả về comments của task (sorted by created_at ASC) có phân trang. Mặc định page=0, size=20.
+      parameters:
+        - { $ref: '#/components/parameters/TaskIdPath' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
       responses:
         '200':
-          description: Danh sách Comment
+          description: Danh sách Comment (phân trang)
           content:
             application/json:
               schema:
@@ -480,9 +484,7 @@ paths:
                   - $ref: '#/components/schemas/ApiResponseBase'
                   - type: object
                     properties:
-                      data:
-                        type: array
-                        items: { $ref: '#/components/schemas/CommentDto' }
+                      data: { $ref: '#/components/schemas/CommentPageResponse' }
     post:
       tags: [Comment]
       summary: Tạo Comment trên Task (FR-CMT-01)
@@ -861,6 +863,23 @@ components:
               - type: object
                 properties:
                   data: { $ref: '#/components/schemas/CommentDto' }
+    CommentPageResponse:
+      description: Danh sách Comment có phân trang. Field chứa danh sách là 'items' (khớp với response thực tế từ Java PageResponse).
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponseBase'
+              - type: object
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PageResponseBase'
+                      - type: object
+                        properties:
+                          items:
+                            type: array
+                            items: { $ref: '#/components/schemas/CommentDto' }
 
     TaskActivityPageResponse:
       description: Danh sách Activity History có phân trang

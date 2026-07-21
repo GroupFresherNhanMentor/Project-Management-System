@@ -1,6 +1,5 @@
 package fpt.qn.pms.comment.controller;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -15,10 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import fpt.qn.pms.comment.dto.CommentDto;
+import fpt.qn.pms.comment.dto.CommentSearchRequest;
 import fpt.qn.pms.comment.dto.CreateCommentRequest;
 import fpt.qn.pms.comment.dto.UpdateCommentRequest;
 import fpt.qn.pms.comment.service.CommentService;
 import fpt.qn.pms.common.dto.ApiResponse;
+import fpt.qn.pms.common.dto.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -46,9 +47,11 @@ public class CommentController {
     }
 
     @GetMapping("/tasks/{taskId}/comments")
-    @Operation(summary = "Get all comments for a task (FR-CMT-02)")
-    public ResponseEntity<ApiResponse<List<CommentDto>>> getCommentsByTaskId(@PathVariable UUID taskId) {
-        List<CommentDto> comments = commentService.getCommentsByTaskId(taskId);
+    @Operation(summary = "Get paginated comments for a task (FR-CMT-02)")
+    public ResponseEntity<ApiResponse<PageResponse<CommentDto>>> getCommentsByTaskId(
+            @PathVariable UUID taskId,
+            @Valid CommentSearchRequest request) {
+        PageResponse<CommentDto> comments = commentService.getCommentsByTaskId(taskId, request);
         return ResponseEntity.ok(ApiResponse.success(comments, null));
     }
 

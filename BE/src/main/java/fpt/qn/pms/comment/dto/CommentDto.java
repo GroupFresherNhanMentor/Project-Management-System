@@ -22,16 +22,16 @@ public class CommentDto {
     @Schema(description = "Comment ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     UUID id;
 
-    @Schema(description = "Task ID", example = "b2c3d4e5-f6a7-8901-bcde-f12345678901")
+    @Schema(description = "Task ID that this comment belongs to", example = "b2c3d4e5-f6a7-8901-bcde-f12345678901")
     UUID taskId;
 
     @Schema(description = "Comment content", example = "This task is blocked by dependency X")
     String content;
 
-    @Schema(description = "User ID of the comment author", example = "c3d4e5f6-a7b8-9012-cdef-123456789012")
+    @Schema(description = "User ID of the comment author (auto-filled from JWT)", example = "c3d4e5f6-a7b8-9012-cdef-123456789012")
     UUID createdBy;
 
-    @Schema(description = "Full name of the comment author", example = "John Doe")
+    @Schema(description = "Full name of the comment author (resolved from users table)", example = "John Doe")
     String createdByName;
 
     @Schema(description = "Creation timestamp", example = "2026-07-20T10:30:00+07:00")
