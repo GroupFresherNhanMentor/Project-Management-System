@@ -1,5 +1,7 @@
 package fpt.qn.pms.user.helper;
 
+import java.util.UUID;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -29,16 +31,16 @@ public class UserCreationTransactionHelper {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UserDto executeAttempt(CreateUserRequest request) {
         String username = usernameGenerator.generate(request.getFullName());
+        UUID id = UUID.randomUUID();
 
         UsersRecord record = userMapper.toRecord(request);
+        record.setId(id);
         record.setUsername(username);
         record.setPassword(passwordEncoder.encode(request.getPassword()));
-        record.setEmployeeId("EMP-");
+        record.setEmployeeId("EMP-" + id);
         record.setStatus(UserStatus.ACTIVE);
 
         UsersRecord saved = userRepository.create(record);
-        saved.setEmployeeId("EMP-" + saved.getId());
-        userRepository.update(saved);
         return userMapper.toDto(saved);
     }
 }

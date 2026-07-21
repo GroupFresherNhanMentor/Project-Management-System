@@ -134,9 +134,9 @@ class UserServiceTest extends BaseIntegrationTest {
 
             assertThat(dto3.getUsername()).isEqualTo("betala");
         } finally {
-            if (dto1.getId() != null) userRepository.deleteById(dto1.getId());
-            if (dto2.getId() != null) userRepository.deleteById(dto2.getId());
-            if (dto3 != null && dto3.getId() != null) userRepository.deleteById(dto3.getId());
+            if (dto1.getId() != null) userRepository.hardDeleteById(dto1.getId());
+            if (dto2.getId() != null) userRepository.hardDeleteById(dto2.getId());
+            if (dto3 != null && dto3.getId() != null) userRepository.hardDeleteById(dto3.getId());
         }
     }
 
@@ -197,7 +197,7 @@ class UserServiceTest extends BaseIntegrationTest {
                 try {
                     UserDto dto = future.get();
                     if (dto != null && dto.getId() != null) {
-                        userRepository.deleteById(dto.getId());
+                        userRepository.hardDeleteById(dto.getId());
                     }
                 } catch (Exception ignored) {
                 }
@@ -260,7 +260,7 @@ class UserServiceTest extends BaseIntegrationTest {
                 try {
                     UserDto dto = future.get();
                     if (dto != null && dto.getId() != null) {
-                        userRepository.deleteById(dto.getId());
+                        userRepository.hardDeleteById(dto.getId());
                     }
                 } catch (Exception ignored) {
                 }
