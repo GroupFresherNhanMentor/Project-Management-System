@@ -53,6 +53,14 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
     }
 
     @Override
+    public List<String> findUsernamesMatchingBase(String baseUsername) {
+        return dsl.select(USERS.USERNAME)
+                .from(USERS)
+                .where(USERS.USERNAME.like(baseUsername + "%"))
+                .fetch(USERS.USERNAME);
+    }
+
+    @Override
     public PaginationResult<UsersRecord> findAll(String keyword, SysRole role, UserStatus status, int page, int size) {
         Condition condition = buildCondition(keyword, role, status);
 

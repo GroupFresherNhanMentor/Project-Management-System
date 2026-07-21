@@ -38,7 +38,7 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThat(dto.getId()).isNotNull();
         assertThat(dto.getEmployeeId()).isEqualTo("EMP-" + dto.getId());
         assertThat(dto.getUsername()).isEqualTo("user101");
-        assertThat(dto.getFullName()).isEqualTo("Test User 101");
+        assertThat(dto.getFullName()).isEqualTo("user101");
         assertThat(dto.getEmail()).isEqualTo("user101@test.com");
         assertThat(dto.getRole()).isEqualTo("USER");
         assertThat(dto.getStatus()).isEqualTo("ACTIVE");
@@ -52,15 +52,46 @@ class UserServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void createUser_shouldThrow_whenUsernameDuplicated() {
-        userService.createUser(buildRequest("003"));
+    void createUser_shouldAutoGenerateFptUsername_forVietnameseFullName() {
+        CreateUserRequest req = buildRequest("003a");
+        req.setFullName("Chế Việt Khôi");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("khoicv");
+    }
 
-        CreateUserRequest duplicate = buildRequest("003x");
-        duplicate.setUsername("user003");
+    @Test
+    void createUser_shouldAutoGenerateFptUsername_forSingleWordName() {
+        CreateUserRequest req = buildRequest("003b");
+        req.setFullName("Khôi");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("khoi");
+    }
 
-        assertThatThrownBy(() -> userService.createUser(duplicate))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("Username already exists");
+    @Test
+    void createUser_shouldAutoGenerateFptUsername_forVietnameseDd() {
+        CreateUserRequest req = buildRequest("003c");
+        req.setFullName("Đỗ Đăng Đạt");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("datdd");
+    }
+
+    @Test
+    void createUser_shouldAppendCollisionSuffix_whenSameNameCreatedMultipleTimes() {
+        CreateUserRequest req1 = buildRequest("003d1");
+        req1.setFullName("Lê An");
+        UserDto dto1 = userService.createUser(req1);
+
+        CreateUserRequest req2 = buildRequest("003d2");
+        req2.setFullName("Lê An");
+        UserDto dto2 = userService.createUser(req2);
+
+        CreateUserRequest req3 = buildRequest("003d3");
+        req3.setFullName("Lê An");
+        UserDto dto3 = userService.createUser(req3);
+
+        assertThat(dto1.getUsername()).isEqualTo("anl");
+        assertThat(dto2.getUsername()).isEqualTo("anl2");
+        assertThat(dto3.getUsername()).isEqualTo("anl3");
     }
 
     @Test
@@ -188,7 +219,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
         UserDto updated = userService.updateUser(created.getId(), req);
 
-        assertThat(updated.getFullName()).isEqualTo("Test User 016");
+        assertThat(updated.getFullName()).isEqualTo("user016");
         assertThat(updated.getRole()).isEqualTo("USER");
         assertThat(updated.getEmail()).isEqualTo("user016@test.com");
     }
@@ -319,7 +350,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
         UserDto updated = userService.updateCurrentUser(req);
 
-        assertThat(updated.getFullName()).isEqualTo("Test User 024");
+        assertThat(updated.getFullName()).isEqualTo("user024");
         assertThat(updated.getEmail()).isEqualTo("user024@test.com");
     }
 
@@ -364,8 +395,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
     private CreateUserRequest buildRequest(String suffix) {
         CreateUserRequest req = new CreateUserRequest();
-        req.setUsername("user" + suffix);
-        req.setFullName("Test User " + suffix);
+        req.setFullName("user" + suffix);
         req.setEmail("user" + suffix + "@test.com");
         req.setPassword("Password@123");
         req.setRole(SysRole.USER);

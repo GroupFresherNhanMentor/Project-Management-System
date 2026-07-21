@@ -20,10 +20,10 @@ import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
-import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
 import fpt.qn.pms.user.mapper.UserMapper;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.user.service.UserService;
+import fpt.qn.pms.user.util.UsernameGenerator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -36,18 +36,19 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    UsernameGenerator usernameGenerator;
 
     @Override
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UsernameAlreadyExistsException();
-        }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
 
+        String username = usernameGenerator.generate(request.getFullName());
+
         UsersRecord record = userMapper.toRecord(request);
+        record.setUsername(username);
         record.setPassword(passwordEncoder.encode(request.getPassword()));
         record.setEmployeeId("EMP-");
         record.setStatus(UserStatus.ACTIVE);
