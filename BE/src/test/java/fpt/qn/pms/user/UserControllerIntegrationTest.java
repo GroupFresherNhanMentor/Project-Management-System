@@ -129,7 +129,6 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void createUser_shouldCreateUser_whenAdminTokenProvided() throws Exception {
         CreateUserRequest request = CreateUserRequest.builder()
-                .password("password123")
                 .fullName("newuser")
                 .email("newuser@pms.com")
                 .role(SysRole.USER)
@@ -140,8 +139,10 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.username").value("newuser"))
-                .andExpect(jsonPath("$.data.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
+                .andExpect(jsonPath("$.data.user.username").value("newuser"))
+                .andExpect(jsonPath("$.data.generatedPassword").isString())
+                .andExpect(jsonPath("$.data.generatedPassword").value(org.hamcrest.Matchers.matchesPattern("^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{12}$")))
+                .andExpect(jsonPath("$.data.user.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
     }
 
     @Test

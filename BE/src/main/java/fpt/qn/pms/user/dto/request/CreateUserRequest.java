@@ -22,10 +22,6 @@ import lombok.experimental.FieldDefaults;
 public class CreateUserRequest {
 
     @NotBlank
-    @Size(min = 8, max = 255)
-    String password;
-
-    @NotBlank
     @Size(max = 150)
     String fullName;
 
