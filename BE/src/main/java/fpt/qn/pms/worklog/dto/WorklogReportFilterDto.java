@@ -13,8 +13,9 @@ import lombok.experimental.FieldDefaults;
 @EqualsAndHashCode(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WorklogReportFilterDto extends PageRequest {
-    UUID project;
-    UUID user;
+    UUID projectId;
+    UUID userId;
+    String username;
     LocalDate fromDate;
     LocalDate toDate;
 }

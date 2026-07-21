@@ -44,11 +44,14 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
     public PaginationResult<WorklogReportItem> getWorklogReport(WorklogReportFilterDto filter) {
         Condition condition = DSL.noCondition();
 
-        if (filter.getProject() != null) {
-            condition = condition.and(TASKS.PROJECT_ID.eq(filter.getProject()));
+        if (filter.getProjectId() != null) {
+            condition = condition.and(TASKS.PROJECT_ID.eq(filter.getProjectId()));
         }
-        if (filter.getUser() != null) {
-            condition = condition.and(WORKLOGS.USER_ID.eq(filter.getUser()));
+        if (filter.getUserId() != null) {
+            condition = condition.and(WORKLOGS.USER_ID.eq(filter.getUserId()));
+        }
+        if (filter.getUsername() != null && !filter.getUsername().isBlank()) {
+            condition = condition.and(USERS.USERNAME.likeIgnoreCase("%" + filter.getUsername().trim() + "%"));
         }
         if (filter.getFromDate() != null) {
             condition = condition.and(WORKLOGS.WORK_DATE.greaterOrEqual(filter.getFromDate()));

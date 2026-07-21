@@ -1,8 +1,6 @@
 package fpt.qn.pms.worklog.controller;
 
-import java.time.LocalDate;
 import java.util.UUID;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,7 +11,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.worklog.dto.CreateWorklogRequest;
@@ -40,17 +37,16 @@ public class WorklogController {
     @GetMapping("/api/tasks/{taskId}/worklogs")
     @Operation(summary = "Get list of worklogs for a Task")
     public ResponseEntity<ApiResponse<PageResponse<WorklogDto>>> getWorklogsByTask(
-            @PathVariable UUID taskId,
-            @RequestParam(defaultValue = "0") int page,
+            @PathVariable UUID taskId, @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         PageResponse<WorklogDto> result = worklogService.getWorklogsByTask(taskId, page, size);
         return ResponseEntity.ok(ApiResponse.success(result, null));
     }
 
     @PostMapping("/api/tasks/{taskId}/worklogs")
-    @Operation(summary = "Log time (Worklog) on a Task", description = "Constraints: Hour > 0 and Hour <= 24")
-    public ResponseEntity<ApiResponse<WorklogDto>> createWorklog(
-            @PathVariable UUID taskId,
+    @Operation(summary = "Log time (Worklog) on a Task",
+            description = "Constraints: Hour > 0 and Hour <= 24")
+    public ResponseEntity<ApiResponse<WorklogDto>> createWorklog(@PathVariable UUID taskId,
             @Valid @RequestBody CreateWorklogRequest request) {
         WorklogDto created = worklogService.createWorklog(taskId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -58,19 +54,21 @@ public class WorklogController {
     }
 
     @PutMapping("/api/worklogs/{id}")
-    @Operation(summary = "Update Worklog", description = "Allowed only for the creator of the worklog")
-    public ResponseEntity<ApiResponse<WorklogDto>> updateWorklog(
-            @PathVariable UUID id,
+    @Operation(summary = "Update Worklog",
+            description = "Allowed only for the creator of the worklog")
+    public ResponseEntity<ApiResponse<WorklogDto>> updateWorklog(@PathVariable UUID id,
             @Valid @RequestBody UpdateWorklogRequest request) {
         WorklogDto updated = worklogService.updateWorklog(id, request);
         return ResponseEntity.ok(ApiResponse.success(updated, "Worklog updated successfully"));
     }
 
     @DeleteMapping("/api/worklogs/{id}")
-    @Operation(summary = "Delete Worklog record", description = "Allowed only for the creator of the worklog")
+    @Operation(summary = "Delete Worklog record",
+            description = "Allowed only for the creator of the worklog")
     public ResponseEntity<ApiResponse<Void>> deleteWorklog(@PathVariable UUID id) {
         worklogService.deleteWorklog(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Worklog deleted successfully"));
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .body(ApiResponse.success(null, "Worklog deleted successfully"));
     }
 
     @PostMapping("/api/reports/worklog")

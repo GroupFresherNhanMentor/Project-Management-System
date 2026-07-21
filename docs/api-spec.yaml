@@ -1117,6 +1117,16 @@ components:
         workDate: { type: string, format: date }
         hour: { type: number, minimum: 0, exclusiveMinimum: true, maximum: 24 }
         description: { type: string }
+    WorklogReportFilterDto:
+      type: object
+      properties:
+        projectId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        fromDate: { type: string, format: date }
+        toDate: { type: string, format: date }
+        page: { type: integer, default: 0 }
+        size: { type: integer, default: 20 }
 
     # ---- Dashboard ----
     DashboardPersonalResponse:
