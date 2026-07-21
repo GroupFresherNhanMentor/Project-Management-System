@@ -33,6 +33,10 @@ export class UserNew {
       this.toast.error('Username, full name, email and password are required.');
       return;
     }
+    if (this.password.length < 8) {
+      this.toast.error('Password must be at least 8 characters.');
+      return;
+    }
 
     this.submitting.set(true);
 
