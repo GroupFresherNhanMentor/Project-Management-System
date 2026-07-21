@@ -124,6 +124,12 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
 
@@ -195,18 +201,6 @@
                             <inputSchema>public</inputSchema>
                             <includes>.*</includes>
                             <excludes>flyway_schema_history</excludes>
-                            <!-- <schemaVersionProvider>
-                                SELECT CASE
-                                WHEN EXISTS (
-                                SELECT 1 FROM information_schema.tables
-                                WHERE table_schema = 'public' AND table_name =
-                                'flyway_schema_history'
-                                )
-                                THEN COALESCE((SELECT MAX(version) FROM flyway_schema_history WHERE
-                                success = true), '0')
-                                ELSE '0'
-                                END
-                            </schemaVersionProvider> -->
                         </database>
                         <generate>
                             <records>true</records>
