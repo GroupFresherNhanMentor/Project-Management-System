@@ -17,6 +17,11 @@
   <button (click)="onSearch()" class="rounded-[8px] border px-3 py-2 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Search</button>
 </div>
 
+<!-- Loading -->
+@if (loading) {
+  <div class="mb-3 rounded-[8px] px-4 py-2 text-[13px]" style="background:#EAF0FE;color:#3B4FD9">Loading users…</div>
+}
+
 <!-- Users table -->
 <div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
   <table class="w-full">
@@ -32,7 +37,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (u of paged; track u.id) {
+      @for (u of users(); track u.id) {
         <tr class="border-b" style="border-color:#F0F1F3">
           <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ u.employeeId }}</td>
           <td class="px-4 py-3 text-[13px] font-mono" style="color:#4B5160">{{ u.username }}</td>
@@ -71,11 +76,11 @@
 
 <!-- Pagination -->
 <div class="mt-3 flex items-center justify-between text-[13px]" style="color:#4B5160">
-  <span class="text-[12px]" style="color:#9AA1AC">{{ filtered.length }} user{{ filtered.length !== 1 ? 's' : '' }} • showing {{ showingFrom }}–{{ showingTo }}</span>
+  <span class="text-[12px]" style="color:#9AA1AC">{{ totalElements }} user{{ totalElements !== 1 ? 's' : '' }}</span>
   <div class="flex items-center gap-3">
-    <button (click)="prevPage()" [disabled]="page === 0" class="rounded-[7px] border px-3 py-1.5 text-[12px] disabled:opacity-40" style="border-color:#E1E4E9">‹ Prev</button>
+    <button (click)="prevPage()" [disabled]="page === 0 || loading" class="rounded-[7px] border px-3 py-1.5 text-[12px] disabled:opacity-40" style="border-color:#E1E4E9">‹ Prev</button>
     <span class="text-[12px]" style="color:#9AA1AC">Page {{ page + 1 }} / {{ totalPages }}</span>
-    <button (click)="nextPage()" [disabled]="page >= totalPages - 1" class="rounded-[7px] border px-3 py-1.5 text-[12px] disabled:opacity-40" style="border-color:#E1E4E9">Next ›</button>
+    <button (click)="nextPage()" [disabled]="page >= totalPages - 1 || loading" class="rounded-[7px] border px-3 py-1.5 text-[12px] disabled:opacity-40" style="border-color:#E1E4E9">Next ›</button>
   </div>
 </div>
 

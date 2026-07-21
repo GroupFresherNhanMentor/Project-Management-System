@@ -5,12 +5,8 @@ import { filter, map, startWith } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth';
 import { ProjectContextService } from '../../../core/services/project-context';
+import { ProjectService } from '../../../core/services/project';
 import { InitialsPipe } from '../../pipes/initials.pipe';
-
-const MOCK_PROJECTS = [
-  { id: 'p1', projectCode: 'WEB', projectName: 'Website Revamp',  description: null, startDate: '2026-07-01', endDate: '2026-09-30', status: 'ACTIVE'   as const },
-  { id: 'p2', projectCode: 'MOB', projectName: 'Mobile App',       description: null, startDate: '2026-06-01', endDate: '2026-12-31', status: 'PLANNING' as const },
-];
 
 @Component({
   selector: 'app-app-shell',
@@ -21,6 +17,7 @@ export class AppShell {
   private readonly authService    = inject(AuthService);
   private readonly router         = inject(Router);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly projectService = inject(ProjectService);
 
   readonly projectContext = inject(ProjectContextService);
   readonly currentUser   = this.authService.getCurrentUser();
@@ -45,20 +42,14 @@ export class AppShell {
 
   readonly roleLabel = computed(() => {
     if (this.isAdmin) return 'Administrator';
-    return this.projectContext.currentUserProjectRole() ?? 'PM';
+    return this.projectContext.currentUserProjectRole() ?? 'Member';
   });
 
   constructor() {
-    if (!this.isAdmin) {
-      this.projectContext.setProjects(MOCK_PROJECTS);
-      const roleMap: Record<string, 'PM' | 'DEV' | 'TESTER'> = {
-        'lena.pham': 'PM',
-        'huy.tran':  'DEV',
-        'mai.le':    'DEV',
-        'khoa.ng':   'TESTER',
-      };
-      const role = roleMap[this.currentUser?.username ?? ''] ?? 'PM';
-      this.projectContext.setCurrentUserRole(role);
+    if (this.currentUser) {
+      this.projectService.getProjects({ page: 0, size: 100 }).subscribe({
+        next: page => this.projectContext.setProjects(page.items),
+      });
     }
   }
 

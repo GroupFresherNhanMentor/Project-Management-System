@@ -1,0 +1,28 @@
+<a routerLink="/projects" class="mb-5 inline-flex text-[13px]" style="color:#3B4FD9">&lsaquo; Back to Projects</a>
+
+@if (loading()) {
+  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading project...</div>
+} @else if (errorMessage()) {
+  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">{{ errorMessage() }}</div>
+} @else if (project(); as p) {
+  <div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:760px">
+    <div class="mb-5 flex items-start justify-between gap-4">
+      <div>
+        <span class="rounded px-2 py-1 font-mono text-[11px]" style="background:#EEF0F3;color:#5B6472">{{ p.projectCode }}</span>
+        <h2 class="mt-3 text-[20px] font-extrabold" style="color:#14161C">{{ p.projectName }}</h2>
+      </div>
+      <span class="badge badge-active">{{ p.status }}</span>
+    </div>
+    <p class="mb-6 text-[13px] leading-relaxed" style="color:#6B7280">{{ p.description || 'No description.' }}</p>
+    <div class="grid grid-cols-2 gap-4 text-[13px]">
+      <div><span style="color:#9AA1AC">Start date</span><p class="font-semibold">{{ p.startDate }}</p></div>
+      <div><span style="color:#9AA1AC">End date</span><p class="font-semibold">{{ p.endDate }}</p></div>
+    </div>
+    <div class="mt-6 flex gap-2">
+      <button (click)="members()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">Manage Members</button>
+      @if (isAdmin) {
+        <button (click)="edit()" class="rounded-[8px] border px-4 py-2 text-[13px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">Edit Project</button>
+      }
+    </div>
+  </div>
+}

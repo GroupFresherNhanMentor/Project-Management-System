@@ -1,7 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { finalize } from 'rxjs';
+
 import { ToastService } from '../../../../core/services/toast';
+import { UserService } from '../../../../core/services/user';
 import type { SystemRole } from '../../../../core/models/api.model';
 
 @Component({
@@ -10,6 +14,7 @@ import type { SystemRole } from '../../../../core/models/api.model';
   templateUrl: './user-new.html',
 })
 export class UserNew {
+  private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -28,9 +33,30 @@ export class UserNew {
       this.toast.error('Username, full name, email and password are required.');
       return;
     }
+    if (this.password.length < 8) {
+      this.toast.error('Password must be at least 8 characters.');
+      return;
+    }
 
     this.submitting.set(true);
-    this.toast.success('User created successfully.');
-    void this.router.navigate(['/users']);
+
+    this.userService.createUser({
+      employeeId: this.employeeId,
+      username: this.username,
+      fullName: this.fullName,
+      email: this.email,
+      password: this.password,
+      role: this.role,
+    })
+    .pipe(finalize(() => this.submitting.set(false)))
+    .subscribe({
+      next: () => {
+        this.toast.success('User created successfully.');
+        void this.router.navigate(['/users']);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to create user.');
+      },
+    });
   }
 }

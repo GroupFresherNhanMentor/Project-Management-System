@@ -1,28 +1,29 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, PLATFORM_ID, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { isPlatformBrowser } from '@angular/common';
+import { finalize } from 'rxjs';
+
 import { ToastService } from '../../../../core/services/toast';
+import { UserService } from '../../../../core/services/user';
 import type { UserDto } from '../../../../core/models/user.model';
 import type { SystemRole, UserStatus } from '../../../../core/models/api.model';
-
-const MOCK_USERS: UserDto[] = [
-  { id: 'u1', employeeId: 'EMP001', username: 'admin',     fullName: 'Admin User',   email: 'admin@waypoint.io',   role: 'ADMIN', status: 'ACTIVE' },
-  { id: 'u2', employeeId: 'EMP002', username: 'lena.pham', fullName: 'Lena Pham',    email: 'lena@waypoint.io',    role: 'USER',  status: 'ACTIVE' },
-  { id: 'u3', employeeId: 'EMP003', username: 'huy.tran',  fullName: 'Huy Tran',     email: 'huy@waypoint.io',     role: 'USER',  status: 'ACTIVE' },
-  { id: 'u4', employeeId: 'EMP004', username: 'mai.le',    fullName: 'Mai Le',       email: 'mai@waypoint.io',     role: 'USER',  status: 'ACTIVE' },
-  { id: 'u5', employeeId: 'EMP005', username: 'khoa.ng',   fullName: 'Khoa Nguyen',  email: 'khoa@waypoint.io',    role: 'USER',  status: 'ACTIVE' },
-  { id: 'u6', employeeId: 'EMP006', username: 'linh.dao',  fullName: 'Linh Dao',     email: 'linh@waypoint.io',    role: 'USER',  status: 'LOCKED' },
-];
 
 @Component({
   selector: 'app-user-list',
   imports: [FormsModule, RouterLink],
   templateUrl: './user-list.html',
 })
-export class UserList {
+export class UserList implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
 
-  private readonly source = signal<UserDto[]>(MOCK_USERS);
+  readonly users = signal<UserDto[]>([]);
+  totalElements = 0;
+  totalPages = 0;
+  loading = false;
 
   keyword = '';
   page = 0;
@@ -35,32 +36,35 @@ export class UserList {
 
   readonly roles: SystemRole[] = ['ADMIN', 'USER'];
 
-  get filtered(): UserDto[] {
-    const kw = this.keyword.toLowerCase().trim();
-    if (!kw) return this.source();
-    return this.source().filter(u =>
-      u.fullName.toLowerCase().includes(kw) ||
-      u.username.toLowerCase().includes(kw) ||
-      u.email.toLowerCase().includes(kw) ||
-      u.employeeId.toLowerCase().includes(kw)
-    );
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.load();
+    }
   }
 
-  get totalPages(): number {
-    return Math.ceil(this.filtered.length / this.size) || 1;
+  load(): void {
+    this.loading = true;
+    this.userService.getUsers({
+      keyword: this.keyword || undefined,
+      page: this.page,
+      size: this.size,
+    })
+    .pipe(finalize(() => this.loading = false))
+    .subscribe({
+      next: (res) => {
+        this.users.set(res.items);
+        this.totalElements = res.totalElements;
+        this.totalPages = res.totalPages;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to load users.');
+      },
+    });
   }
 
-  get paged(): UserDto[] {
-    return this.filtered.slice(this.page * this.size, (this.page + 1) * this.size);
-  }
-
-  get showingFrom(): number { return this.filtered.length ? this.page * this.size + 1 : 0; }
-  get showingTo(): number { return Math.min((this.page + 1) * this.size, this.filtered.length); }
-
-  onSearch(): void { this.page = 0; }
-
-  prevPage(): void { if (this.page > 0) this.page--; }
-  nextPage(): void { if (this.page < this.totalPages - 1) this.page++; }
+  onSearch(): void { this.page = 0; this.load(); }
+  prevPage(): void { if (this.page > 0) { this.page--; this.load(); } }
+  nextPage(): void { if (this.page < this.totalPages - 1) { this.page++; this.load(); } }
 
   openEdit(u: UserDto): void {
     this.editTarget = u;
@@ -71,18 +75,35 @@ export class UserList {
 
   saveEdit(): void {
     if (!this.editTarget) return;
-    this.source.update(list => list.map(u =>
-      u.id === this.editTarget!.id
-        ? { ...u, fullName: this.editFullName, email: this.editEmail, role: this.editRole }
-        : u
-    ));
-    this.toast.success('User updated.');
-    this.editTarget = null;
+    const target = this.editTarget;
+    this.userService.updateUser(target.id, {
+      fullName: this.editFullName,
+      email: this.editEmail,
+      role: this.editRole,
+    })
+    .subscribe({
+      next: (updated) => {
+        this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
+        this.toast.success('User updated.');
+        this.editTarget = null;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to update user.');
+      },
+    });
   }
 
   toggleLock(u: UserDto): void {
     const newStatus: UserStatus = u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
-    this.source.update(list => list.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
-    this.toast.success(newStatus === 'LOCKED' ? 'User locked.' : 'User unlocked.');
+    this.userService.updateUserStatus(u.id, { status: newStatus })
+    .subscribe({
+      next: (updated) => {
+        this.users.update(list => list.map(x => x.id === updated.id ? updated : x));
+        this.toast.success(newStatus === 'LOCKED' ? 'User locked.' : 'User unlocked.');
+      },
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to update user status.');
+      },
+    });
   }
 }

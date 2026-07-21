@@ -1,13 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { APP_CONSTANTS } from '../../../../configs/constants';
+import { HttpErrorResponse } from '@angular/common/http';
+import { finalize } from 'rxjs';
 
-const MOCK_ACCOUNTS: Record<string, { role: 'ADMIN' | 'USER'; fullName: string }> = {
-  admin:     { role: 'ADMIN', fullName: 'Admin User' },
-  'lena.pham':  { role: 'USER',  fullName: 'Lena Pham'  },
-  'huy.tran':   { role: 'USER',  fullName: 'Huy Tran'   },
-};
+import { AuthService } from '../../../../core/services/auth';
 
 @Component({
   selector: 'app-login',
@@ -15,6 +12,7 @@ const MOCK_ACCOUNTS: Record<string, { role: 'ADMIN' | 'USER'; fullName: string }
   templateUrl: './login.html',
 })
 export class Login {
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   username     = '';
@@ -23,15 +21,21 @@ export class Login {
   isSubmitting = signal(false);
 
   submit(): void {
-    if (!this.username || !this.password) { this.errorMessage.set('Username and password are required.'); return; }
+    if (!this.username || !this.password) {
+      this.errorMessage.set('Username and password are required.');
+      return;
+    }
 
-    const account = MOCK_ACCOUNTS[this.username] ?? { role: 'USER' as const, fullName: this.username };
+    this.errorMessage.set('');
+    this.isSubmitting.set(true);
 
-    const mockUser = { id: 'u1', username: this.username, fullName: account.fullName, email: `${this.username}@waypoint.io`, role: account.role, status: 'ACTIVE' };
-
-    localStorage.setItem(APP_CONSTANTS.tokenKey, 'mock-token');
-    localStorage.setItem(APP_CONSTANTS.userKey, JSON.stringify(mockUser));
-
-    void this.router.navigateByUrl('/dashboard');
+    this.authService.login({ username: this.username, password: this.password })
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: () => void this.router.navigateByUrl('/dashboard'),
+        error: (err: HttpErrorResponse) => {
+          this.errorMessage.set(err.error?.message ?? 'Login failed. Please check your credentials.');
+        },
+      });
   }
 }

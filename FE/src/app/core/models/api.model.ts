@@ -1,7 +1,7 @@
 export interface ApiResponse<T> {
-  success: boolean;
-  message: string | null;
   data: T;
+  message: string | null;
+  success: boolean;
 }
 
 export interface PageResponse<T> {
