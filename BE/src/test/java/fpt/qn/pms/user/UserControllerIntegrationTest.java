@@ -11,33 +11,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import fpt.qn.pms.ProjectManagementSystemApplication;
+import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.JwtTokenProvider;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.repository.UserRepository;
-import fpt.qn.pms.config.TestRedisConfig;
 
-import org.springframework.test.context.ActiveProfiles;
-
-@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
-@ActiveProfiles("test")
-@Transactional
-class UserControllerIntegrationTest {
+class UserControllerIntegrationTest extends BaseIntegrationTest {
 
     MockMvc mockMvc;
 
@@ -136,7 +129,6 @@ class UserControllerIntegrationTest {
     @Test
     void createUser_shouldCreateUser_whenAdminTokenProvided() throws Exception {
         CreateUserRequest request = CreateUserRequest.builder()
-                .employeeId("EMP003")
                 .username("newuser")
                 .password("password123")
                 .fullName("New User")
@@ -149,7 +141,8 @@ class UserControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.username").value("newuser"));
+                .andExpect(jsonPath("$.data.username").value("newuser"))
+                .andExpect(jsonPath("$.data.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
     }
 
     @Test
@@ -166,6 +159,58 @@ class UserControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.fullName").value("Updated Regular User"));
+    }
+
+    @Test
+    void getCurrentUser_shouldReturnOwnProfile_whenUserTokenProvided() throws Exception {
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value("regularuser"))
+                .andExpect(jsonPath("$.data.role").value("USER"));
+    }
+
+    @Test
+    void getCurrentUser_shouldReturnProfile_whenAdminTokenProvided() throws Exception {
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value("admin"))
+                .andExpect(jsonPath("$.data.role").value("ADMIN"));
+    }
+
+    @Test
+    void getCurrentUser_shouldReturn401_whenNoToken() throws Exception {
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateCurrentUser_shouldUpdateProfile_whenUserTokenProvided() throws Exception {
+        UpdateCurrentUserRequest request = UpdateCurrentUserRequest.builder()
+                .fullName("Self Updated User")
+                .email("selfupdated@pms.com")
+                .build();
+
+        mockMvc.perform(put("/api/users/me")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.fullName").value("Self Updated User"))
+                .andExpect(jsonPath("$.data.email").value("selfupdated@pms.com"));
+    }
+
+    @Test
+    void updateCurrentUser_shouldReturn401_whenNoToken() throws Exception {
+        UpdateCurrentUserRequest request = UpdateCurrentUserRequest.builder()
+                .fullName("Hacker")
+                .build();
+
+        mockMvc.perform(put("/api/users/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

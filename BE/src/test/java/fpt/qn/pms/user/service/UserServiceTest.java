@@ -3,30 +3,28 @@ package fpt.qn.pms.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-import fpt.qn.pms.ProjectManagementSystemApplication;
+import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
-import fpt.qn.pms.config.TestRedisConfig;
 
-import org.springframework.test.context.ActiveProfiles;
-
-@SpringBootTest(classes = {ProjectManagementSystemApplication.class, TestRedisConfig.class})
-@ActiveProfiles("test")
-@Transactional
-class UserServiceTest {
+class UserServiceTest extends BaseIntegrationTest {
 
     @Autowired
     UserService userService;
@@ -38,7 +36,7 @@ class UserServiceTest {
         UserDto dto = userService.createUser(buildRequest("101"));
 
         assertThat(dto.getId()).isNotNull();
-        assertThat(dto.getEmployeeId()).isEqualTo("EMP101");
+        assertThat(dto.getEmployeeId()).isEqualTo("EMP-" + dto.getId());
         assertThat(dto.getUsername()).isEqualTo("user101");
         assertThat(dto.getFullName()).isEqualTo("Test User 101");
         assertThat(dto.getEmail()).isEqualTo("user101@test.com");
@@ -75,18 +73,6 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Email already exists");
-    }
-
-    @Test
-    void createUser_shouldThrow_whenEmployeeIdDuplicated() {
-        userService.createUser(buildRequest("005"));
-
-        CreateUserRequest duplicate = buildRequest("005x");
-        duplicate.setEmployeeId("EMP005");
-
-        assertThatThrownBy(() -> userService.createUser(duplicate))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("Employee ID already exists");
     }
 
     // ── getUserById ───────────────────────────────────────────────────────────
@@ -270,9 +256,114 @@ class UserServiceTest {
                 .hasMessageContaining("User not found");
     }
 
+    // ── getCurrentUser ─────────────────────────────────────────────────────────
+
+    @Test
+    void getCurrentUser_shouldReturnAuthenticatedUser() {
+        userService.createUser(buildRequest("021"));
+
+        setSecurityContext("user021", "USER");
+
+        UserDto current = userService.getCurrentUser();
+
+        assertThat(current.getUsername()).isEqualTo("user021");
+        assertThat(current.getEmail()).isEqualTo("user021@test.com");
+    }
+
+    @Test
+    void getCurrentUser_shouldThrow_whenUserNotInDb() {
+        setSecurityContext("nonexistent", "USER");
+
+        assertThatThrownBy(() -> userService.getCurrentUser())
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("User not found");
+    }
+
+    // ── updateCurrentUser ──────────────────────────────────────────────────────
+
+    @Test
+    void updateCurrentUser_shouldUpdateFullNameAndEmail() {
+        userService.createUser(buildRequest("022"));
+        setSecurityContext("user022", "USER");
+
+        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
+        req.setFullName("New Name 022");
+        req.setEmail("new022@test.com");
+
+        UserDto updated = userService.updateCurrentUser(req);
+
+        assertThat(updated.getFullName()).isEqualTo("New Name 022");
+        assertThat(updated.getEmail()).isEqualTo("new022@test.com");
+        assertThat(updated.getUsername()).isEqualTo("user022");
+    }
+
+    @Test
+    void updateCurrentUser_shouldEncodePassword() {
+        userService.createUser(buildRequest("023"));
+        setSecurityContext("user023", "USER");
+
+        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
+        req.setPassword("NewPass123!");
+
+        UserDto updated = userService.updateCurrentUser(req);
+
+        assertThat(updated).isNotNull();
+    }
+
+    @Test
+    void updateCurrentUser_shouldIgnoreNullFields() {
+        userService.createUser(buildRequest("024"));
+        setSecurityContext("user024", "USER");
+
+        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
+
+        UserDto updated = userService.updateCurrentUser(req);
+
+        assertThat(updated.getFullName()).isEqualTo("Test User 024");
+        assertThat(updated.getEmail()).isEqualTo("user024@test.com");
+    }
+
+    @Test
+    void updateCurrentUser_shouldThrow_whenEmailTakenByAnotherUser() {
+        userService.createUser(buildRequest("025"));
+        userService.createUser(buildRequest("026"));
+        setSecurityContext("user026", "USER");
+
+        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
+        req.setEmail("user025@test.com");
+
+        assertThatThrownBy(() -> userService.updateCurrentUser(req))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Email already exists");
+    }
+
+    @Test
+    void updateCurrentUser_shouldAllowSameEmail() {
+        userService.createUser(buildRequest("027"));
+        setSecurityContext("user027", "USER");
+
+        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
+        req.setEmail("user027@test.com");
+
+        UserDto updated = userService.updateCurrentUser(req);
+
+        assertThat(updated.getEmail()).isEqualTo("user027@test.com");
+    }
+
+    private void setSecurityContext(String username, String role) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(username, null,
+                        List.of(new SimpleGrantedAuthority(role)))
+        );
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
     private CreateUserRequest buildRequest(String suffix) {
         CreateUserRequest req = new CreateUserRequest();
-        req.setEmployeeId("EMP" + suffix);
         req.setUsername("user" + suffix);
         req.setFullName("Test User " + suffix);
         req.setEmail("user" + suffix + "@test.com");

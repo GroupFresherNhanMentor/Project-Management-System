@@ -33,16 +33,15 @@
         <p class="rounded-[7px] px-3 py-2 text-[12px]" style="background:#FDECEC;color:#D0342C">{{ errorMessage() }}</p>
       }
 
-      <p class="text-[11px]" style="color:#9AA1AC">Hint: use <strong>admin</strong>, <strong>lena.pham</strong>, or <strong>huy.tran</strong> (any password)</p>
-
       <button
         type="submit"
-        class="mt-1 w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white transition"
+        [disabled]="isSubmitting()"
+        class="mt-1 w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white transition disabled:opacity-60"
         style="background:#3B4FD9"
         onmouseover="this.style.background='#2F40C4'"
         onmouseout="this.style.background='#3B4FD9'"
       >
-        Sign in
+        {{ isSubmitting() ? 'Signing in…' : 'Sign in' }}
       </button>
     </form>
   </section>

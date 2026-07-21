@@ -6,6 +6,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/mini-project-management-system}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
   jooq:
     sql-dialect: POSTGRES
   flyway:
@@ -49,6 +53,9 @@ springdoc:
     - group: tasks
       paths-to-match: /api/tasks/**
       packages-to-scan: fpt.qn.pms.task
+    - group: sprints
+      paths-to-match: /api/projects/*/sprints/**
+      packages-to-scan: fpt.qn.pms.sprint
     - group: worklogs
       paths-to-match: /api/worklogs/**, /api/tasks/*/worklogs, /api/reports/worklog
       packages-to-scan: fpt.qn.pms.worklog

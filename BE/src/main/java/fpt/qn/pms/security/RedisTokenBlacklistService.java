@@ -1,6 +1,6 @@
 package fpt.qn.pms.security;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class RedisTokenBlacklistService {
         }
         String key = BLACKLIST_KEY_PREFIX + tokenId;
         try {
-            redisTemplate.opsForValue().set(key, "revoked", remainingExpirationMs, TimeUnit.MILLISECONDS);
+            redisTemplate.opsForValue().set(key, "revoked", Duration.ofMillis(remainingExpirationMs));
             log.info("Token ID {} blacklisted in Redis for {} ms", tokenId, remainingExpirationMs);
         } catch (Exception ex) {
             log.warn("Failed to blacklist token in Redis (connection unavailable): {}", ex.getMessage());

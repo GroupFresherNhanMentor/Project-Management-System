@@ -15,8 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.common.exception.InternalServerErrorException;
 import fpt.qn.pms.jooq.enums.ActivityAction;
+import fpt.qn.pms.project.exception.ProjectNotFoundException;
+import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
+import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
+import fpt.qn.pms.task.exception.TaskNotFoundException;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
 import fpt.qn.pms.jooq.enums.TaskStatus;
@@ -54,13 +59,13 @@ public class TaskServiceImpl implements TaskService {
             // Fallback: mock first user from database
             UsersRecord mockUser = dsl.selectFrom(USERS).limit(1).fetchOne();
             if (mockUser == null) {
-                throw new AppException("No users found in database to mock authentication");
+                throw new InternalServerErrorException( "No users found in database to mock authentication");
             }
             return mockUser;
         }
         String username = auth.getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("Current user not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
     @Override
@@ -73,7 +78,7 @@ public class TaskServiceImpl implements TaskService {
         ProjectsRecord project = dsl.selectFrom(PROJECTS)
                 .where(PROJECTS.ID.eq(request.getProjectId()))
                 .fetchOptional()
-                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+                .orElseThrow(() -> new ProjectNotFoundException());
 
         int nextNum = taskRepository.getNextTaskNumber(request.getProjectId());
         String taskKey = project.getProjectCode() + "-" + nextNum;
@@ -86,7 +91,7 @@ public class TaskServiceImpl implements TaskService {
         if (!userRepository.existsById(reporterId)) {
             reporterId = dsl.select(USERS.ID).from(USERS).limit(1).fetchOne(USERS.ID);
             if (reporterId == null) {
-                throw new IllegalArgumentException("No users found in database to act as reporter");
+                throw new InternalServerErrorException( "No users found in database to act as reporter");
             }
         }
         record.setReporterId(reporterId);
@@ -113,7 +118,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     public TaskDto getTaskById(UUID id) {
         TasksRecord record = taskRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                .orElseThrow(() -> new TaskNotFoundException());
         return toDtoWithUserNames(record);
     }
 
@@ -135,7 +140,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskDto updateTask(UUID id, UpdateTaskRequest request) {
         UsersRecord currentUser = getCurrentUser();
         TasksRecord task = taskRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                .orElseThrow(() -> new TaskNotFoundException());
 
         // 1. Check if PM
         boolean isPm = dsl.fetchExists(
@@ -164,7 +169,7 @@ public class TaskServiceImpl implements TaskService {
                 // else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TODO) validTransition = true;
 
                 if (!validTransition) {
-                    throw new IllegalArgumentException("Invalid status transition for developer: " + oldStatus + " -> " + newStatus);
+                    throw new InvalidTaskStatusTransitionException("Invalid status transition for developer: " + oldStatus + " -> " + newStatus);
                 }
             }
         }
@@ -208,7 +213,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskDto assignTask(UUID id, AssignTaskRequest request) {
         UsersRecord currentUser = getCurrentUser();
         TasksRecord task = taskRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                .orElseThrow(() -> new TaskNotFoundException());
 
         // 1. Check if assignee is member of the project
         boolean isMember = dsl.fetchExists(
@@ -217,7 +222,7 @@ public class TaskServiceImpl implements TaskService {
                         .and(PROJECT_MEMBERS.USER_ID.eq(request.getAssigneeId()))
         );
         if (!isMember) {
-            throw new IllegalArgumentException("Assignee must be a member of the project");
+            throw new AssigneeNotInProjectException();
         }
 
         // 3. Assign and log activity

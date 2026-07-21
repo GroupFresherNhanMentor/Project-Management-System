@@ -3,20 +3,24 @@ package fpt.qn.pms.user.service.impl;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
+import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
+import fpt.qn.pms.user.exception.UserNotFoundException;
+import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
 import fpt.qn.pms.user.mapper.UserMapper;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.user.service.UserService;
@@ -37,20 +41,20 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new AppException("Username already exists");
+            throw new UsernameAlreadyExistsException();
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException("Email already exists");
-        }
-        if (userRepository.existsByEmployeeId(request.getEmployeeId())) {
-            throw new AppException("Employee ID already exists");
+            throw new EmailAlreadyExistsException();
         }
 
         UsersRecord record = userMapper.toRecord(request);
         record.setPassword(passwordEncoder.encode(request.getPassword()));
+        record.setEmployeeId("EMP-");
         record.setStatus(UserStatus.ACTIVE);
 
         UsersRecord saved = userRepository.create(record);
+        saved.setEmployeeId("EMP-" + saved.getId());
+        userRepository.update(saved);
         return userMapper.toDto(saved);
     }
 
@@ -58,7 +62,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public UserDto getUserById(UUID id) {
         UsersRecord record = userRepository.findById(id)
-                .orElseThrow(() -> new AppException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         return userMapper.toDto(record);
     }
 
@@ -74,10 +78,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto updateUser(UUID id, UpdateUserRequest request) {
         UsersRecord record = userRepository.findById(id)
-                .orElseThrow(() -> new AppException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (request.getEmail() != null && userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
-            throw new AppException("Email already exists");
+            throw new EmailAlreadyExistsException();
         }
 
         userMapper.updateRecord(record, request);
@@ -89,10 +93,47 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDto updateUserStatus(UUID id, UpdateUserStatusRequest request) {
         UsersRecord record = userRepository.findById(id)
-                .orElseThrow(() -> new AppException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         record.setStatus(request.getStatus());
         userRepository.update(record);
         return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDto getCurrentUser() {
+        UsersRecord record = getCurrentUserRecord();
+        return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public UserDto updateCurrentUser(UpdateCurrentUserRequest request) {
+        UsersRecord record = getCurrentUserRecord();
+
+        if (request.getEmail() != null
+                && userRepository.existsByEmailAndIdNot(request.getEmail(), record.getId())) {
+            throw new EmailAlreadyExistsException();
+        }
+
+        if (request.getFullName() != null) {
+            record.setFullName(request.getFullName());
+        }
+        if (request.getEmail() != null) {
+            record.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null) {
+            record.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        userRepository.update(record);
+        return userMapper.toDto(record);
+    }
+
+    private UsersRecord getCurrentUserRecord() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException());
     }
 }
