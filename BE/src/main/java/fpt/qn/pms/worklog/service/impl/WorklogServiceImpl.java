@@ -123,7 +123,7 @@ public class WorklogServiceImpl implements WorklogService {
             throw new AccessDeniedException("Only the creator of the worklog can delete it");
         }
 
-        worklogRepository.deleteById(id);
+        worklogRepository.hardDeleteById(id);
     }
 
     @Override

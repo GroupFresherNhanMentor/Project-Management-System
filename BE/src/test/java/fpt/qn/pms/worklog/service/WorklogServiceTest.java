@@ -196,7 +196,7 @@ class WorklogServiceTest {
 
         worklogService.deleteWorklog(worklogId);
 
-        verify(worklogRepository).deleteById(worklogId);
+        verify(worklogRepository).hardDeleteById(worklogId);
     }
 
     @Test
