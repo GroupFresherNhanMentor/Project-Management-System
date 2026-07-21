@@ -179,9 +179,8 @@ class WorklogControllerTest {
         filter.setPage(0);
         filter.setSize(20);
 
-        mockMvc.perform(post("/api/reports/worklog")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(filter)))
+        mockMvc.perform(get("/api/reports/worklog")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].taskKey").value("WEB-1"));
     }
