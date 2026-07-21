@@ -14,6 +14,7 @@ export const API = {
     base: '/api/projects',
     byId: (id: string) => `/api/projects/${id}`,
     members: (projectId: string) => `/api/projects/${projectId}/members`,
+    memberCandidates: (projectId: string) => `/api/projects/${projectId}/members/candidates`,
     memberById: (projectId: string, memberId: string) => `/api/projects/${projectId}/members/${memberId}`,
     sprints: (projectId: string) => `/api/projects/${projectId}/sprints`,
   },

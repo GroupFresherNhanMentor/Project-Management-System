@@ -1,12 +1,26 @@
-@if (isAdmin) {
-  <div class="mb-4">
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  <input [(ngModel)]="keyword" (keyup.enter)="applyFilters()" placeholder="Search code or name"
+         class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+  <select [(ngModel)]="status" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+    <option value="">All statuses</option>
+    @for (item of statuses; track item) { <option [value]="item">{{ statusLabel(item) }}</option> }
+  </select>
+  <button (click)="applyFilters()" class="rounded-[8px] border px-4 py-2 text-[13px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">Search</button>
+  @if (isAdmin) {
     <button (click)="newProject()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ New Project</button>
-  </div>
-}
+  }
+</div>
 
+@if (loading()) {
+  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading projects...</div>
+} @else if (errorMessage()) {
+  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">
+    {{ errorMessage() }} <button (click)="load()" class="ml-2 font-semibold underline">Retry</button>
+  </div>
+} @else {
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
   @for (p of projects(); track p.id) {
-    <div class="rounded-[12px] border bg-white p-5 transition hover:border-primary" style="border-color:#E6E8EC;cursor:default">
+    <button type="button" (click)="viewProject(p)" class="rounded-[12px] border bg-white p-5 text-left transition hover:border-primary" style="border-color:#E6E8EC">
       <div class="mb-3 flex items-start justify-between">
         <span class="rounded-[5px] px-2 py-0.5 font-mono text-[11px] font-semibold" style="background:#EEF0F3;color:#5B6472">{{ p.projectCode }}</span>
         <span [class]="statusBadge(p.status)">{{ statusLabel(p.status) }}</span>
@@ -16,9 +30,17 @@
         <p class="mb-3 text-[12px] leading-relaxed" style="color:#6B7280">{{ p.description }}</p>
       }
       <p class="mt-auto text-[11px]" style="color:#9AA1AC">{{ p.startDate }} — {{ p.endDate }}</p>
-    </div>
+    </button>
   }
   @empty {
     <div class="col-span-3 py-16 text-center text-[13px]" style="color:#9AA1AC">No projects found.</div>
   }
 </div>
+@if (totalPages > 1) {
+  <div class="mt-5 flex items-center justify-center gap-3 text-[13px]">
+    <button (click)="previousPage()" [disabled]="page === 0" class="rounded border px-3 py-1.5 disabled:opacity-40">Previous</button>
+    <span style="color:#6B7280">Page {{ page + 1 }} / {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="page + 1 >= totalPages" class="rounded border px-3 py-1.5 disabled:opacity-40">Next</button>
+  </div>
+}
+}
