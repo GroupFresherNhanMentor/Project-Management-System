@@ -14,7 +14,7 @@ public interface Repository<R> {
 
     R update(R record);
 
-    void deleteById(UUID id);
+    void hardDeleteById(UUID id);
 
     boolean existsById(UUID id);
 }

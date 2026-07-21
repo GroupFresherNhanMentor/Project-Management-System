@@ -23,7 +23,6 @@ import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
 import fpt.qn.pms.task.exception.TaskNotFoundException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectRole;
-import fpt.qn.pms.jooq.enums.TaskPriority;
 import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
 import fpt.qn.pms.jooq.tables.records.TaskActivitiesRecord;
