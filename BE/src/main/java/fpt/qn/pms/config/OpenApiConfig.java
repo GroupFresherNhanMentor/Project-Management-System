@@ -31,6 +31,15 @@ public class OpenApiConfig {
     }
 
     @Bean
+    public GroupedOpenApi sprintApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("sprints")
+                .pathsToMatch("/api/projects/{projectId}/sprints/**")
+                .packagesToScan("fpt.qn.pms.sprint")
+                .build();
+    }
+
+    @Bean
     public GroupedOpenApi taskApiGroup() {
         return GroupedOpenApi.builder()
                 .group("tasks")

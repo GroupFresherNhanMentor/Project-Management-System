@@ -23,6 +23,10 @@ import fpt.qn.pms.sprint.dto.SprintDto;
 import fpt.qn.pms.sprint.dto.UpdateSprintRequest;
 import fpt.qn.pms.sprint.dto.UpdateSprintStatusRequest;
 import fpt.qn.pms.sprint.service.SprintService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -32,31 +36,37 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/projects/{projectId}/sprints")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Tag(name = "Sprint", description = "Sprint management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class SprintController {
 
     SprintService sprintService;
 
     @GetMapping
+    @Operation(summary = "Get sprints by project", description = "Retrieve paginated sprints with optional keyword and status filters")
     public ResponseEntity<ApiResponse<PageResponse<SprintDto>>> getSprintsByProject(
-            @PathVariable UUID projectId,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) SprintStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
+            @Parameter(description = "Search keyword (matches sprint name)") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Filter by status (PLANNED / ACTIVE / CLOSED)") @RequestParam(required = false) SprintStatus status,
+            @Parameter(description = "Page number (zero-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
 
         PageResponse<SprintDto> result = sprintService.getSprintsByProject(projectId, keyword, status, page, size);
         return ResponseEntity.ok(ApiResponse.success(result, null));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SprintDto>> getSprintById(@PathVariable UUID id) {
+    @Operation(summary = "Get sprint by ID", description = "Retrieve a single sprint by its ID")
+    public ResponseEntity<ApiResponse<SprintDto>> getSprintById(
+            @Parameter(description = "Sprint ID") @PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(sprintService.getSprintById(id), null));
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Create sprint", description = "Create a new sprint (admin only)")
     public ResponseEntity<ApiResponse<SprintDto>> createSprint(
-            @PathVariable UUID projectId,
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Valid @RequestBody CreateSprintRequest request) {
 
         request.setProjectId(projectId);
@@ -67,8 +77,9 @@ public class SprintController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored (admin only)")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprint(
-            @PathVariable UUID id,
+            @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintRequest request) {
 
         return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprint(id, request), null));
@@ -76,8 +87,9 @@ public class SprintController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Update sprint status", description = "Transition sprint status: PLANNED → ACTIVE → CLOSED (admin only). Only one ACTIVE sprint per project.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprintStatus(
-            @PathVariable UUID id,
+            @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprintStatus(id, request), null));
