@@ -19,7 +19,6 @@ import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
-import fpt.qn.pms.user.exception.EmployeeIdAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
 import fpt.qn.pms.user.mapper.UserMapper;
@@ -47,15 +46,15 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
-        if (userRepository.existsByEmployeeId(request.getEmployeeId())) {
-            throw new EmployeeIdAlreadyExistsException();
-        }
 
         UsersRecord record = userMapper.toRecord(request);
         record.setPassword(passwordEncoder.encode(request.getPassword()));
+        record.setEmployeeId("EMP-");
         record.setStatus(UserStatus.ACTIVE);
 
         UsersRecord saved = userRepository.create(record);
+        saved.setEmployeeId("EMP-" + saved.getId());
+        userRepository.update(saved);
         return userMapper.toDto(saved);
     }
 
