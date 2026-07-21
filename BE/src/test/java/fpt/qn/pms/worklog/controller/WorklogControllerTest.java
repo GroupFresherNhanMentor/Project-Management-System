@@ -139,12 +139,12 @@ class WorklogControllerTest {
 
     @Test
     @DisplayName("DELETE /api/worklogs/{id} - Should delete worklog")
-    void deleteWorklog_shouldReturn200() throws Exception {
+    void deleteWorklog_shouldReturn204() throws Exception {
         doNothing().when(worklogService).deleteWorklog(worklogId);
 
         mockMvc.perform(delete("/api/worklogs/{id}", worklogId)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
+                .andExpect(status().isNoContent())
                 .andExpect(jsonPath("$.message").value("Worklog deleted successfully"));
     }
 

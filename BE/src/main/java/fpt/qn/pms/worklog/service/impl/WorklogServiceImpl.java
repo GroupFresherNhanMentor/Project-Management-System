@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,16 +45,18 @@ public class WorklogServiceImpl implements WorklogService {
 
     private UsersRecord getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+        if (auth == null || !auth.isAuthenticated()
+                || "anonymousUser".equals(auth.getPrincipal())) {
             UsersRecord mockUser = dsl.selectFrom(USERS).limit(1).fetchOne();
             if (mockUser == null) {
-                throw new AppException("No users found in database to mock authentication");
+                throw new AppException(HttpStatus.NOT_FOUND,
+                        "No users found in database to mock authentication");
             }
             return mockUser;
         }
         String username = auth.getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException("Current user not found"));
+        return userRepository.findByUsername(username).orElseThrow(
+                () -> new AppException(HttpStatus.NOT_FOUND, "Current user not found"));
     }
 
     @Override
@@ -63,14 +66,13 @@ public class WorklogServiceImpl implements WorklogService {
             throw new IllegalArgumentException("Task not found");
         }
 
-        PaginationResult<WorklogsRecord> result = worklogRepository.findByTaskId(taskId, page, size);
+        PaginationResult<WorklogsRecord> result =
+                worklogRepository.findByTaskId(taskId, page, size);
         return PageResponse.<WorklogDto>builder()
                 .items(result.getItems().stream().map(this::toDtoWithUserName).toList())
                 .totalElements(result.getTotal())
-                .totalPages((int) Math.ceil((double) result.getTotal() / size))
-                .pageNumber(page)
-                .pageSize(size)
-                .build();
+                .totalPages((int) Math.ceil((double) result.getTotal() / size)).pageNumber(page)
+                .pageSize(size).build();
     }
 
     @Override
@@ -128,22 +130,17 @@ public class WorklogServiceImpl implements WorklogService {
     @Transactional(readOnly = true)
     public PageResponse<WorklogReportItem> getWorklogReport(WorklogReportFilterDto filter) {
         PaginationResult<WorklogReportItem> result = worklogRepository.getWorklogReport(filter);
-        return PageResponse.<WorklogReportItem>builder()
-                .items(result.getItems())
+        return PageResponse.<WorklogReportItem>builder().items(result.getItems())
                 .totalElements(result.getTotal())
                 .totalPages((int) Math.ceil((double) result.getTotal() / filter.getSize()))
-                .pageNumber(filter.getPage())
-                .pageSize(filter.getSize())
-                .build();
+                .pageNumber(filter.getPage()).pageSize(filter.getSize()).build();
     }
 
     private WorklogDto toDtoWithUserName(WorklogsRecord record) {
         WorklogDto dto = worklogMapper.toDto(record);
         if (record.getUserId() != null) {
-            String userName = dsl.select(USERS.FULL_NAME)
-                    .from(USERS)
-                    .where(USERS.ID.eq(record.getUserId()))
-                    .fetchOne(USERS.FULL_NAME);
+            String userName = dsl.select(USERS.FULL_NAME).from(USERS)
+                    .where(USERS.ID.eq(record.getUserId())).fetchOne(USERS.FULL_NAME);
             dto.setCreatedBy(userName);
         }
         return dto;
