@@ -129,9 +129,8 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void createUser_shouldCreateUser_whenAdminTokenProvided() throws Exception {
         CreateUserRequest request = CreateUserRequest.builder()
-                .username("newuser")
                 .password("password123")
-                .fullName("New User")
+                .fullName("newuser")
                 .email("newuser@pms.com")
                 .role(SysRole.USER)
                 .build();

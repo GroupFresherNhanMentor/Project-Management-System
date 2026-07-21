@@ -3,8 +3,17 @@ package fpt.qn.pms.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -12,22 +21,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
+import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
+import fpt.qn.pms.user.repository.UserRepository;
 
 class UserServiceTest extends BaseIntegrationTest {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    UserRepository userRepository;
 
     // ── createUser ────────────────────────────────────────────────────────────
 
@@ -38,7 +55,7 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThat(dto.getId()).isNotNull();
         assertThat(dto.getEmployeeId()).isEqualTo("EMP-" + dto.getId());
         assertThat(dto.getUsername()).isEqualTo("user101");
-        assertThat(dto.getFullName()).isEqualTo("Test User 101");
+        assertThat(dto.getFullName()).isEqualTo("user101");
         assertThat(dto.getEmail()).isEqualTo("user101@test.com");
         assertThat(dto.getRole()).isEqualTo("USER");
         assertThat(dto.getStatus()).isEqualTo("ACTIVE");
@@ -52,15 +69,75 @@ class UserServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void createUser_shouldThrow_whenUsernameDuplicated() {
-        userService.createUser(buildRequest("003"));
+    void createUser_shouldAutoGenerateFptUsername_forVietnameseFullName() {
+        CreateUserRequest req = buildRequest("003a");
+        req.setFullName("Chế Việt Khôi");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("khoicv");
+    }
 
-        CreateUserRequest duplicate = buildRequest("003x");
-        duplicate.setUsername("user003");
+    @Test
+    void createUser_shouldAutoGenerateFptUsername_forSingleWordName() {
+        CreateUserRequest req = buildRequest("003b");
+        req.setFullName("Khôi");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("khoi");
+    }
 
-        assertThatThrownBy(() -> userService.createUser(duplicate))
-                .isInstanceOf(AppException.class)
-                .hasMessageContaining("Username already exists");
+    @Test
+    void createUser_shouldAutoGenerateFptUsername_forVietnameseDd() {
+        CreateUserRequest req = buildRequest("003c");
+        req.setFullName("Đỗ Đăng Đạt");
+        UserDto dto = userService.createUser(req);
+        assertThat(dto.getUsername()).isEqualTo("datdd");
+    }
+
+    @Test
+    void createUser_shouldAppendCollisionSuffix_whenSameNameCreatedMultipleTimes() {
+        CreateUserRequest req1 = buildRequest("003d1");
+        req1.setFullName("Lê An Alpha");
+        UserDto dto1 = userService.createUser(req1);
+
+        CreateUserRequest req2 = buildRequest("003d2");
+        req2.setFullName("Lê An Alpha");
+        UserDto dto2 = userService.createUser(req2);
+
+        CreateUserRequest req3 = buildRequest("003d3");
+        req3.setFullName("Lê An Alpha");
+        UserDto dto3 = userService.createUser(req3);
+
+        assertThat(dto1.getUsername()).isEqualTo("alphala");
+        assertThat(dto2.getUsername()).isEqualTo("alphala2");
+        assertThat(dto3.getUsername()).isEqualTo("alphala3");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void createUser_shouldReturnBareBase_whenNumericSuffixExistsButBareBaseDeleted() {
+        CreateUserRequest req1 = buildRequest("003e1");
+        req1.setFullName("Lê An Beta");
+        UserDto dto1 = userService.createUser(req1);
+
+        CreateUserRequest req2 = buildRequest("003e2");
+        req2.setFullName("Lê An Beta");
+        UserDto dto2 = userService.createUser(req2);
+
+        UserDto dto3 = null;
+        try {
+            UsersRecord record = userRepository.findById(dto1.getId()).orElseThrow();
+            record.setUsername("betala_deleted");
+            userRepository.update(record);
+
+            CreateUserRequest req3 = buildRequest("003e3");
+            req3.setFullName("Lê An Beta");
+            dto3 = userService.createUser(req3);
+
+            assertThat(dto3.getUsername()).isEqualTo("betala");
+        } finally {
+            if (dto1.getId() != null) userRepository.hardDeleteById(dto1.getId());
+            if (dto2.getId() != null) userRepository.hardDeleteById(dto2.getId());
+            if (dto3 != null && dto3.getId() != null) userRepository.hardDeleteById(dto3.getId());
+        }
     }
 
     @Test
@@ -73,6 +150,122 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThatThrownBy(() -> userService.createUser(duplicate))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Email already exists");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void createUser_shouldHandleConcurrentSameNameCreation() throws Exception {
+        int numThreads = 5;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+        List<Future<UserDto>> futures = new ArrayList<>();
+
+        for (int i = 0; i < numThreads; i++) {
+            final int idx = i;
+            futures.add(executor.submit(() -> {
+                startLatch.await();
+                try {
+                    CreateUserRequest req = buildRequest("conc_name_" + idx);
+                    req.setFullName("Lê An Gamma");
+                    return userService.createUser(req);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        try {
+            startLatch.countDown();
+            boolean completed = doneLatch.await(15, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            assertThat(completed).isTrue();
+
+            Set<String> generatedUsernames = new HashSet<>();
+            for (Future<UserDto> future : futures) {
+                UserDto dto = future.get();
+                assertThat(dto).isNotNull();
+                generatedUsernames.add(dto.getUsername());
+            }
+
+            assertThat(generatedUsernames)
+                    .containsExactlyInAnyOrder("gammala", "gammala2", "gammala3", "gammala4", "gammala5");
+        } finally {
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null && dto.getId() != null) {
+                        userRepository.hardDeleteById(dto.getId());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void createUser_shouldFailOnDuplicateEmail_withoutRetryingAsUsernameCollision() throws Exception {
+        int numThreads = 5;
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+        String sharedEmail = "concurrent-dup-email@test.com";
+        List<Future<UserDto>> futures = new ArrayList<>();
+
+        for (int i = 0; i < numThreads; i++) {
+            final int idx = i;
+            futures.add(executor.submit(() -> {
+                startLatch.await();
+                try {
+                    CreateUserRequest req = buildRequest("conc_email_" + idx);
+                    req.setEmail(sharedEmail);
+                    return userService.createUser(req);
+                } finally {
+                    doneLatch.countDown();
+                }
+            }));
+        }
+
+        try {
+            startLatch.countDown();
+            boolean completed = doneLatch.await(15, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            assertThat(completed).isTrue();
+
+            int successCount = 0;
+            int duplicateEmailExceptionCount = 0;
+
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null) {
+                        successCount++;
+                    }
+                } catch (ExecutionException e) {
+                    if (e.getCause() instanceof EmailAlreadyExistsException) {
+                        duplicateEmailExceptionCount++;
+                    }
+                }
+            }
+
+            assertThat(successCount).isEqualTo(1);
+            assertThat(duplicateEmailExceptionCount).isEqualTo(numThreads - 1);
+        } finally {
+            for (Future<UserDto> future : futures) {
+                try {
+                    UserDto dto = future.get();
+                    if (dto != null && dto.getId() != null) {
+                        userRepository.hardDeleteById(dto.getId());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 
     // ── getUserById ───────────────────────────────────────────────────────────
@@ -188,7 +381,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
         UserDto updated = userService.updateUser(created.getId(), req);
 
-        assertThat(updated.getFullName()).isEqualTo("Test User 016");
+        assertThat(updated.getFullName()).isEqualTo("user016");
         assertThat(updated.getRole()).isEqualTo("USER");
         assertThat(updated.getEmail()).isEqualTo("user016@test.com");
     }
@@ -319,7 +512,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
         UserDto updated = userService.updateCurrentUser(req);
 
-        assertThat(updated.getFullName()).isEqualTo("Test User 024");
+        assertThat(updated.getFullName()).isEqualTo("user024");
         assertThat(updated.getEmail()).isEqualTo("user024@test.com");
     }
 
@@ -364,8 +557,7 @@ class UserServiceTest extends BaseIntegrationTest {
 
     private CreateUserRequest buildRequest(String suffix) {
         CreateUserRequest req = new CreateUserRequest();
-        req.setUsername("user" + suffix);
-        req.setFullName("Test User " + suffix);
+        req.setFullName("user" + suffix);
         req.setEmail("user" + suffix + "@test.com");
         req.setPassword("Password@123");
         req.setRole(SysRole.USER);
