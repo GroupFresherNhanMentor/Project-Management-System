@@ -18,16 +18,21 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.UserDto;
+import fpt.qn.pms.user.repository.UserRepository;
 
 class UserServiceTest extends BaseIntegrationTest {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    UserRepository userRepository;
 
     // ── createUser ────────────────────────────────────────────────────────────
 
@@ -92,6 +97,27 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThat(dto1.getUsername()).isEqualTo("anl");
         assertThat(dto2.getUsername()).isEqualTo("anl2");
         assertThat(dto3.getUsername()).isEqualTo("anl3");
+    }
+
+    @Test
+    void createUser_shouldReturnBareBase_whenNumericSuffixExistsButBareBaseDeleted() {
+        CreateUserRequest req1 = buildRequest("003e1");
+        req1.setFullName("Lê An");
+        UserDto dto1 = userService.createUser(req1);
+
+        CreateUserRequest req2 = buildRequest("003e2");
+        req2.setFullName("Lê An");
+        UserDto dto2 = userService.createUser(req2);
+
+        UsersRecord record = userRepository.findById(dto1.getId()).orElseThrow();
+        record.setUsername("anl_deleted");
+        userRepository.update(record);
+
+        CreateUserRequest req3 = buildRequest("003e3");
+        req3.setFullName("Lê An");
+        UserDto dto3 = userService.createUser(req3);
+
+        assertThat(dto3.getUsername()).isEqualTo("anl");
     }
 
     @Test

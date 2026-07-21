@@ -57,12 +57,11 @@ public class UsernameGenerator {
             }
         }
 
-        if (!exactBaseExists && maxSuffix == 0) {
+        if (!exactBaseExists) {
             return base;
         }
 
-        int nextSuffix = (maxSuffix == 0) ? 2 : maxSuffix + 1;
-        return base + nextSuffix;
+        return base + (maxSuffix + 1);
     }
 
     public static String buildBaseUsername(String fullName) {

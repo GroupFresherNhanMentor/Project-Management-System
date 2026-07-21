@@ -28,6 +28,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import org.jooq.exception.DataAccessException;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -45,18 +47,33 @@ public class UserServiceImpl implements UserService {
             throw new EmailAlreadyExistsException();
         }
 
-        String username = usernameGenerator.generate(request.getFullName());
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                String username = usernameGenerator.generate(request.getFullName());
 
-        UsersRecord record = userMapper.toRecord(request);
-        record.setUsername(username);
-        record.setPassword(passwordEncoder.encode(request.getPassword()));
-        record.setEmployeeId("EMP-");
-        record.setStatus(UserStatus.ACTIVE);
+                UsersRecord record = userMapper.toRecord(request);
+                record.setUsername(username);
+                record.setPassword(passwordEncoder.encode(request.getPassword()));
+                record.setEmployeeId("EMP-");
+                record.setStatus(UserStatus.ACTIVE);
 
-        UsersRecord saved = userRepository.create(record);
-        saved.setEmployeeId("EMP-" + saved.getId());
-        userRepository.update(saved);
-        return userMapper.toDto(saved);
+                UsersRecord saved = userRepository.create(record);
+                saved.setEmployeeId("EMP-" + saved.getId());
+                userRepository.update(saved);
+                return userMapper.toDto(saved);
+            } catch (DataAccessException e) {
+                if (attempt == maxRetries || !isDuplicateUsernameException(e)) {
+                    throw e;
+                }
+            }
+        }
+        throw new IllegalStateException("Failed to generate unique username after max retries");
+    }
+
+    private boolean isDuplicateUsernameException(DataAccessException e) {
+        String msg = e.getMessage();
+        return msg != null && (msg.toLowerCase().contains("username") || msg.contains("23505"));
     }
 
     @Override
