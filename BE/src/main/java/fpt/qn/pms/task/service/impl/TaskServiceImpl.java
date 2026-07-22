@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.NotFoundException;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.TaskStatus;
@@ -56,7 +56,7 @@ public class TaskServiceImpl implements TaskService {
     @RequireProjectRole(ProjectRole.PM)
     public TaskDto createTask(CreateTaskRequest request) {
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         // 1. Retrieve Project and generate Task Key
         ProjectsRecord project = projectRepository.findById(request.getProjectId())
@@ -113,7 +113,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskDto updateTask(UUID id, UpdateTaskRequest request) {
 
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
@@ -191,7 +191,7 @@ public class TaskServiceImpl implements TaskService {
     @RequireProjectRole(ProjectRole.PM)
     public TaskDto assignTask(UUID id, AssignTaskRequest request) {
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
 

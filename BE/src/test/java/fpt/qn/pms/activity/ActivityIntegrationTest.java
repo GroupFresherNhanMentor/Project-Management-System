@@ -176,7 +176,7 @@ class ActivityIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/tasks/" + task.getId() + "/activities")
                         .header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items[0].action").value("TASK_CREATED"))
                 .andExpect(jsonPath("$.data.items[0].userName").value("act_member"));
@@ -195,7 +195,7 @@ class ActivityIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/tasks/" + task.getId() + "/activities")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items[0].action").value("STATUS_CHANGED"))
                 .andExpect(jsonPath("$.data.items[0].oldValue").value("TODO"))
                 .andExpect(jsonPath("$.data.items[0].newValue").value("IN_PROGRESS"));
