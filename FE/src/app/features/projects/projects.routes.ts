@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from '../../core/guards/admin-guard';
+import { projectViewGuard } from '../../core/guards/project-view-guard';
 
 export const PROJECTS_ROUTES: Routes = [
   {
     path: '',
+    canActivate: [projectViewGuard],
     loadComponent: () =>
       import('./pages/project-list/project-list').then(m => m.ProjectList),
     data: { title: 'Projects' },
@@ -24,6 +26,7 @@ export const PROJECTS_ROUTES: Routes = [
   },
   {
     path: ':id',
+    canActivate: [projectViewGuard],
     loadComponent: () =>
       import('./pages/project-detail/project-detail').then(m => m.ProjectDetail),
     data: { title: 'Project Detail' },
