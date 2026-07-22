@@ -63,6 +63,7 @@
               <button (click)="toggleLock(u)" class="rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-white" [style.background]="u.status === 'ACTIVE' ? '#D0342C' : '#1C8A4B'">
                 {{ u.status === 'ACTIVE' ? 'Lock' : 'Unlock' }}
               </button>
+              <button (click)="confirmReset(u)" class="rounded-[6px] border px-2.5 py-1 text-[12px] font-medium" style="border-color:#E1E4E9;color:#B8860B">Reset PW</button>
             </div>
           </td>
         </tr>
@@ -110,6 +111,53 @@
         <button (click)="saveEdit()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white" style="background:#3B4FD9">Save</button>
         <button (click)="editTarget=null" class="rounded-[8px] border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
       </div>
+    </div>
+  </div>
+}
+
+<!-- Confirm reset -->
+@if (resetTarget) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(20,22,28,0.4)">
+    <div class="w-full rounded-[14px] bg-white p-6" style="max-width:380px;box-shadow:0 20px 50px -20px rgba(20,24,40,0.3)">
+      <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full" style="background:#FFF3E0">
+        <span style="color:#E65100">⚠</span>
+      </div>
+      <h3 class="mb-1 text-[16px] font-extrabold" style="color:#14161C">Reset Password</h3>
+      <p class="mb-4 text-[13px]" style="color:#4B5160">Reset password for <strong>{{ resetTarget.username }}</strong>?</p>
+      <p class="mb-4 text-[12px]" style="color:#9AA1AC">A new temporary password will be generated. The user will need to use the new password to login.</p>
+      <div class="flex gap-2">
+        <button (click)="doReset()" [disabled]="resetting()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#E65100">
+          {{ resetting() ? 'Resetting…' : 'Reset Password' }}
+        </button>
+        <button (click)="cancelReset()" class="rounded-[8px] border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reset result -->
+@if (resetResult(); as r) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(20,22,28,0.4)">
+    <div class="w-full rounded-[14px] bg-white p-6" style="max-width:420px;box-shadow:0 20px 50px -20px rgba(20,24,40,0.3)">
+      <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background:#E4F5E9">
+        <span class="text-lg">✓</span>
+      </div>
+      <h3 class="mb-1 mt-3 text-[16px] font-extrabold" style="color:#14161C">Password Reset</h3>
+      <p class="mb-4 text-[12px]" style="color:#9AA1AC">New password generated for {{ r.username }}</p>
+
+      <div class="mb-3 rounded-[8px] p-4" style="background:#FAFBFC">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase" style="color:#9AA1AC">New Password</p>
+            <p class="mt-0.5 text-[14px] font-bold font-mono" style="color:#14161C">{{ r.generatedPassword }}</p>
+          </div>
+          <button (click)="copy(r.generatedPassword)" class="rounded-[6px] border px-2.5 py-1 text-[11px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Copy</button>
+        </div>
+      </div>
+
+      <p class="mb-3 text-[11px]" style="color:#D0342C">⚠ Copy this password now. It won't be shown again.</p>
+
+      <button (click)="closeResetResult()" class="w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white" style="background:#3B4FD9">Done</button>
     </div>
   </div>
 }
