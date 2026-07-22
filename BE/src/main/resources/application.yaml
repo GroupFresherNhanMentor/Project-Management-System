@@ -60,6 +60,7 @@ springdoc:
       paths-to-match:
         - /api/tasks/**
         - /api/projects/{projectId}/task-statuses/**
+        - /api/projects/{projectId}/task-workflow/**
       packages-to-scan: fpt.qn.pms.task
     - group: sprints
       paths-to-match: /api/projects/{projectId}/sprints/**

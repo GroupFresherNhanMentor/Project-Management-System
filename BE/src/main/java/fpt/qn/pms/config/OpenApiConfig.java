@@ -17,8 +17,13 @@ public class OpenApiConfig {
         return new OpenAPI().info(new Info().title("Project Management System API").version("1.0.0")
                 .description("Backend API documentation for Jira-like Project Management System"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .components(new Components().addSecuritySchemes("bearerAuth",
-                        new SecurityScheme().name("bearerAuth").type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer").bearerFormat("JWT")));
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new SecurityScheme()
+                                        .name("bearerAuth")
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")));
     }
+
 }
