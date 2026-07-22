@@ -1,4 +1,4 @@
-import { ProjectRole, ProjectMemberStatus } from './api.model';
+import { ProjectRole, ProjectMemberStatus, SystemRole } from './api.model';
 
 export interface ProjectMemberDto {
   id: string;
@@ -7,6 +7,7 @@ export interface ProjectMemberDto {
   employeeId?: string;
   userFullName: string;
   email?: string;
+  systemRole?: SystemRole;
   projectRole: ProjectRole;
   status: ProjectMemberStatus;
   createdAt?: string;
