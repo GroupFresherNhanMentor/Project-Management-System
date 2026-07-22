@@ -27,11 +27,17 @@ public class ProjectSecurityEvaluator {
 
     public Optional<UUID> getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
+        if (auth == null) {
             return Optional.empty();
         }
-        String username = jwt.getSubject();
-        return userRepository.findByUsername(username).map(UsersRecord::getId);
+        if (auth.getPrincipal() instanceof UserPrincipal principal) {
+            return Optional.ofNullable(principal.getId());
+        }
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String username = jwt.getSubject();
+            return userRepository.findByUsername(username).map(UsersRecord::getId);
+        }
+        return Optional.empty();
     }
 
     public boolean isMember(UUID projectId) {

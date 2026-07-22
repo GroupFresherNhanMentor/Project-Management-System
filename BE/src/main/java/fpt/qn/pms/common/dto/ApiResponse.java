@@ -1,6 +1,7 @@
 package fpt.qn.pms.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 public class ApiResponse<T> {
     T data;
     String message;
+    @JsonProperty("isSuccess")
     boolean isSuccess;
 
    public static <T> ApiResponse<T> success(T data, String message) {
