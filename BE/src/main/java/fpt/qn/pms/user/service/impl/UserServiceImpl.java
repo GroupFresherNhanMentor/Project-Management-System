@@ -189,7 +189,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
-        UsersRecord record = getCurrentUserRecord();
+        UsersRecord currentUser = getCurrentUserRecord();
+        UsersRecord record = userRepository.findByIdForUpdate(currentUser.getId())
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (!passwordEncoder.matches(request.getOldPassword(), record.getPassword())) {
             throw new InvalidOldPasswordException();
