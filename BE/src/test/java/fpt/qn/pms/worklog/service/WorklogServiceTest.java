@@ -1,6 +1,5 @@
 package fpt.qn.pms.worklog.service;
 
-import static fpt.qn.pms.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,14 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.jooq.DSLContext;
-import org.jooq.SelectLimitPercentStep;
-import org.jooq.SelectWhereStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,15 +50,6 @@ class WorklogServiceTest {
 
     @Mock
     WorklogMapper worklogMapper;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    DSLContext dsl;
-
-    @Mock
-    SelectWhereStep<UsersRecord> selectWhereStep;
-
-    @Mock
-    SelectLimitPercentStep<UsersRecord> selectLimitStep;
 
     @InjectMocks
     WorklogServiceImpl worklogService;
@@ -107,9 +93,7 @@ class WorklogServiceTest {
     }
 
     private void mockCurrentUser(UsersRecord user) {
-        when(dsl.selectFrom(USERS)).thenReturn(selectWhereStep);
-        when(selectWhereStep.limit(1)).thenReturn(selectLimitStep);
-        when(selectLimitStep.fetchOne()).thenReturn(user);
+        when(userRepository.findAll()).thenReturn(List.of(user));
     }
 
     // ── 1. Create Worklog ──────────────────────────────────────────────────────
@@ -124,6 +108,7 @@ class WorklogServiceTest {
 
         when(taskRepository.existsById(taskId)).thenReturn(true);
         mockCurrentUser(currentUser);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
         when(worklogMapper.toRecord(request)).thenReturn(new WorklogsRecord());
         when(worklogRepository.create(any(WorklogsRecord.class))).thenReturn(mockWorklogRecord);
         when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
@@ -161,6 +146,7 @@ class WorklogServiceTest {
 
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
         mockCurrentUser(currentUser);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
         when(worklogRepository.update(mockWorklogRecord)).thenReturn(mockWorklogRecord);
         when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
 

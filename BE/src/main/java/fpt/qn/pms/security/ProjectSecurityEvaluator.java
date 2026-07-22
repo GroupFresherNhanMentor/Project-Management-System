@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
-import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
@@ -26,7 +25,7 @@ public class ProjectSecurityEvaluator {
     private final ProjectMemberRepository projectMemberRepository;
     private final TaskRepository taskRepository;
 
-    private Optional<UUID> getCurrentUserId() {
+    public Optional<UUID> getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
             return Optional.empty();
