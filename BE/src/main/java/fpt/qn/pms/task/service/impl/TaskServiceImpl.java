@@ -1,37 +1,21 @@
 package fpt.qn.pms.task.service.impl;
 
-import static fpt.qn.pms.jooq.Tables.PROJECTS;
-import static fpt.qn.pms.jooq.Tables.PROJECT_MEMBERS;
-import static fpt.qn.pms.jooq.Tables.TASK_ACTIVITIES;
-import static fpt.qn.pms.jooq.Tables.USERS;
-
 import java.util.UUID;
-
-import org.jooq.DSLContext;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.InternalServerErrorException;
 import fpt.qn.pms.common.exception.NotFoundException;
-import fpt.qn.pms.jooq.enums.ActivityAction;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
-import fpt.qn.pms.project.exception.ProjectNotFoundException;
-import fpt.qn.pms.project.repository.ProjectRepository;
-import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
-import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
-import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
-import fpt.qn.pms.task.exception.TaskNotFoundException;
-import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
-import fpt.qn.pms.jooq.tables.records.TaskActivitiesRecord;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.project.exception.ProjectNotFoundException;
+import fpt.qn.pms.project.repository.ProjectRepository;
+import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.security.ProjectSecurityEvaluator;
 import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.task.dto.AssignTaskRequest;
@@ -39,6 +23,9 @@ import fpt.qn.pms.task.dto.CreateTaskRequest;
 import fpt.qn.pms.task.dto.TaskDto;
 import fpt.qn.pms.task.dto.TaskSearchRequest;
 import fpt.qn.pms.task.dto.UpdateTaskRequest;
+import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
+import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
+import fpt.qn.pms.task.exception.TaskNotFoundException;
 import fpt.qn.pms.task.mapper.TaskMapper;
 import fpt.qn.pms.task.repository.TaskRepository;
 import fpt.qn.pms.task.service.TaskService;
