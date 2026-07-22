@@ -54,16 +54,38 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
     }
 
     @Override
-    public PaginationResult<ProjectMemberDetails> findAllByProjectId(UUID projectId, int page, int size) {
-        long total = dsl.fetchCount(PROJECT_MEMBERS, PROJECT_MEMBERS.PROJECT_ID.eq(projectId));
+    public Optional<ProjectMemberDetails> findDetailsByProjectIdAndUserId(UUID projectId, UUID userId) {
+        return detailsQuery(projectId)
+                .and(PROJECT_MEMBERS.USER_ID.eq(userId))
+                .fetchOptional(this::toDetails);
+    }
+
+    @Override
+    public PaginationResult<ProjectMemberDetails> findAllByProjectId(
+            UUID projectId, String keyword, int page, int size) {
+        Condition condition = PROJECT_MEMBERS.PROJECT_ID.eq(projectId);
+        if (keyword != null && !keyword.isBlank()) {
+            String pattern = "%" + keyword.trim() + "%";
+            condition = condition.and(
+                    USERS.EMPLOYEE_ID.likeIgnoreCase(pattern)
+                            .or(USERS.FULL_NAME.likeIgnoreCase(pattern))
+                            .or(USERS.EMAIL.likeIgnoreCase(pattern)));
+        }
+
+        Long total = dsl.selectCount()
+                .from(PROJECT_MEMBERS)
+                .join(USERS).on(USERS.ID.eq(PROJECT_MEMBERS.USER_ID))
+                .where(condition)
+                .fetchOne(0, Long.class);
 
         List<ProjectMemberDetails> items = detailsQuery(projectId)
+                .and(condition)
                 .orderBy(PROJECT_MEMBERS.CREATED_AT.desc())
                 .limit(size)
                 .offset((long) page * size)
                 .fetch(this::toDetails);
 
-        return new PaginationResult<>(total, items);
+        return new PaginationResult<>(total == null ? 0 : total, items);
     }
 
     @Override

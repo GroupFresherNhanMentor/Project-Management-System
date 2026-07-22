@@ -17,7 +17,10 @@ public interface ProjectMemberRepository extends Repository<ProjectMembersRecord
 
     Optional<ProjectMemberDetails> findDetailsByIdAndProjectId(UUID id, UUID projectId);
 
-    PaginationResult<ProjectMemberDetails> findAllByProjectId(UUID projectId, int page, int size);
+    Optional<ProjectMemberDetails> findDetailsByProjectIdAndUserId(UUID projectId, UUID userId);
+
+    PaginationResult<ProjectMemberDetails> findAllByProjectId(
+            UUID projectId, String keyword, int page, int size);
 
     PaginationResult<UsersRecord> findAvailableUsers(
             UUID projectId, String keyword, int page, int size);

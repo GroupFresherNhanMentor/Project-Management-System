@@ -93,6 +93,26 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void getMembers_shouldFilterByKeyword() throws Exception {
+        mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
+                        .param("keyword", projectManager.getEmail())
+                        .header("Authorization", "Bearer " + developerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.items[0].userId")
+                        .value(projectManager.getId().toString()));
+    }
+
+    @Test
+    void getCurrentMember_shouldReturnAuthenticatedMembership() throws Exception {
+        mockMvc.perform(get("/api/projects/{projectId}/members/me", projectId)
+                        .header("Authorization", "Bearer " + pmToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(projectManager.getId().toString()))
+                .andExpect(jsonPath("$.data.projectRole").value("PM"));
+    }
+
+    @Test
     void getMemberCandidates_shouldReturnAvailableUsersForProjectManager() throws Exception {
         mockMvc.perform(get("/api/projects/{projectId}/members/candidates", projectId)
                         .param("keyword", "member-api-candidate")

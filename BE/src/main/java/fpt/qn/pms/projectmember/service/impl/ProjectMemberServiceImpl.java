@@ -49,16 +49,27 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProjectMemberDto> getMembers(UUID projectId, int page, int size) {
+    public PageResponse<ProjectMemberDto> getMembers(
+            UUID projectId, String keyword, int page, int size) {
         requireProject(projectId);
         authorizationService.assertCanViewMembers(projectId);
 
         PaginationResult<ProjectMemberDetails> result = projectMemberRepository
-                .findAllByProjectId(projectId, page, size);
+                .findAllByProjectId(projectId, keyword, page, size);
         List<ProjectMemberDto> items = result.getItems().stream()
                 .map(projectMemberMapper::toDto)
                 .toList();
         return PageResponse.of(items, page, size, result.getTotal());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectMemberDto getCurrentMember(UUID projectId) {
+        requireProject(projectId);
+        UsersRecord currentUser = authorizationService.assertCanViewMembers(projectId);
+        return projectMemberRepository.findDetailsByProjectIdAndUserId(projectId, currentUser.getId())
+                .map(projectMemberMapper::toDto)
+                .orElseThrow(ProjectMemberNotFoundException::new);
     }
 
     @Override
