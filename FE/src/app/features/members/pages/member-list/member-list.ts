@@ -1,7 +1,9 @@
 import { Component, signal, inject, effect } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { ProjectMemberDto } from '../../../../core/models/project-member.model';
+import { ProjectRole } from '../../../../core/models/api.model';
 import { AuthService } from '../../../../core/services/auth';
 import { ProjectService } from '../../../../core/services/project';
 import { ProjectContextService } from '../../../../core/services/project-context';
@@ -27,6 +29,9 @@ export class MemberList {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly canManage = signal(this.authService.getCurrentUser()?.role === 'ADMIN');
+  readonly currentProjectRole = signal<ProjectRole | null>(null);
+  readonly pendingRemoval = signal<ProjectMemberDto | null>(null);
+  readonly removingMemberId = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -51,6 +56,7 @@ export class MemberList {
         const currentMembership = page.items.find(
           item => item.userId === currentUserId && item.status === 'ACTIVE');
         this.projectContext.setCurrentUserRole(currentMembership?.projectRole ?? null);
+        this.currentProjectRole.set(currentMembership?.projectRole ?? null);
         this.canManage.set(
           this.authService.getCurrentUser()?.role === 'ADMIN'
           || currentMembership?.projectRole === 'PM');
@@ -68,16 +74,45 @@ export class MemberList {
   }
 
   removeMember(member: ProjectMemberDto): void {
+    if (!this.projectId() || !this.canRemove(member)) return;
+    this.pendingRemoval.set(member);
+  }
+
+  cancelRemoval(): void {
+    if (this.removingMemberId()) return;
+    this.pendingRemoval.set(null);
+  }
+
+  confirmRemoval(): void {
     const projectId = this.projectId();
-    if (!projectId || member.status !== 'ACTIVE') return;
-    this.projectService.removeMember(projectId, member.id).subscribe({
+    const member = this.pendingRemoval();
+    if (!projectId || !member || !this.canRemove(member)) {
+      this.pendingRemoval.set(null);
+      return;
+    }
+
+    this.removingMemberId.set(member.id);
+
+    this.projectService.removeMember(projectId, member.id)
+      .pipe(finalize(() => this.removingMemberId.set(null)))
+      .subscribe({
       next: () => {
+        this.pendingRemoval.set(null);
         this.toast.success('Member removed.');
         this.load(projectId);
       },
       error: (error: HttpErrorResponse) =>
         this.toast.error(error.error?.message ?? 'Unable to remove member.'),
-    });
+      });
+  }
+
+  canRemove(member: ProjectMemberDto): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser || !this.canManage() || member.status !== 'ACTIVE') return false;
+    if (member.userId === currentUser.id || member.systemRole === 'ADMIN') return false;
+    return currentUser.role === 'ADMIN' || (
+      this.currentProjectRole() === 'PM' && member.projectRole !== 'PM'
+    );
   }
 
   statusBadge(s: string): string {
