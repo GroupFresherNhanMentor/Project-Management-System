@@ -10,7 +10,9 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import org.jooq.DSLContext;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -28,13 +30,28 @@ import org.springframework.context.annotation.Profile;
 
 @Component
 @Profile("!test")
-public class DataInitializer implements CommandLineRunner {
+public class DataInitializer implements ApplicationRunner {
 
     public static final UUID ADMIN_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     public static final UUID DEV_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
     public static final UUID PROJECT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     public static final UUID SPRINT_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     public static final UUID TASK_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+
+    @Value("${app.seed.admin.username}")
+    private String adminUsername;
+
+    @Value("${app.seed.admin.password}")
+    private String adminPassword;
+
+    @Value("${app.seed.admin.full-name}")
+    private String adminFullName;
+
+    @Value("${app.seed.admin.email}")
+    private String adminEmail;
+
+    @Value("${app.seed.admin.employee-id}")
+    private String adminEmployeeId;
 
     private final DSLContext dsl;
     private final PasswordEncoder passwordEncoder;
@@ -45,7 +62,8 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(ApplicationArguments args) throws Exception {
+        seedAdmin();
         seedUsers();
         seedProjects();
         seedProjectMembers();
@@ -54,20 +72,22 @@ public class DataInitializer implements CommandLineRunner {
         System.out.println("✅ Sample test data initialized successfully!");
     }
 
-    private void seedUsers() {
-        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("admin"))) {
+    private void seedAdmin() {
+        if (!dsl.fetchExists(USERS, USERS.USERNAME.eq(adminUsername))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, ADMIN_USER_ID)
-                    .set(USERS.USERNAME, "admin")
-                    .set(USERS.PASSWORD, passwordEncoder.encode("admin123"))
-                    .set(USERS.FULL_NAME, "Project Manager Admin")
-                    .set(USERS.EMAIL, "admin@pms.com")
-                    .set(USERS.EMPLOYEE_ID, "EMP-001")
+                    .set(USERS.USERNAME, adminUsername)
+                    .set(USERS.PASSWORD, passwordEncoder.encode(adminPassword))
+                    .set(USERS.FULL_NAME, adminFullName)
+                    .set(USERS.EMAIL, adminEmail)
+                    .set(USERS.EMPLOYEE_ID, adminEmployeeId)
                     .set(USERS.ROLE, SysRole.ADMIN)
                     .set(USERS.STATUS, UserStatus.ACTIVE)
                     .execute();
         }
+    }
 
+    private void seedUsers() {
         if (!dsl.fetchExists(USERS, USERS.USERNAME.eq("dev1"))) {
             dsl.insertInto(USERS)
                     .set(USERS.ID, DEV_USER_ID)
@@ -85,7 +105,7 @@ public class DataInitializer implements CommandLineRunner {
     private UUID getAdminUserId() {
         return dsl.select(USERS.ID)
                 .from(USERS)
-                .where(USERS.USERNAME.eq("admin"))
+                .where(USERS.USERNAME.eq(adminUsername))
                 .fetchOptional(USERS.ID)
                 .orElse(ADMIN_USER_ID);
     }

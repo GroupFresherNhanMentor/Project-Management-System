@@ -73,13 +73,13 @@
 
     <!-- User card -->
     <div class="flex items-center gap-2.5 border-t px-4 py-3" style="border-color:#E6E8EC">
-      <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
+      <a routerLink="/profile" class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9;text-decoration:none">
         {{ currentUser?.fullName | initials }}
-      </div>
-      <div class="min-w-0 flex-1">
+      </a>
+      <a routerLink="/profile" class="min-w-0 flex-1" style="text-decoration:none">
         <p class="truncate text-[13px] font-semibold" style="color:#14161C">{{ currentUser?.fullName }}</p>
         <p class="text-[11px]" style="color:#9AA1AC">{{ roleLabel() }}</p>
-      </div>
+      </a>
       <button (click)="logout()" class="flex-shrink-0 text-[12px] hover:underline" style="color:#6B7280">Exit</button>
     </div>
   </aside>

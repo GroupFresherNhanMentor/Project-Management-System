@@ -129,9 +129,7 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void createUser_shouldCreateUser_whenAdminTokenProvided() throws Exception {
         CreateUserRequest request = CreateUserRequest.builder()
-                .username("newuser")
-                .password("password123")
-                .fullName("New User")
+                .fullName("newuser")
                 .email("newuser@pms.com")
                 .role(SysRole.USER)
                 .build();
@@ -141,8 +139,10 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.username").value("newuser"))
-                .andExpect(jsonPath("$.data.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
+                .andExpect(jsonPath("$.data.user.username").value("newuser"))
+                .andExpect(jsonPath("$.data.generatedPassword").isString())
+                .andExpect(jsonPath("$.data.generatedPassword").value(org.hamcrest.Matchers.matchesPattern("^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{12}$")))
+                .andExpect(jsonPath("$.data.user.employeeId").value(org.hamcrest.Matchers.matchesPattern("^EMP-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")));
     }
 
     @Test
@@ -225,5 +225,32 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("LOCKED"));
+    }
+
+    @Test
+    void resetPassword_shouldResetPassword_whenAdminTokenProvided() throws Exception {
+        mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(testUser.getId().toString()))
+                .andExpect(jsonPath("$.data.username").value(testUser.getUsername()))
+                .andExpect(jsonPath("$.data.generatedPassword").isNotEmpty());
+    }
+
+    @Test
+    void resetPassword_shouldReturn403_whenUserTokenProvided() throws Exception {
+        mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void request_shouldFail_whenUserIsLocked() throws Exception {
+        testUser.setStatus(UserStatus.LOCKED);
+        userRepository.update(testUser);
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isUnauthorized());
     }
 }

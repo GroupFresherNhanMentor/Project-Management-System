@@ -15,11 +15,8 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Project Management System API")
-                        .version("1.0.0")
-                        .description("Backend API documentation for Jira-like Project Management System"))
+        return new OpenAPI().info(new Info().title("Project Management System API").version("1.0.0")
+                .description("Backend API documentation for Jira-like Project Management System"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
@@ -45,6 +42,24 @@ public class OpenApiConfig {
                 .group("tasks")
                 .pathsToMatch("/api/tasks/**")
                 .packagesToScan("fpt.qn.pms.task")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi activityApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("activities")
+                .pathsToMatch("/api/tasks/{taskId}/activities/**", "/api/tasks/{taskId}/activities")
+                .packagesToScan("fpt.qn.pms.activity")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi dashboardApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("dashboard")
+                .pathsToMatch("/api/dashboard/**")
+                .packagesToScan("fpt.qn.pms.dashboard")
                 .build();
     }
 }

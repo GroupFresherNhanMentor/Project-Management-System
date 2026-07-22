@@ -24,6 +24,13 @@ public abstract class BaseRepository<R extends UpdatableRecord<R>> implements Re
                 .fetchOptional();
     }
 
+    public Optional<R> findByIdForUpdate(UUID id) {
+        return dsl.selectFrom(table)
+                .where(table.field("id", UUID.class).eq(id))
+                .forUpdate()
+                .fetchOptional();
+    }
+
     public List<R> findAll() {
         return dsl.selectFrom(table).fetch();
     }
