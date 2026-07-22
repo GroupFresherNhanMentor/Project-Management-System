@@ -109,6 +109,12 @@ class ProjectMemberRepositoryTest extends BaseIntegrationTest {
                 projectId, activePmUserId, ProjectRole.PM)).isTrue();
         assertThat(projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
                 projectId, inactivePmUserId, ProjectRole.PM)).isFalse();
+        assertThat(projectMemberRepository.existsActiveByUserIdAndRole(
+                activePmUserId, ProjectRole.PM)).isTrue();
+        assertThat(projectMemberRepository.existsActiveByUserIdAndRole(
+                activeDevUserId, ProjectRole.PM)).isFalse();
+        assertThat(projectMemberRepository.existsActiveByUserIdAndRole(
+                inactivePmUserId, ProjectRole.PM)).isFalse();
     }
 
     @Test

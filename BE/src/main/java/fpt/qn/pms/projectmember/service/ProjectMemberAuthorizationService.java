@@ -32,7 +32,17 @@ public class ProjectMemberAuthorizationService {
     public UsersRecord assertCanViewMembers(UUID projectId) {
         UsersRecord currentUser = requireActiveCurrentUser();
         if (currentUser.getRole() == SysRole.ADMIN
-                || projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, currentUser.getId())) {
+                || projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
+                        projectId, currentUser.getId(), ProjectRole.PM)) {
+            return currentUser;
+        }
+        throw new ProjectMemberAccessDeniedException();
+    }
+
+    @Transactional(readOnly = true)
+    public UsersRecord assertIsActiveProjectMember(UUID projectId) {
+        UsersRecord currentUser = requireActiveCurrentUser();
+        if (projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, currentUser.getId())) {
             return currentUser;
         }
         throw new ProjectMemberAccessDeniedException();

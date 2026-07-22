@@ -101,28 +101,42 @@ class ProjectMemberAuthorizationServiceTest {
     }
 
     @Test
-    void assertCanViewMembers_shouldAllowActiveProjectMember() {
+    void assertCanViewMembers_shouldAllowActiveProjectManager() {
         UUID projectId = UUID.randomUUID();
-        UsersRecord member = user("member", SysRole.USER, UserStatus.ACTIVE);
-        authenticate("member");
-        when(userRepository.findByUsername("member")).thenReturn(Optional.of(member));
-        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, member.getId()))
+        UsersRecord member = user("pm", SysRole.USER, UserStatus.ACTIVE);
+        authenticate("pm");
+        when(userRepository.findByUsername("pm")).thenReturn(Optional.of(member));
+        when(projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
+                projectId, member.getId(), ProjectRole.PM))
                 .thenReturn(true);
 
         assertThat(authorizationService.assertCanViewMembers(projectId)).isSameAs(member);
     }
 
     @Test
-    void assertCanViewMembers_shouldRejectNonMember() {
+    void assertCanViewMembers_shouldRejectDeveloper() {
         UUID projectId = UUID.randomUUID();
         UsersRecord user = user("user", SysRole.USER, UserStatus.ACTIVE);
         authenticate("user");
         when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
-        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, user.getId()))
+        when(projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
+                projectId, user.getId(), ProjectRole.PM))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> authorizationService.assertCanViewMembers(projectId))
                 .isInstanceOf(ProjectMemberAccessDeniedException.class);
+    }
+
+    @Test
+    void assertIsActiveProjectMember_shouldStillAllowDeveloperToReadOwnMembership() {
+        UUID projectId = UUID.randomUUID();
+        UsersRecord developer = user("developer", SysRole.USER, UserStatus.ACTIVE);
+        authenticate("developer");
+        when(userRepository.findByUsername("developer")).thenReturn(Optional.of(developer));
+        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, developer.getId()))
+                .thenReturn(true);
+
+        assertThat(authorizationService.assertIsActiveProjectMember(projectId)).isSameAs(developer);
     }
 
     private void authenticate(String username) {

@@ -42,7 +42,7 @@ public class ProjectMemberController {
     ProjectMemberService projectMemberService;
 
     @GetMapping
-    @Operation(summary = "Get project members", description = "Available to ADMIN or an active project member")
+    @Operation(summary = "Get project members", description = "Available to ADMIN or an active PM of this project")
     public ResponseEntity<ApiResponse<PageResponse<ProjectMemberDto>>> getMembers(
             @PathVariable UUID projectId,
             @RequestParam(required = false) String keyword,

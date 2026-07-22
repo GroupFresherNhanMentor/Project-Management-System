@@ -45,7 +45,7 @@ public class ProjectController {
     ProjectService projectService;
 
     @GetMapping
-    @Operation(summary = "Get projects", description = "ADMIN sees all projects; USER sees active memberships only")
+    @Operation(summary = "Get projects", description = "ADMIN sees all projects; USER sees projects where they are an active PM")
     public ResponseEntity<ApiResponse<PageResponse<ProjectDto>>> getProjects(
             @Parameter(description = "Matches project code or name") @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProjectStatus status,
@@ -56,7 +56,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    @Operation(summary = "Get project details", description = "Available to ADMIN or an active project member")
+    @Operation(summary = "Get project details", description = "Available to ADMIN or an active PM of this project")
     public ResponseEntity<ApiResponse<ProjectDto>> getProjectById(@PathVariable UUID projectId) {
         return ResponseEntity.ok(ApiResponse.success(projectService.getProjectById(projectId), null));
     }

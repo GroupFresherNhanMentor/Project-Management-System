@@ -84,9 +84,9 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldReturnPageForActiveMember() throws Exception {
+    void getMembers_shouldReturnPageForActiveProjectManager() throws Exception {
         mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
-                        .header("Authorization", "Bearer " + developerToken))
+                        .header("Authorization", "Bearer " + pmToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(2))
                 .andExpect(jsonPath("$.data.items.length()").value(2));
@@ -96,11 +96,19 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     void getMembers_shouldFilterByKeyword() throws Exception {
         mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
                         .param("keyword", projectManager.getEmail())
-                        .header("Authorization", "Bearer " + developerToken))
+                        .header("Authorization", "Bearer " + pmToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.items[0].userId")
                         .value(projectManager.getId().toString()));
+    }
+
+    @Test
+    void getMembers_shouldReturn403ForActiveDeveloper() throws Exception {
+        mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
+                        .header("Authorization", "Bearer " + developerToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test

@@ -79,6 +79,15 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.projectCode").value("APIWEB"));
+
+        UUID projectId = dsl.select(PROJECTS.ID)
+                .from(PROJECTS)
+                .where(PROJECTS.PROJECT_CODE.eq("APIWEB"))
+                .fetchOne(PROJECTS.ID);
+        org.assertj.core.api.Assertions.assertThat(
+                dsl.fetchCount(PROJECT_MEMBERS, PROJECT_MEMBERS.PROJECT_ID.eq(projectId)))
+                .as("creating a project must not require or auto-create a PM")
+                .isZero();
     }
 
     @Test
@@ -91,17 +100,49 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getProjects_shouldReturnOnlyActiveMembershipsForRegularUser() throws Exception {
+    void getProjects_shouldReturnOnlyActivePmMembershipsForRegularUser() throws Exception {
         UUID visibleProjectId = insertProject("VISIBLE", "Visible Project");
         UUID hiddenProjectId = insertProject("HIDDEN", "Hidden Project");
-        insertMembership(visibleProjectId, user.getId(), ProjectMemberStatus.ACTIVE);
-        insertMembership(hiddenProjectId, user.getId(), ProjectMemberStatus.INACTIVE);
+        insertMembership(visibleProjectId, user.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        insertMembership(hiddenProjectId, user.getId(), ProjectRole.PM, ProjectMemberStatus.INACTIVE);
 
         mockMvc.perform(get("/api/projects")
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.items[0].id").value(visibleProjectId.toString()));
+    }
+
+    @Test
+    void getProjects_shouldReturn403ForActiveDeveloper() throws Exception {
+        UUID projectId = insertProject("DEVONLY", "Developer Project");
+        insertMembership(projectId, user.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
+
+        mockMvc.perform(get("/api/projects")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void getProjectById_shouldReturn200ForActiveProjectManager() throws Exception {
+        UUID projectId = insertProject("PMDETAIL", "PM Detail Project");
+        insertMembership(projectId, user.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+
+        mockMvc.perform(get("/api/projects/" + projectId)
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(projectId.toString()));
+    }
+
+    @Test
+    void getProjectById_shouldReturn403ForActiveDeveloper() throws Exception {
+        UUID projectId = insertProject("DEVDETAIL", "Developer Detail Project");
+        insertMembership(projectId, user.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
+
+        mockMvc.perform(get("/api/projects/" + projectId)
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -173,11 +214,12 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
                 .fetchOne(PROJECTS.ID);
     }
 
-    private void insertMembership(UUID projectId, UUID userId, ProjectMemberStatus status) {
+    private void insertMembership(
+            UUID projectId, UUID userId, ProjectRole role, ProjectMemberStatus status) {
         dsl.insertInto(PROJECT_MEMBERS)
                 .set(PROJECT_MEMBERS.PROJECT_ID, projectId)
                 .set(PROJECT_MEMBERS.USER_ID, userId)
-                .set(PROJECT_MEMBERS.PROJECT_ROLE, ProjectRole.DEV)
+                .set(PROJECT_MEMBERS.PROJECT_ROLE, role)
                 .set(PROJECT_MEMBERS.STATUS, status)
                 .execute();
     }

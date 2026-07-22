@@ -66,7 +66,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     @Transactional(readOnly = true)
     public ProjectMemberDto getCurrentMember(UUID projectId) {
         requireProject(projectId);
-        UsersRecord currentUser = authorizationService.assertCanViewMembers(projectId);
+        UsersRecord currentUser = authorizationService.assertIsActiveProjectMember(projectId);
         return projectMemberRepository.findDetailsByProjectIdAndUserId(projectId, currentUser.getId())
                 .map(projectMemberMapper::toDto)
                 .orElseThrow(ProjectMemberNotFoundException::new);

@@ -29,5 +29,7 @@ public interface ProjectMemberRepository extends Repository<ProjectMembersRecord
 
     boolean existsActiveByProjectIdAndUserIdAndRole(UUID projectId, UUID userId, ProjectRole role);
 
+    boolean existsActiveByUserIdAndRole(UUID userId, ProjectRole role);
+
     long countActiveByProjectIdAndRole(UUID projectId, ProjectRole role);
 }
