@@ -13,6 +13,7 @@ import fpt.qn.pms.activity.dto.TaskActivityDto;
 import fpt.qn.pms.activity.service.ActivityService;
 import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,6 +22,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Tag(name = "Activity", description = "Endpoints for managing task activity logs (FR-ACT)")
 public class ActivityController {
 
     ActivityService activityService;

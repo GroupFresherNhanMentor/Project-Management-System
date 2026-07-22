@@ -26,4 +26,39 @@ public class OpenApiConfig {
                                         .bearerFormat("JWT")));
     }
 
+    @Bean
+    public GroupedOpenApi sprintApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("sprints")
+                .pathsToMatch("/api/projects/{projectId}/sprints/**")
+                .packagesToScan("fpt.qn.pms.sprint")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi taskApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("tasks")
+                .pathsToMatch("/api/tasks/**")
+                .packagesToScan("fpt.qn.pms.task")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi activityApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("activities")
+                .pathsToMatch("/api/tasks/{taskId}/activities/**", "/api/tasks/{taskId}/activities")
+                .packagesToScan("fpt.qn.pms.activity")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi dashboardApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("dashboard")
+                .pathsToMatch("/api/dashboard/**")
+                .packagesToScan("fpt.qn.pms.dashboard")
+                .build();
+    }
 }

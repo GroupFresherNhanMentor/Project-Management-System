@@ -30,7 +30,7 @@
     <properties>
         <java.version>25</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>2.8.5</springdoc.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <!-- override to match local DB when running codegen -->
         <db.url>jdbc:postgresql://localhost:5432/mini-project-management-system</db.url>
