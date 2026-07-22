@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
-import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
+import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
@@ -28,11 +28,20 @@ public class ProjectSecurityEvaluator {
 
     public Optional<UUID> getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
+        if (auth == null) {
             return Optional.empty();
         }
-        String username = jwt.getSubject();
-        return userRepository.findByUsername(username).map(UsersRecord::getId);
+        if (auth.getPrincipal() instanceof UserPrincipal principal) {
+            return Optional.ofNullable(principal.getId());
+        }
+        if (auth.getPrincipal() instanceof Jwt jwt) {
+            String username = jwt.getSubject();
+            return userRepository.findByUsername(username).map(UsersRecord::getId);
+        }
+        if (auth.getPrincipal() instanceof String username) {
+            return userRepository.findByUsername(username).map(UsersRecord::getId);
+        }
+        return Optional.empty();
     }
 
     public boolean isMember(UUID projectId) {
@@ -56,6 +65,13 @@ public class ProjectSecurityEvaluator {
             return false;
         }
         return isMember(taskOpt.get().getProjectId());
+    }
+
+    public boolean isAdmin() {
+        return getCurrentUserId()
+                .flatMap(userId -> userRepository.findById(userId))
+                .map(user -> user.getRole() == SysRole.ADMIN)
+                .orElse(false);
     }
 
     public boolean isPmOfTask(UUID taskId) {

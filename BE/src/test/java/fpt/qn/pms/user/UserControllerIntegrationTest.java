@@ -24,6 +24,7 @@ import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.security.JwtTokenProvider;
+import fpt.qn.pms.user.dto.request.ChangePasswordRequest;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -242,5 +243,45 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void request_shouldFail_whenUserIsLocked() throws Exception {
+        testUser.setStatus(UserStatus.LOCKED);
+        userRepository.update(testUser);
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void changePassword_shouldReturn200_whenValidOldPassword() throws Exception {
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .oldPassword("password123")
+                .newPassword("NewPass123!")
+                .build();
+
+        mockMvc.perform(put("/api/users/me/change-password")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password changed successfully"));
+    }
+
+    @Test
+    void changePassword_shouldReturn400_whenInvalidOldPassword() throws Exception {
+        ChangePasswordRequest request = ChangePasswordRequest.builder()
+                .oldPassword("WrongOldPass123")
+                .newPassword("NewPass123!")
+                .build();
+
+        mockMvc.perform(put("/api/users/me/change-password")
+                        .header("Authorization", "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Current password is incorrect"));
     }
 }

@@ -32,6 +32,13 @@ public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements T
     }
 
     @Override
+    public boolean existsAssignedTaskByProjectIdAndAssigneeId(UUID projectId, UUID assigneeId) {
+        return dsl.fetchExists(TASKS,
+                TASKS.PROJECT_ID.eq(projectId)
+                        .and(TASKS.ASSIGNEE_ID.eq(assigneeId)));
+    }
+
+    @Override
     public PaginationResult<TasksRecord> findAll(TaskSearchRequest request) {
         Condition condition = DSL.noCondition();
 

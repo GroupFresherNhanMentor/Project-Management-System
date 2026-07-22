@@ -42,4 +42,7 @@ public class SprintDto {
 
     @Schema(description = "Creation timestamp", example = "2026-07-20T10:30:00+07:00")
     OffsetDateTime createdAt;
+
+    @Schema(description = "Last update timestamp", example = "2026-07-20T10:30:00+07:00")
+    OffsetDateTime updatedAt;
 }

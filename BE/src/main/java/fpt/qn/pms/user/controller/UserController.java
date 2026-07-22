@@ -19,6 +19,7 @@ import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.user.dto.request.ChangePasswordRequest;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -55,6 +56,14 @@ public class UserController {
     @Operation(summary = "Update current authenticated user profile")
     public ResponseEntity<ApiResponse<UserDto>> updateCurrentUser(@Valid @RequestBody UpdateCurrentUserRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateCurrentUser(request), null));
+    }
+
+    @PutMapping("/me/change-password")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Change password for current authenticated user")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Password changed successfully"));
     }
 
     @GetMapping

@@ -11,5 +11,7 @@ public interface TaskRepository extends Repository<TasksRecord> {
 
     int getNextTaskNumber(UUID projectId);
 
+    boolean existsAssignedTaskByProjectIdAndAssigneeId(UUID projectId, UUID assigneeId);
+
     PaginationResult<TasksRecord> findAll(TaskSearchRequest request);
 }

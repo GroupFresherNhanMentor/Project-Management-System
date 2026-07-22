@@ -13,11 +13,11 @@ public interface SprintService {
 
     PageResponse<SprintDto> getSprintsByProject(UUID projectId, String keyword, SprintStatus status, int page, int size);
 
-    SprintDto getSprintById(UUID id);
+    SprintDto getSprintById(UUID projectId, UUID id);
 
     SprintDto createSprint(CreateSprintRequest request);
 
-    SprintDto updateSprint(UUID id, UpdateSprintRequest request);
+    SprintDto updateSprint(UUID projectId, UUID id, UpdateSprintRequest request);
 
-    SprintDto updateSprintStatus(UUID id, UpdateSprintStatusRequest request);
+    SprintDto updateSprintStatus(UUID projectId, UUID id, UpdateSprintStatusRequest request);
 }

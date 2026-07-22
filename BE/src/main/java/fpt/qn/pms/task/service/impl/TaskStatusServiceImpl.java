@@ -1,4 +1,4 @@
-package fpt.qn.pms.task.service;
+package fpt.qn.pms.task.service.impl;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +17,7 @@ import fpt.qn.pms.task.exception.TaskStatusNameConflictException;
 import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
 import fpt.qn.pms.task.mapper.TaskStatusMapper;
 import fpt.qn.pms.task.repository.TaskStatusRepository;
+import fpt.qn.pms.task.service.TaskStatusService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

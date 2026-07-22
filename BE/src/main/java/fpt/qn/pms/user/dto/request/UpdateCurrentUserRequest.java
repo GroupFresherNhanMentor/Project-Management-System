@@ -24,7 +24,4 @@ public class UpdateCurrentUserRequest {
     @Email
     @Size(max = 150)
     String email;
-
-    @Size(min = 6, max = 100)
-    String password;
 }

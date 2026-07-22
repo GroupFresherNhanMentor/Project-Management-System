@@ -29,6 +29,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -37,6 +40,7 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/projects/{projectId}/sprints")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Validated
 @Tag(name = "Sprint", description = "Sprint management endpoints")
 @SecurityRequirement(name = "bearerAuth")
 public class SprintController {
@@ -49,18 +53,19 @@ public class SprintController {
             @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Search keyword (matches sprint name)") @RequestParam(required = false) String keyword,
             @Parameter(description = "Filter by status (PLANNED / ACTIVE / CLOSED)") @RequestParam(required = false) SprintStatus status,
-            @Parameter(description = "Page number (zero-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Page number (zero-based)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
 
         PageResponse<SprintDto> result = sprintService.getSprintsByProject(projectId, keyword, status, page, size);
         return ResponseEntity.ok(ApiResponse.success(result, null));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get sprint by ID", description = "Retrieve a single sprint by its ID")
+    @Operation(summary = "Get sprint by ID", description = "Retrieve a single sprint by its ID; available to ADMIN or active project member")
     public ResponseEntity<ApiResponse<SprintDto>> getSprintById(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(sprintService.getSprintById(id), null));
+        return ResponseEntity.ok(ApiResponse.success(sprintService.getSprintById(projectId, id), null));
     }
 
     @PostMapping
@@ -80,19 +85,21 @@ public class SprintController {
     @RequireProjectRole(ProjectRole.PM)
     @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored (PM only)")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprint(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintRequest request) {
 
-        return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprint(id, request), null));
+        return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprint(projectId, id, request), null));
     }
 
     @PatchMapping("/{id}/status")
     @RequireProjectRole(ProjectRole.PM)
     @Operation(summary = "Update sprint status", description = "Transition sprint status: PLANNED → ACTIVE → CLOSED (PM only). Only one ACTIVE sprint per project.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprintStatus(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintStatusRequest request) {
 
-        return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprintStatus(id, request), null));
+        return ResponseEntity.ok(ApiResponse.success(sprintService.updateSprintStatus(projectId, id, request), null));
     }
 }
