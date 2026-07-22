@@ -238,7 +238,7 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/dashboard/me")
                         .header("Authorization", "Bearer " + devToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.myOpenTasks").value(2)) // IN_PROGRESS + TODO (Overdue)
                 .andExpect(jsonPath("$.data.myCompletedTasks").value(1)) // DONE
                 .andExpect(jsonPath("$.data.myOverdueTasks").value(1)) // Overdue Task
@@ -250,7 +250,7 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/dashboard/project/" + project.getId())
                         .header("Authorization", "Bearer " + pmToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.totalTasks").value(3))
                 .andExpect(jsonPath("$.data.taskByStatus.IN_PROGRESS").value(1))
                 .andExpect(jsonPath("$.data.taskByStatus.DONE").value(1))
@@ -268,7 +268,7 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/dashboard/project/" + project.getId())
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isSuccess").value(true));
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.NotFoundException;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.TaskStatus;
@@ -34,6 +34,10 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import org.springframework.context.ApplicationEventPublisher;
+import fpt.qn.pms.activity.event.TaskActivityEvent;
+import fpt.qn.pms.jooq.enums.ActivityAction;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -45,13 +49,14 @@ public class TaskServiceImpl implements TaskService {
     ProjectMemberRepository projectMemberRepository;
     ProjectSecurityEvaluator projectSecurityEvaluator;
     TaskMapper taskMapper;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     @RequireProjectRole(ProjectRole.PM)
     public TaskDto createTask(CreateTaskRequest request) {
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         // 1. Retrieve Project and generate Task Key
         ProjectsRecord project = projectRepository.findById(request.getProjectId())
@@ -72,13 +77,14 @@ public class TaskServiceImpl implements TaskService {
 
         TasksRecord saved = taskRepository.create(record);
 
-        // 4. Record activity
-        // TaskActivitiesRecord activity = dsl.newRecord(TASK_ACTIVITIES);
-        // activity.setTaskId(saved.getId());
-        // activity.setUserId(currentUserId);
-        // activity.setAction(ActivityAction.TASK_CREATED);
-        // activity.setNewValue("Task created with status TODO");
-        // activity.store();
+        // Record activity via Spring Event
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                saved.getId(),
+                currentUserId,
+                ActivityAction.TASK_CREATED,
+                null,
+                saved.getSummary()
+        ));
 
         return toDtoWithUserNames(saved);
     }
@@ -107,7 +113,7 @@ public class TaskServiceImpl implements TaskService {
     public TaskDto updateTask(UUID id, UpdateTaskRequest request) {
 
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
@@ -152,13 +158,13 @@ public class TaskServiceImpl implements TaskService {
             TaskStatus oldStatus = task.getStatus();
             task.setStatus(request.getStatus());
 
-            // TaskActivitiesRecord activity = dsl.newRecord(TASK_ACTIVITIES);
-            // activity.setTaskId(task.getId());
-            // activity.setUserId(currentUser.getId());
-            // activity.setAction(ActivityAction.STATUS_CHANGED);
-            // activity.setOldValue(oldStatus.getLiteral());
-            // activity.setNewValue(request.getStatus().getLiteral());
-            // activity.store();
+            eventPublisher.publishEvent(new TaskActivityEvent(
+                    task.getId(),
+                    currentUserId,
+                    ActivityAction.STATUS_CHANGED,
+                    oldStatus != null ? oldStatus.getLiteral() : null,
+                    request.getStatus().getLiteral()
+            ));
         }
 
         if (request.getDescription() != null) {
@@ -185,7 +191,7 @@ public class TaskServiceImpl implements TaskService {
     @RequireProjectRole(ProjectRole.PM)
     public TaskDto assignTask(UUID id, AssignTaskRequest request) {
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
 
@@ -207,13 +213,13 @@ public class TaskServiceImpl implements TaskService {
 
         TasksRecord saved = taskRepository.update(task);
 
-        // TaskActivitiesRecord activity = dsl.newRecord(TASK_ACTIVITIES);
-        // activity.setTaskId(task.getId());
-        // activity.setUserId(currentUser.getId());
-        // activity.setAction(ActivityAction.ASSIGNEE_CHANGED);
-        // activity.setOldValue(oldAssignee != null ? oldAssignee.toString() : "Unassigned");
-        // activity.setNewValue(request.getAssigneeId().toString());
-        // activity.store();
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                task.getId(),
+                currentUserId,
+                ActivityAction.ASSIGNEE_CHANGED,
+                oldAssignee != null ? oldAssignee.toString() : "Unassigned",
+                request.getAssigneeId().toString()
+        ));
 
         return toDtoWithUserNames(saved);
     }

@@ -28,7 +28,7 @@ public class ActivityController {
     ActivityService activityService;
 
     @GetMapping("/{taskId}/activities")
-    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasRole('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasAuthority('ADMIN')")
     public ApiResponse<PageResponse<TaskActivityDto>> getActivitiesByTaskId(
             @PathVariable UUID taskId,
             @RequestParam(defaultValue = "0") int page,
