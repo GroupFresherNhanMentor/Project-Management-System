@@ -2,6 +2,7 @@ package fpt.qn.pms.projectmember;
 
 import static fpt.qn.pms.jooq.Tables.PROJECT_MEMBERS;
 import static fpt.qn.pms.jooq.Tables.PROJECTS;
+import static fpt.qn.pms.jooq.Tables.TASKS;
 import static fpt.qn.pms.jooq.Tables.USERS;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -27,6 +28,9 @@ import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
+import fpt.qn.pms.jooq.enums.TaskPriority;
+import fpt.qn.pms.jooq.enums.TaskStatus;
+import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
@@ -54,6 +58,7 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     UsersRecord developer;
     UsersRecord candidate;
     UUID projectId;
+    UUID projectManagerMemberId;
     UUID developerMemberId;
     String adminToken;
     String pmToken;
@@ -69,7 +74,8 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
         developer = insertUser("member-api-dev", SysRole.USER);
         candidate = insertUser("member-api-candidate", SysRole.USER);
         projectId = insertProject("MEMAPI");
-        insertMembership(projectId, projectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        projectManagerMemberId = insertMembership(
+                projectId, projectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
         developerMemberId = insertMembership(
                 projectId, developer.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
         adminToken = token(admin);
@@ -135,6 +141,25 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void addMember_shouldReturn409ForLockedUser() throws Exception {
+        dsl.update(USERS)
+                .set(USERS.STATUS, UserStatus.LOCKED)
+                .where(USERS.ID.eq(candidate.getId()))
+                .execute();
+        AddProjectMemberRequest request = AddProjectMemberRequest.builder()
+                .userId(candidate.getId())
+                .projectRole(ProjectRole.TESTER)
+                .build();
+
+        mockMvc.perform(post("/api/projects/{projectId}/members", projectId)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Only active users can be added to a project"));
+    }
+
+    @Test
     void removeMember_shouldReturn204AndSoftDeleteForProjectManager() throws Exception {
         mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}", projectId, developerMemberId)
                         .header("Authorization", "Bearer " + pmToken))
@@ -145,6 +170,63 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
                 .where(PROJECT_MEMBERS.ID.eq(developerMemberId))
                 .fetchOne(PROJECT_MEMBERS.STATUS);
         org.assertj.core.api.Assertions.assertThat(status).isEqualTo(ProjectMemberStatus.INACTIVE);
+    }
+
+    @Test
+    void removeMember_shouldReturn403WhenProjectManagerRemovesSelf() throws Exception {
+        mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
+                        projectId, projectManagerMemberId)
+                        .header("Authorization", "Bearer " + pmToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("You cannot remove yourself from the project"));
+    }
+
+    @Test
+    void removeMember_shouldAllowAdministratorToRemoveProjectManager() throws Exception {
+        UsersRecord otherProjectManager = insertUser("member-api-removable-pm", SysRole.USER);
+        insertMembership(projectId, otherProjectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+
+        mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
+                        projectId, projectManagerMemberId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void removeMember_shouldReturn409WhenRemovingLastProjectManager() throws Exception {
+        mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
+                        projectId, projectManagerMemberId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("A project must have at least one active project manager"));
+    }
+
+    @Test
+    void removeMember_shouldReturn409WhenMemberHasAssignedTasks() throws Exception {
+        insertTask(developer.getId(), TaskStatus.IN_PROGRESS);
+
+        mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
+                        projectId, developerMemberId)
+                        .header("Authorization", "Bearer " + pmToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "Cannot remove a member who is assigned to tasks. "
+                                + "Transfer or unassign the tasks first"));
+    }
+
+    @Test
+    void removeMember_shouldReturn403WhenAdministratorRemovesAdministrator() throws Exception {
+        UsersRecord otherAdmin = insertUser("member-api-other-admin", SysRole.ADMIN);
+        UUID otherAdminMemberId = insertMembership(
+                projectId, otherAdmin.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+
+        mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
+                        projectId, otherAdminMemberId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message")
+                        .value("An administrator cannot be removed from a project"));
     }
 
     @Test
@@ -196,5 +278,20 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
                 .set(PROJECT_MEMBERS.STATUS, status)
                 .returning(PROJECT_MEMBERS.ID)
                 .fetchOne(PROJECT_MEMBERS.ID);
+    }
+
+    private void insertTask(UUID assigneeId, TaskStatus taskStatus) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        dsl.insertInto(TASKS)
+                .set(TASKS.TASK_KEY, "MEMAPI-" + suffix)
+                .set(TASKS.PROJECT_ID, projectId)
+                .set(TASKS.SUMMARY, "Member assignment API test task")
+                .set(TASKS.TASK_TYPE, TaskType.TASK)
+                .set(TASKS.PRIORITY, TaskPriority.MEDIUM)
+                .set(TASKS.STATUS, taskStatus)
+                .set(TASKS.ASSIGNEE_ID, assigneeId)
+                .set(TASKS.REPORTER_ID, projectManager.getId())
+                .set(TASKS.CREATED_BY, projectManager.getId())
+                .execute();
     }
 }

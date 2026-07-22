@@ -10,6 +10,7 @@ import org.mapstruct.factory.Mappers;
 
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
+import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
 import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
@@ -24,12 +25,14 @@ class ProjectMemberMapperTest {
         ProjectMemberDetails details = new ProjectMemberDetails(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "EMP-001", "Developer One", "dev1@test.com",
+                SysRole.USER,
                 ProjectRole.DEV, ProjectMemberStatus.ACTIVE, OffsetDateTime.now());
 
         ProjectMemberDto dto = mapper.toDto(details);
 
         assertThat(dto.getId()).isEqualTo(details.id());
         assertThat(dto.getUserFullName()).isEqualTo("Developer One");
+        assertThat(dto.getSystemRole()).isEqualTo("USER");
         assertThat(dto.getProjectRole()).isEqualTo("DEV");
         assertThat(dto.getStatus()).isEqualTo("ACTIVE");
     }

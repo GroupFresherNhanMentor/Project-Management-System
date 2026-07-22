@@ -12,6 +12,7 @@ import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAccessDeniedException;
+import fpt.qn.pms.projectmember.exception.ProjectMemberRemovalForbiddenException;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.repository.UserRepository;
@@ -53,6 +54,24 @@ public class ProjectMemberAuthorizationService {
         }
 
         return currentUser;
+    }
+
+    public void assertCanRemoveMember(
+            UsersRecord currentUser, UsersRecord targetUser, ProjectRole targetProjectRole) {
+        if (currentUser.getId().equals(targetUser.getId())) {
+            throw new ProjectMemberRemovalForbiddenException(
+                    "You cannot remove yourself from the project");
+        }
+
+        if (targetUser.getRole() == SysRole.ADMIN) {
+            throw new ProjectMemberRemovalForbiddenException(
+                    "An administrator cannot be removed from a project");
+        }
+
+        if (currentUser.getRole() != SysRole.ADMIN && targetProjectRole == ProjectRole.PM) {
+            throw new ProjectMemberRemovalForbiddenException(
+                    "A project manager cannot remove another project manager");
+        }
     }
 
     private UsersRecord requireActiveCurrentUser() {

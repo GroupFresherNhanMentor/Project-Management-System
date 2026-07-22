@@ -32,6 +32,16 @@ public class ProjectRepositoryImpl extends BaseRepository<ProjectsRecord> implem
     }
 
     @Override
+    public boolean lockById(UUID projectId) {
+        return dsl.select(PROJECTS.ID)
+                .from(PROJECTS)
+                .where(PROJECTS.ID.eq(projectId))
+                .forUpdate()
+                .fetchOptional()
+                .isPresent();
+    }
+
+    @Override
     public PaginationResult<ProjectsRecord> findAll(
             String keyword, ProjectStatus status, UUID memberUserId, int page, int size) {
         Condition condition = buildCondition(keyword, status, memberUserId);
