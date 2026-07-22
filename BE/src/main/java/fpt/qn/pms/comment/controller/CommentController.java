@@ -59,7 +59,8 @@ public class CommentController {
     }
 
     @PutMapping("/comments/{id}")
-    @Operation(summary = "Update a comment")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Update a comment", description = "Only the comment author can update.")
     public ResponseEntity<ApiResponse<CommentDto>> updateComment(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCommentRequest request) {
@@ -68,7 +69,8 @@ public class CommentController {
     }
 
     @DeleteMapping("/comments/{id}")
-    @Operation(summary = "Delete a comment")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Delete a comment", description = "Only the comment author can delete.")
     public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable UUID id) {
         commentService.deleteComment(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Comment deleted successfully"));

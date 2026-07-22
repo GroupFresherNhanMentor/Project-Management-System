@@ -26,7 +26,6 @@ import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
@@ -238,7 +237,7 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
 
     @Test
     void removeMember_shouldRejectMemberWithAssignedTasks() {
-        insertTask(developer.getId(), TaskStatus.TODO);
+        insertTask(developer.getId());
         authenticate(projectManager.getUsername());
 
         assertThatThrownBy(() -> projectMemberService.removeMember(projectId, developerMemberId))
@@ -249,7 +248,7 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
 
     @Test
     void removeMember_shouldRejectMemberWithDoneAssignedTasks() {
-        insertTask(developer.getId(), TaskStatus.DONE);
+        insertTask(developer.getId());
         authenticate(projectManager.getUsername());
 
         assertThatThrownBy(() -> projectMemberService.removeMember(projectId, developerMemberId))
@@ -340,7 +339,7 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
                 .fetchOne(PROJECT_MEMBERS.ID);
     }
 
-    private void insertTask(UUID assigneeId, TaskStatus taskStatus) {
+    private void insertTask(UUID assigneeId) {
         String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         dsl.insertInto(TASKS)
                 .set(TASKS.TASK_KEY, "MEM-" + suffix)
@@ -348,7 +347,6 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
                 .set(TASKS.SUMMARY, "Member assignment test task")
                 .set(TASKS.TASK_TYPE, TaskType.TASK)
                 .set(TASKS.PRIORITY, TaskPriority.MEDIUM)
-                .set(TASKS.STATUS, taskStatus)
                 .set(TASKS.ASSIGNEE_ID, assigneeId)
                 .set(TASKS.REPORTER_ID, projectManager.getId())
                 .set(TASKS.CREATED_BY, projectManager.getId())

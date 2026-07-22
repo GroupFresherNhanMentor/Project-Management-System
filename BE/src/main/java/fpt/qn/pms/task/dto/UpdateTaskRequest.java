@@ -2,8 +2,8 @@ package fpt.qn.pms.task.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateTaskRequest {
 
-    TaskStatus status;
+    UUID statusId;
 
     String description;
 

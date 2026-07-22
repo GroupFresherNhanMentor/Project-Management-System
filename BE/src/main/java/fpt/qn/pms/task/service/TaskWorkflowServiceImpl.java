@@ -8,9 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.tables.records.TaskWorkflowRecord;
-import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.task.dto.CreateTaskWorkflowRequest;
 import fpt.qn.pms.task.dto.TaskWorkflowDto;
 import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
@@ -44,7 +42,6 @@ public class TaskWorkflowServiceImpl implements TaskWorkflowService {
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
     public List<TaskWorkflowDto> createAll(UUID projectId, List<CreateTaskWorkflowRequest> requests) {
         // collect project's status IDs once to avoid per-item DB calls
         var projectStatusIds = taskStatusRepository.findAllByProjectId(projectId, null, null)
@@ -85,7 +82,6 @@ public class TaskWorkflowServiceImpl implements TaskWorkflowService {
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
     public void delete(UUID projectId, UUID id) {
         taskWorkflowRepository.findByIdAndProjectId(id, projectId)
                 .orElseThrow(() -> new TaskWorkflowNotFoundException(id));

@@ -1,5 +1,6 @@
 package fpt.qn.pms.dashboard;
 
+import static fpt.qn.pms.jooq.Tables.TASK_STATUSES;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,6 @@ import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SprintStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
@@ -72,6 +73,9 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
     @Autowired
     JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    DSLContext dsl;
+
     String adminToken;
     String pmToken;
     String devToken;
@@ -87,6 +91,10 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
     TasksRecord openTask;
     TasksRecord doneTask;
     TasksRecord overdueTask;
+
+    UUID todoStatusId;
+    UUID inProgressStatusId;
+    UUID doneStatusId;
 
     @BeforeEach
     void setUp() {
@@ -173,7 +181,38 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         devMember.setStatus(ProjectMemberStatus.ACTIVE);
         projectMemberRepository.create(devMember);
 
-        // 5. Seed Active Sprint
+        // 5. Seed Task Statuses for this project
+        todoStatusId = dsl.insertInto(TASK_STATUSES)
+                .set(TASK_STATUSES.PROJECT_ID, project.getId())
+                .set(TASK_STATUSES.NAME, "TODO")
+                .set(TASK_STATUSES.COLOR, "#808080")
+                .set(TASK_STATUSES.IS_INITIAL, true)
+                .set(TASK_STATUSES.IS_FINAL, false)
+                .set(TASK_STATUSES.IS_ACTIVE, true)
+                .returning(TASK_STATUSES.ID)
+                .fetchOne(TASK_STATUSES.ID);
+
+        inProgressStatusId = dsl.insertInto(TASK_STATUSES)
+                .set(TASK_STATUSES.PROJECT_ID, project.getId())
+                .set(TASK_STATUSES.NAME, "IN_PROGRESS")
+                .set(TASK_STATUSES.COLOR, "#0052CC")
+                .set(TASK_STATUSES.IS_INITIAL, false)
+                .set(TASK_STATUSES.IS_FINAL, false)
+                .set(TASK_STATUSES.IS_ACTIVE, true)
+                .returning(TASK_STATUSES.ID)
+                .fetchOne(TASK_STATUSES.ID);
+
+        doneStatusId = dsl.insertInto(TASK_STATUSES)
+                .set(TASK_STATUSES.PROJECT_ID, project.getId())
+                .set(TASK_STATUSES.NAME, "DONE")
+                .set(TASK_STATUSES.COLOR, "#36B37E")
+                .set(TASK_STATUSES.IS_INITIAL, false)
+                .set(TASK_STATUSES.IS_FINAL, true)
+                .set(TASK_STATUSES.IS_ACTIVE, true)
+                .returning(TASK_STATUSES.ID)
+                .fetchOne(TASK_STATUSES.ID);
+
+        // 6. Seed Active Sprint
         SprintsRecord sprintRecord = new SprintsRecord();
         sprintRecord.setProjectId(project.getId());
         sprintRecord.setSprintName("Sprint 1");
@@ -182,8 +221,8 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         sprintRecord.setStatus(SprintStatus.ACTIVE);
         activeSprint = sprintRepository.create(sprintRecord);
 
-        // 6. Seed Tasks for devUser
-        // 6a. Open Task
+        // 7. Seed Tasks for devUser
+        // 7a. Open Task (IN_PROGRESS — not final)
         TasksRecord t1 = new TasksRecord();
         t1.setTaskKey("DSH-" + System.currentTimeMillis() % 100000 + "-1");
         t1.setProjectId(project.getId());
@@ -191,13 +230,13 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         t1.setSummary("Open Task");
         t1.setTaskType(TaskType.TASK);
         t1.setPriority(TaskPriority.HIGH);
-        t1.setStatus(TaskStatus.IN_PROGRESS);
+        t1.setStatusId(inProgressStatusId);
         t1.setAssigneeId(devUser.getId());
         t1.setReporterId(pmUser.getId());
         t1.setDueDate(LocalDate.now().plusDays(3));
         openTask = taskRepository.create(t1);
 
-        // 6b. Completed Task
+        // 7b. Completed Task (DONE — is_final = true)
         TasksRecord t2 = new TasksRecord();
         t2.setTaskKey("DSH-" + System.currentTimeMillis() % 100000 + "-2");
         t2.setProjectId(project.getId());
@@ -205,25 +244,25 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
         t2.setSummary("Done Task");
         t2.setTaskType(TaskType.STORY);
         t2.setPriority(TaskPriority.LOW);
-        t2.setStatus(TaskStatus.DONE);
+        t2.setStatusId(doneStatusId);
         t2.setAssigneeId(devUser.getId());
         t2.setReporterId(pmUser.getId());
         doneTask = taskRepository.create(t2);
 
-        // 6c. Overdue Task
+        // 7c. Overdue Task (TODO — not final, past due date)
         TasksRecord t3 = new TasksRecord();
         t3.setTaskKey("DSH-" + System.currentTimeMillis() % 100000 + "-3");
         t3.setProjectId(project.getId());
         t3.setSummary("Overdue Task");
         t3.setTaskType(TaskType.BUG);
         t3.setPriority(TaskPriority.CRITICAL);
-        t3.setStatus(TaskStatus.TODO);
+        t3.setStatusId(todoStatusId);
         t3.setAssigneeId(devUser.getId());
         t3.setReporterId(pmUser.getId());
-        t3.setDueDate(LocalDate.now().minusDays(2)); // Overdue
+        t3.setDueDate(LocalDate.now().minusDays(2));
         overdueTask = taskRepository.create(t3);
 
-        // 7. Seed Worklog for devUser on openTask
+        // 8. Seed Worklog for devUser on openTask
         WorklogsRecord worklog = new WorklogsRecord();
         worklog.setTaskId(openTask.getId());
         worklog.setUserId(devUser.getId());
@@ -240,7 +279,7 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.myOpenTasks").value(2)) // IN_PROGRESS + TODO (Overdue)
-                .andExpect(jsonPath("$.data.myCompletedTasks").value(1)) // DONE
+                .andExpect(jsonPath("$.data.myCompletedTasks").value(1)) // DONE (is_final)
                 .andExpect(jsonPath("$.data.myOverdueTasks").value(1)) // Overdue Task
                 .andExpect(jsonPath("$.data.totalLoggedHours").value(4.5));
     }
@@ -255,7 +294,6 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.data.taskByStatus.IN_PROGRESS").value(1))
                 .andExpect(jsonPath("$.data.taskByStatus.DONE").value(1))
                 .andExpect(jsonPath("$.data.taskByStatus.TODO").value(1))
-                .andExpect(jsonPath("$.data.taskByStatus.TESTING").value(0))
                 .andExpect(jsonPath("$.data.taskByPriority.CRITICAL").value(1))
                 .andExpect(jsonPath("$.data.sprintProgress.sprintName").value("Sprint 1"))
                 .andExpect(jsonPath("$.data.sprintProgress.totalTasks").value(2))

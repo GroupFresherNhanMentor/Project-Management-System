@@ -74,7 +74,8 @@ public class SprintServiceImpl implements SprintService {
             throw new ProjectNotFoundException();
         }
 
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new SprintAccessDeniedException());
 
         SprintsRecord record = sprintMapper.toRecord(request);
@@ -101,7 +102,8 @@ public class SprintServiceImpl implements SprintService {
             throw new InvalidDateRangeException();
         }
 
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new SprintAccessDeniedException());
 
         sprintMapper.updateRecord(record, request);
@@ -129,7 +131,8 @@ public class SprintServiceImpl implements SprintService {
 
         validateStatusTransition(currentStatus, newStatus);
 
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new SprintAccessDeniedException());
 
         record.setStatus(newStatus);

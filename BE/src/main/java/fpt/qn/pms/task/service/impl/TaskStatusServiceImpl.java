@@ -6,9 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.tables.records.TaskStatusesRecord;
-import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.task.dto.CreateTaskStatusRequest;
 import fpt.qn.pms.task.dto.TaskStatusDto;
 import fpt.qn.pms.task.dto.UpdateTaskStatusRequest;
@@ -32,7 +30,7 @@ public class TaskStatusServiceImpl implements TaskStatusService {
 
     @Override
     @Transactional(readOnly = true)
-    @RequireProjectRole({ProjectRole.PM, ProjectRole.DEV, ProjectRole.TESTER})
+
     public List<TaskStatusDto> getByProject(UUID projectId, Boolean isInitial, Boolean isActive) {
         return taskStatusRepository.findAllByProjectId(projectId, isInitial, isActive)
                 .stream()
@@ -42,7 +40,7 @@ public class TaskStatusServiceImpl implements TaskStatusService {
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
+
     public TaskStatusDto create(UUID projectId, CreateTaskStatusRequest request) {
         if (Boolean.TRUE.equals(request.getIsInitial()) && Boolean.TRUE.equals(request.getIsFinal())) {
             throw new InvalidTaskStatusFlagsException();
@@ -60,7 +58,7 @@ public class TaskStatusServiceImpl implements TaskStatusService {
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
+
     public TaskStatusDto update(UUID projectId, UUID id, UpdateTaskStatusRequest request) {
         TaskStatusesRecord record = taskStatusRepository.findById(id)
                 .filter(r -> r.getProjectId().equals(projectId))
@@ -83,7 +81,7 @@ public class TaskStatusServiceImpl implements TaskStatusService {
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
+
     public void delete(UUID projectId, UUID id) {
         taskStatusRepository.findById(id)
                 .filter(r -> r.getProjectId().equals(projectId))

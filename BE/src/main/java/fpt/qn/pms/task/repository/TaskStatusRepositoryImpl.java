@@ -3,6 +3,7 @@ package fpt.qn.pms.task.repository;
 import static fpt.qn.pms.jooq.Tables.TASK_STATUSES;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.jooq.Condition;
@@ -46,6 +47,15 @@ public class TaskStatusRepositoryImpl extends BaseRepository<TaskStatusesRecord>
                 TASK_STATUSES.PROJECT_ID.eq(projectId)
                         .and(TASK_STATUSES.NAME.equalIgnoreCase(name))
                         .and(TASK_STATUSES.ID.ne(excludeId)));
+    }
+
+    @Override
+    public Optional<TaskStatusesRecord> findInitialByProjectId(UUID projectId) {
+        return dsl.selectFrom(TASK_STATUSES)
+                .where(TASK_STATUSES.PROJECT_ID.eq(projectId))
+                .and(TASK_STATUSES.IS_INITIAL.isTrue())
+                .and(TASK_STATUSES.IS_ACTIVE.isTrue())
+                .fetchOptional();
     }
 
     @Override

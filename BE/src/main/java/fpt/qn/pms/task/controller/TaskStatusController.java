@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,7 +38,8 @@ public class TaskStatusController {
     TaskStatusService taskStatusService;
 
     @GetMapping
-    @Operation(summary = "Get all task statuses for a project", description = "Optionally filter by isInitial and/or isActive. Omit parameters to return all statuses.")
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
+    @Operation(summary = "Get all task statuses for a project", description = "Optionally filter by isInitial and/or isActive.")
     public ResponseEntity<ApiResponse<List<TaskStatusDto>>> getByProject(
             @PathVariable UUID projectId,
             @RequestParam(required = false) Boolean isInitial,
@@ -46,7 +48,8 @@ public class TaskStatusController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a new task status", description = "Adds a custom status to the project's workflow.")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Create a new task status", description = "Adds a custom status to the project's workflow. PM only.")
     public ResponseEntity<ApiResponse<TaskStatusDto>> create(
             @PathVariable UUID projectId,
             @Valid @RequestBody CreateTaskStatusRequest request) {
@@ -55,7 +58,8 @@ public class TaskStatusController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update a task status")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Update a task status. PM only.")
     public ResponseEntity<ApiResponse<TaskStatusDto>> update(
             @PathVariable UUID projectId,
             @PathVariable UUID id,
@@ -64,7 +68,8 @@ public class TaskStatusController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a task status", description = "Removes the status from the project. Fails if tasks are still using it.")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Delete a task status. PM only.")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID projectId,
             @PathVariable UUID id) {
