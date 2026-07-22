@@ -584,6 +584,44 @@ class UserServiceTest extends BaseIntegrationTest {
                 .isInstanceOf(UserNotFoundException.class);
     }
 
+    @Test
+    void resetPasswordByAdmin_shouldHandleConcurrentResetsCorrectly() throws Exception {
+        CreateUserResponse created = userService.createUser(buildRequest("029"));
+        UUID userId = created.getUser().getId();
+
+        int threadCount = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+        List<ResetPasswordResponse> results = new ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    ResetPasswordResponse res = userService.resetPasswordByAdmin(userId);
+                    synchronized (results) {
+                        results.add(res);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        doneLatch.await(10, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        assertThat(results).hasSize(threadCount);
+        UsersRecord finalRecord = userRepository.findById(userId).orElseThrow();
+        boolean matchesAnyResultPassword = results.stream()
+                .anyMatch(r -> passwordEncoder.matches(r.getGeneratedPassword(), finalRecord.getPassword()));
+        assertThat(matchesAnyResultPassword).isTrue();
+    }
+
     private void setSecurityContext(String username, String role) {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(username, null,

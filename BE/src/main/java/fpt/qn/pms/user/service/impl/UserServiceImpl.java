@@ -142,7 +142,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public ResetPasswordResponse resetPasswordByAdmin(UUID id) {
-        UsersRecord record = userRepository.findById(id)
+        UsersRecord record = userRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new UserNotFoundException());
 
         String generatedPassword = passwordGenerator.generateSecurePassword();
