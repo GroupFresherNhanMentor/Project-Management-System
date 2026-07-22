@@ -36,8 +36,10 @@ import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
+import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.repository.UserRepository;
 
 class UserServiceTest extends BaseIntegrationTest {
@@ -553,6 +555,71 @@ class UserServiceTest extends BaseIntegrationTest {
         UserDto updated = userService.updateCurrentUser(req);
 
         assertThat(updated.getEmail()).isEqualTo("user027@test.com");
+    }
+
+    // ── resetPasswordByAdmin ──────────────────────────────────────────────────
+
+    @Test
+    void resetPasswordByAdmin_shouldGenerateNewPassword_andUpdateUserPasswordHash() {
+        CreateUserResponse created = userService.createUser(buildRequest("028"));
+        UUID userId = created.getUser().getId();
+        String initialGeneratedPassword = created.getGeneratedPassword();
+
+        ResetPasswordResponse resetRes = userService.resetPasswordByAdmin(userId);
+
+        assertThat(resetRes.getUserId()).isEqualTo(userId);
+        assertThat(resetRes.getUsername()).isEqualTo(created.getUser().getUsername());
+        assertThat(resetRes.getGeneratedPassword()).isNotBlank();
+        assertThat(resetRes.getGeneratedPassword()).isNotEqualTo(initialGeneratedPassword);
+
+        UsersRecord updatedRecord = userRepository.findById(userId).orElseThrow();
+        assertThat(passwordEncoder.matches(resetRes.getGeneratedPassword(), updatedRecord.getPassword())).isTrue();
+    }
+
+    @Test
+    void resetPasswordByAdmin_shouldThrowException_whenUserNotFound() {
+        UUID nonExistentId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> userService.resetPasswordByAdmin(nonExistentId))
+                .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    void resetPasswordByAdmin_shouldHandleConcurrentResetsCorrectly() throws Exception {
+        CreateUserResponse created = userService.createUser(buildRequest("029"));
+        UUID userId = created.getUser().getId();
+
+        int threadCount = 2;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+        List<ResetPasswordResponse> results = new ArrayList<>();
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    ResetPasswordResponse res = userService.resetPasswordByAdmin(userId);
+                    synchronized (results) {
+                        results.add(res);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        doneLatch.await(10, TimeUnit.SECONDS);
+        executor.shutdown();
+
+        assertThat(results).hasSize(threadCount);
+        UsersRecord finalRecord = userRepository.findById(userId).orElseThrow();
+        boolean matchesAnyResultPassword = results.stream()
+                .anyMatch(r -> passwordEncoder.matches(r.getGeneratedPassword(), finalRecord.getPassword()));
+        assertThat(matchesAnyResultPassword).isTrue();
     }
 
     private void setSecurityContext(String username, String role) {

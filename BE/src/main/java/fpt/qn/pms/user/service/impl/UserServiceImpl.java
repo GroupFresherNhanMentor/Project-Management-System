@@ -20,6 +20,7 @@ import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
@@ -136,6 +137,23 @@ public class UserServiceImpl implements UserService {
         record.setStatus(request.getStatus());
         userRepository.update(record);
         return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public ResetPasswordResponse resetPasswordByAdmin(UUID id) {
+        UsersRecord record = userRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        String generatedPassword = passwordGenerator.generateSecurePassword();
+        record.setPassword(passwordEncoder.encode(generatedPassword));
+        userRepository.update(record);
+
+        return ResetPasswordResponse.builder()
+                .userId(record.getId())
+                .username(record.getUsername())
+                .generatedPassword(generatedPassword)
+                .build();
     }
 
     @Override

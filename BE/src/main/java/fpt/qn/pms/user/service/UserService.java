@@ -10,6 +10,7 @@ import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 
 public interface UserService {
@@ -23,6 +24,8 @@ public interface UserService {
     UserDto updateUser(UUID id, UpdateUserRequest request);
 
     UserDto updateUserStatus(UUID id, UpdateUserStatusRequest request);
+
+    ResetPasswordResponse resetPasswordByAdmin(UUID id);
 
     UserDto getCurrentUser();
 
