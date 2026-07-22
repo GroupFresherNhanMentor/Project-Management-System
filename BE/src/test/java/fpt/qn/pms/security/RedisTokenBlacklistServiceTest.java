@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ class RedisTokenBlacklistServiceTest {
 
         blacklistService.blacklistToken("test-jwt-id", 60000);
 
-        verify(valueOperations).set(eq("token:blacklist:test-jwt-id"), eq("revoked"), eq(60000L), eq(TimeUnit.MILLISECONDS));
+        verify(valueOperations).set(eq("token:blacklist:test-jwt-id"), eq("revoked"), eq(Duration.ofMillis(60000)));
     }
 
     @Test

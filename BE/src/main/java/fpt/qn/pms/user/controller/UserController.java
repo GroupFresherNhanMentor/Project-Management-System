@@ -23,8 +23,12 @@ import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -34,24 +38,28 @@ import lombok.experimental.FieldDefaults;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Tag(name = "Users", description = "Endpoints for managing system users (FR-USER)")
 public class UserController {
 
     UserService userService;
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get current authenticated user profile")
     public ResponseEntity<ApiResponse<UserDto>> getCurrentUser() {
         return ResponseEntity.ok(ApiResponse.success(userService.getCurrentUser(), null));
     }
 
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Update current authenticated user profile")
     public ResponseEntity<ApiResponse<UserDto>> updateCurrentUser(@Valid @RequestBody UpdateCurrentUserRequest request) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateCurrentUser(request), null));
     }
 
     @GetMapping
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Get paginated list of users (Admin only)")
     public ResponseEntity<ApiResponse<PageResponse<UserDto>>> getUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) SysRole role,
@@ -65,19 +73,22 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Get user by ID (Admin only)")
     public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id), null));
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<UserDto>> createUser(@Valid @RequestBody CreateUserRequest request) {
-        UserDto created = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "User created successfully"));
+    @Operation(summary = "Create user with auto-generated username & password (Admin only)")
+    public ResponseEntity<ApiResponse<CreateUserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        CreateUserResponse response = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "User created successfully"));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Update user details (Admin only)")
     public ResponseEntity<ApiResponse<UserDto>> updateUser(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateUserRequest request) {
@@ -87,10 +98,21 @@ public class UserController {
 
     @PatchMapping("/{id}/lock")
     @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Lock or unlock user status (Admin only)")
     public ResponseEntity<ApiResponse<UserDto>> updateUserStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateUserStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.success(userService.updateUserStatus(id, request), null));
+    }
+
+    @PutMapping("/{id}/reset-password")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Reset user password with auto-generated password (Admin only)")
+    public ResponseEntity<ApiResponse<ResetPasswordResponse>> resetPassword(
+            @PathVariable UUID id) {
+
+        ResetPasswordResponse response = userService.resetPasswordByAdmin(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "User password reset successfully"));
     }
 }

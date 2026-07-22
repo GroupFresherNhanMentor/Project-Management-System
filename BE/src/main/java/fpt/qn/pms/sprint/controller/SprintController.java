@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
+import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.SprintStatus;
+import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.sprint.dto.CreateSprintRequest;
 import fpt.qn.pms.sprint.dto.SprintDto;
 import fpt.qn.pms.sprint.dto.UpdateSprintRequest;
@@ -63,8 +64,8 @@ public class SprintController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Create sprint", description = "Create a new sprint (admin only)")
+    @RequireProjectRole(ProjectRole.PM)
+    @Operation(summary = "Create sprint", description = "Create a new sprint (PM only)")
     public ResponseEntity<ApiResponse<SprintDto>> createSprint(
             @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Valid @RequestBody CreateSprintRequest request) {
@@ -76,8 +77,8 @@ public class SprintController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored (admin only)")
+    @RequireProjectRole(ProjectRole.PM)
+    @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored (PM only)")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprint(
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintRequest request) {
@@ -86,8 +87,8 @@ public class SprintController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    @Operation(summary = "Update sprint status", description = "Transition sprint status: PLANNED → ACTIVE → CLOSED (admin only). Only one ACTIVE sprint per project.")
+    @RequireProjectRole(ProjectRole.PM)
+    @Operation(summary = "Update sprint status", description = "Transition sprint status: PLANNED → ACTIVE → CLOSED (PM only). Only one ACTIVE sprint per project.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprintStatus(
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintStatusRequest request) {

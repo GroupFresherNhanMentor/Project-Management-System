@@ -50,7 +50,24 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   group-configs:
+    - group: auth
+      paths-to-match: /api/auth/**
+      packages-to-scan: fpt.qn.pms.auth
+    - group: users
+      paths-to-match: /api/users/**
+      packages-to-scan: fpt.qn.pms.user
     - group: tasks
-      paths-to-match: /api/tasks/**
+      paths-to-match:
+        - /api/tasks/**
+        - /api/projects/{projectId}/task-statuses/**
+        - /api/projects/{projectId}/task-workflow/**
       packages-to-scan: fpt.qn.pms.task
-
+    - group: sprints
+      paths-to-match: /api/projects/{projectId}/sprints/**
+      packages-to-scan: fpt.qn.pms.sprint
+    - group: worklogs
+      paths-to-match: /api/worklogs/**, /api/tasks/*/worklogs, /api/reports/worklog
+      packages-to-scan: fpt.qn.pms.worklog
+    - group: reports
+      paths-to-match: /api/reports/**
+      packages-to-scan: fpt.qn.pms.worklog

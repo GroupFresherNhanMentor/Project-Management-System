@@ -2,6 +2,7 @@ package fpt.qn.pms.task.controller;
 
 import java.util.UUID;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,11 +53,10 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success(task, null));
     }
 
-    @PostMapping("/search")
+    @GetMapping("/search")
     @Operation(summary = "Search Tasks with pagination and multi-criteria filters")
     public ResponseEntity<ApiResponse<PageResponse<TaskDto>>> searchTasks(
-            @RequestBody @Valid TaskSearchRequest request) {
-
+            @Valid TaskSearchRequest request) {
         PageResponse<TaskDto> result = taskService.searchTasks(request);
         return ResponseEntity.ok(ApiResponse.success(result, null));
     }

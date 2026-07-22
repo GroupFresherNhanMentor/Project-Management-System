@@ -1,44 +1,25 @@
 <a routerLink="/users" class="mb-5 inline-flex items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9;text-decoration:none">← Back to Users</a>
 
-<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:640px">
+<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:560px">
   <h2 class="mb-1 text-[18px] font-extrabold" style="color:#14161C">New User</h2>
-  <p class="mb-5 text-[12px]" style="color:#9AA1AC">Create a new system user (Administrator only)</p>
+  <p class="mb-5 text-[12px]" style="color:#9AA1AC">Username and password will be auto-generated</p>
 
   <div class="flex flex-col gap-4">
-
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Employee ID</label>
-        <input [(ngModel)]="employeeId" placeholder="e.g. EMP007" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-      </div>
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Username *</label>
-        <input [(ngModel)]="username" placeholder="e.g. john.doe" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-      </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Full Name *</label>
+      <input [(ngModel)]="fullName" placeholder="e.g. John Doe" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Full Name *</label>
-        <input [(ngModel)]="fullName" placeholder="John Doe" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-      </div>
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Email *</label>
-        <input [(ngModel)]="email" type="email" placeholder="john@waypoint.io" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-      </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Email *</label>
+      <input [(ngModel)]="email" type="email" placeholder="john@company.com" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Password *</label>
-        <input [(ngModel)]="password" type="password" placeholder="Min 8 characters" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-      </div>
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role</label>
-        <select [(ngModel)]="role" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
-          @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
-        </select>
-      </div>
+    <div style="max-width:200px">
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role</label>
+      <select [(ngModel)]="role" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
+        @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
+      </select>
     </div>
 
     <div class="flex gap-3 pt-2">
@@ -50,6 +31,42 @@
       >{{ submitting() ? 'Creating…' : 'Create User' }}</button>
       <a routerLink="/users" class="inline-flex items-center rounded-[8px] border px-6 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160;text-decoration:none">Cancel</a>
     </div>
-
   </div>
 </div>
+
+<!-- Credentials popup -->
+@if (result(); as r) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(20,22,28,0.4)">
+    <div class="w-full rounded-[14px] bg-white p-6" style="max-width:420px;box-shadow:0 20px 50px -20px rgba(20,24,40,0.3)">
+      <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background:#E4F5E9">
+        <span class="text-lg">✓</span>
+      </div>
+      <h3 class="mb-1 mt-3 text-[16px] font-extrabold" style="color:#14161C">User Created</h3>
+      <p class="mb-4 text-[12px]" style="color:#9AA1AC">Share these credentials with the user</p>
+
+      <div class="mb-4 rounded-[8px] p-4" style="background:#FAFBFC">
+        <div class="mb-3 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase" style="color:#9AA1AC">Username</p>
+            <p class="mt-0.5 text-[14px] font-bold font-mono" style="color:#14161C">{{ r.user.username }}</p>
+          </div>
+          <button (click)="copy(r.user.username)" class="rounded-[6px] border px-2.5 py-1 text-[11px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Copy</button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-semibold uppercase" style="color:#9AA1AC">Temporary Password</p>
+            <p class="mt-0.5 text-[14px] font-bold font-mono" style="color:#14161C">{{ r.generatedPassword }}</p>
+          </div>
+          <button (click)="copy(r.generatedPassword)" class="rounded-[6px] border px-2.5 py-1 text-[11px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Copy</button>
+        </div>
+      </div>
+
+      <div class="text-[12px]" style="color:#9AA1AC">
+        <p>Employee ID: <strong style="color:#4B5160">{{ r.user.employeeId }}</strong></p>
+        <p>Email: <strong style="color:#4B5160">{{ r.user.email }}</strong></p>
+      </div>
+
+      <button (click)="closeResult()" class="mt-4 w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white" style="background:#3B4FD9">Done</button>
+    </div>
+  </div>
+}
