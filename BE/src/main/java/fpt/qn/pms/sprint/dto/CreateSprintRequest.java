@@ -18,7 +18,6 @@ import lombok.experimental.FieldDefaults;
 @Schema(description = "Request body to create a new sprint")
 public class CreateSprintRequest {
 
-    @NotNull
     @Schema(hidden = true)
     UUID projectId;
 
