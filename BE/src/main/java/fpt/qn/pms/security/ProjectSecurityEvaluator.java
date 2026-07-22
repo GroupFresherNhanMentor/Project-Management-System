@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
+import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
@@ -61,6 +62,13 @@ public class ProjectSecurityEvaluator {
             return false;
         }
         return isMember(taskOpt.get().getProjectId());
+    }
+
+    public boolean isAdmin() {
+        return getCurrentUserId()
+                .flatMap(userId -> userRepository.findById(userId))
+                .map(user -> user.getRole() == SysRole.ADMIN)
+                .orElse(false);
     }
 
     public boolean isPmOfTask(UUID taskId) {

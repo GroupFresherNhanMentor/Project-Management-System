@@ -13,7 +13,7 @@ public interface SprintService {
 
     PageResponse<SprintDto> getSprintsByProject(UUID projectId, String keyword, SprintStatus status, int page, int size);
 
-    SprintDto getSprintById(UUID id);
+    SprintDto getSprintById(UUID projectId, UUID id);
 
     SprintDto createSprint(CreateSprintRequest request);
 

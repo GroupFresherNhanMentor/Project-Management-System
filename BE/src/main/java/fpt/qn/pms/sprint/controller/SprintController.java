@@ -57,10 +57,11 @@ public class SprintController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get sprint by ID", description = "Retrieve a single sprint by its ID")
+    @Operation(summary = "Get sprint by ID", description = "Retrieve a single sprint by its ID; available to ADMIN or active project member")
     public ResponseEntity<ApiResponse<SprintDto>> getSprintById(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(sprintService.getSprintById(id), null));
+        return ResponseEntity.ok(ApiResponse.success(sprintService.getSprintById(projectId, id), null));
     }
 
     @PostMapping
@@ -80,6 +81,7 @@ public class SprintController {
     @RequireProjectRole(ProjectRole.PM)
     @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored (PM only)")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprint(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintRequest request) {
 
@@ -90,6 +92,7 @@ public class SprintController {
     @RequireProjectRole(ProjectRole.PM)
     @Operation(summary = "Update sprint status", description = "Transition sprint status: PLANNED → ACTIVE → CLOSED (PM only). Only one ACTIVE sprint per project.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprintStatus(
+            @Parameter(description = "Project ID") @PathVariable UUID projectId,
             @Parameter(description = "Sprint ID") @PathVariable UUID id,
             @Valid @RequestBody UpdateSprintStatusRequest request) {
 

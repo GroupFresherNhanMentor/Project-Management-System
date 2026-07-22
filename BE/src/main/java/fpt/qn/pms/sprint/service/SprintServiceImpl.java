@@ -16,9 +16,13 @@ import fpt.qn.pms.sprint.dto.UpdateSprintStatusRequest;
 import fpt.qn.pms.sprint.exception.ActiveSprintAlreadyExistsException;
 import fpt.qn.pms.sprint.exception.InvalidDateRangeException;
 import fpt.qn.pms.sprint.exception.InvalidSprintStatusTransitionException;
+import fpt.qn.pms.project.exception.ProjectNotFoundException;
+import fpt.qn.pms.project.repository.ProjectRepository;
+import fpt.qn.pms.sprint.exception.SprintAccessDeniedException;
 import fpt.qn.pms.sprint.exception.SprintNotFoundException;
 import fpt.qn.pms.sprint.mapper.SprintMapper;
 import fpt.qn.pms.sprint.repository.SprintRepository;
+import fpt.qn.pms.security.ProjectSecurityEvaluator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,24 +34,31 @@ public class SprintServiceImpl implements SprintService {
 
     SprintRepository sprintRepository;
     SprintMapper sprintMapper;
+    ProjectSecurityEvaluator projectSecurityEvaluator;
+    ProjectRepository projectRepository;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<SprintDto> getSprintsByProject(UUID projectId, String keyword, SprintStatus status, int page, int size) {
+        // Check access: ADMIN or project member
+        if (!projectSecurityEvaluator.isAdmin() && !projectSecurityEvaluator.isMember(projectId)) {
+            throw new SprintAccessDeniedException();
+        }
         PaginationResult<SprintsRecord> result = sprintRepository.findAll(projectId, keyword, status, page, size);
-        return PageResponse.<SprintDto>builder()
-                .items(result.getItems().stream().map(sprintMapper::toDto).toList())
-                .totalElements(result.getTotal())
-                .totalPages((int) Math.ceil((double) result.getTotal() / size))
-                .pageNumber(page)
-                .pageSize(size)
-                .build();
+        return PageResponse.of(
+                result.getItems().stream().map(sprintMapper::toDto).toList(),
+                page, size, result.getTotal());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SprintDto getSprintById(UUID id) {
+    public SprintDto getSprintById(UUID projectId, UUID id) {
+        // Check access: ADMIN or project member
+        if (!projectSecurityEvaluator.isAdmin() && !projectSecurityEvaluator.isMember(projectId)) {
+            throw new SprintAccessDeniedException();
+        }
         return sprintRepository.findById(id)
+                .filter(record -> record.getProjectId().equals(projectId))
                 .map(sprintMapper::toDto)
                 .orElseThrow(() -> new SprintNotFoundException());
     }
@@ -57,6 +68,10 @@ public class SprintServiceImpl implements SprintService {
     public SprintDto createSprint(CreateSprintRequest request) {
         if (request.getEndDate().isBefore(request.getStartDate())) {
             throw new InvalidDateRangeException();
+        }
+
+        if (!projectRepository.existsById(request.getProjectId())) {
+            throw new ProjectNotFoundException();
         }
 
         SprintsRecord record = sprintMapper.toRecord(request);

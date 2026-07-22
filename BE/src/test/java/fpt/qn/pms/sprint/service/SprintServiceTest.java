@@ -117,7 +117,7 @@ class SprintServiceTest extends BaseIntegrationTest {
     void getSprintById_shouldReturnDto_whenExists() {
         SprintDto created = sprintService.createSprint(buildCreateRequest("Sprint 5"));
 
-        SprintDto found = sprintService.getSprintById(created.getId());
+        SprintDto found = sprintService.getSprintById(projectId, created.getId());
 
         assertThat(found.getId()).isEqualTo(created.getId());
         assertThat(found.getSprintName()).isEqualTo("Sprint 5");
@@ -125,7 +125,7 @@ class SprintServiceTest extends BaseIntegrationTest {
 
     @Test
     void getSprintById_shouldThrow_whenNotExists() {
-        assertThatThrownBy(() -> sprintService.getSprintById(UUID.randomUUID()))
+        assertThatThrownBy(() -> sprintService.getSprintById(projectId, UUID.randomUUID()))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Sprint not found");
     }

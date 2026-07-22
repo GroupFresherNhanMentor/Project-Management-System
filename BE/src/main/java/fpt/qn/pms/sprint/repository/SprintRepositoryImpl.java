@@ -2,6 +2,7 @@ package fpt.qn.pms.sprint.repository;
 
 import static fpt.qn.pms.jooq.Tables.SPRINTS;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +44,14 @@ public class SprintRepositoryImpl extends BaseRepository<SprintsRecord> implemen
         return dsl.fetchExists(SPRINTS,
                 SPRINTS.PROJECT_ID.eq(projectId)
                         .and(SPRINTS.STATUS.eq(SprintStatus.ACTIVE)));
+    }
+
+    @Override
+    public List<SprintsRecord> findActiveSprintsPastEndDate(LocalDate date) {
+        return dsl.selectFrom(SPRINTS)
+                .where(SPRINTS.STATUS.eq(SprintStatus.ACTIVE)
+                        .and(SPRINTS.END_DATE.lessThan(date)))
+                .fetch();
     }
 
     private Condition buildCondition(UUID projectId, String keyword, SprintStatus status) {
