@@ -26,7 +26,9 @@ export class Profile {
   email = this.user()?.email ?? '';
   saving = signal(false);
 
-  currentPassword = '';
+  showChangePassword = signal(false);
+
+  oldPassword = '';
   newPassword = '';
   confirmPassword = '';
   changingPass = signal(false);
@@ -53,8 +55,19 @@ export class Profile {
       });
   }
 
-  changePassword(): void {
-    if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
+  openChangePassword(): void {
+    this.oldPassword = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.showChangePassword.set(true);
+  }
+
+  closeChangePassword(): void {
+    this.showChangePassword.set(false);
+  }
+
+  doChangePassword(): void {
+    if (!this.oldPassword || !this.newPassword || !this.confirmPassword) {
       this.toast.error('All password fields are required.');
       return;
     }
@@ -67,14 +80,12 @@ export class Profile {
       return;
     }
     this.changingPass.set(true);
-    this.userService.updateCurrentUser({ password: this.newPassword })
+    this.userService.changePassword({ oldPassword: this.oldPassword, newPassword: this.newPassword })
       .pipe(finalize(() => this.changingPass.set(false)))
       .subscribe({
         next: () => {
           this.toast.success('Password changed successfully.');
-          this.currentPassword = '';
-          this.newPassword = '';
-          this.confirmPassword = '';
+          this.showChangePassword.set(false);
         },
         error: (err: HttpErrorResponse) => {
           this.toast.error(err.error?.message ?? 'Failed to change password.');
