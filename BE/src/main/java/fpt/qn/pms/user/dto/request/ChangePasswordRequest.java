@@ -19,10 +19,10 @@ import lombok.experimental.FieldDefaults;
 public class ChangePasswordRequest {
 
     @NotBlank
-    @Size(min = 6, max = 100)
+    @Size(min = 6, max = 72)
     String oldPassword;
 
     @NotBlank
-    @Size(min = 6, max = 100)
+    @Size(min = 6, max = 72)
     String newPassword;
 }
