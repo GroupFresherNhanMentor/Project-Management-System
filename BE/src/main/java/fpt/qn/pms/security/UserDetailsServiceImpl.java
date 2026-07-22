@@ -30,10 +30,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         boolean enabled = user.getStatus() == UserStatus.ACTIVE;
 
-        return User.withUsername(user.getUsername())
+        return UserPrincipal.builder()
+                .id(user.getId())
+                .username(user.getUsername())
                 .password(user.getPassword())
-                .disabled(!enabled)
-                .accountLocked(!enabled)
+                .enabled(enabled)
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getLiteral())))
                 .build();
     }
