@@ -2,6 +2,7 @@ package fpt.qn.pms.projectmember.service;
 
 import static fpt.qn.pms.jooq.Tables.PROJECT_MEMBERS;
 import static fpt.qn.pms.jooq.Tables.PROJECTS;
+import static fpt.qn.pms.jooq.Tables.TASKS;
 import static fpt.qn.pms.jooq.Tables.USERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,6 +25,9 @@ import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
+import fpt.qn.pms.jooq.enums.TaskPriority;
+import fpt.qn.pms.jooq.enums.TaskStatus;
+import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
@@ -31,7 +35,11 @@ import fpt.qn.pms.projectmember.dto.response.ProjectMemberCandidateDto;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAccessDeniedException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAlreadyActiveException;
+import fpt.qn.pms.projectmember.exception.LastProjectManagerRemovalForbiddenException;
+import fpt.qn.pms.projectmember.exception.ProjectMemberHasAssignedTasksException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberNotFoundException;
+import fpt.qn.pms.projectmember.exception.ProjectMemberRemovalForbiddenException;
+import fpt.qn.pms.projectmember.exception.ProjectMemberUserInactiveException;
 
 class ProjectMemberServiceTest extends BaseIntegrationTest {
 
@@ -46,6 +54,7 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     UsersRecord developer;
     UsersRecord candidate;
     UUID projectId;
+    UUID projectManagerMemberId;
     UUID developerMemberId;
 
     @BeforeEach
@@ -55,7 +64,8 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
         developer = insertUser("member-dev", SysRole.USER);
         candidate = insertUser("member-candidate", SysRole.USER);
         projectId = insertProject("MEMBER");
-        insertMembership(projectId, projectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        projectManagerMemberId = insertMembership(
+                projectId, projectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
         developerMemberId = insertMembership(
                 projectId, developer.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
     }
@@ -110,6 +120,20 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     }
 
     @Test
+    void addMember_shouldRejectLockedUser() {
+        dsl.update(USERS)
+                .set(USERS.STATUS, UserStatus.LOCKED)
+                .where(USERS.ID.eq(candidate.getId()))
+                .execute();
+        authenticate(admin.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.addMember(
+                projectId, request(candidate.getId(), ProjectRole.TESTER)))
+                .isInstanceOf(ProjectMemberUserInactiveException.class)
+                .hasMessage("Only active users can be added to a project");
+    }
+
+    @Test
     void addMember_shouldReactivateInactiveMembershipAndUpdateRole() {
         UUID inactiveMemberId = insertMembership(
                 projectId, candidate.getId(), ProjectRole.DEV, ProjectMemberStatus.INACTIVE);
@@ -134,6 +158,96 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
                 .where(PROJECT_MEMBERS.ID.eq(developerMemberId))
                 .fetchOne(PROJECT_MEMBERS.STATUS))
                 .isEqualTo(ProjectMemberStatus.INACTIVE);
+    }
+
+    @Test
+    void removeMember_shouldRejectProjectManagerRemovingSelf() {
+        authenticate(projectManager.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, projectManagerMemberId))
+                .isInstanceOf(ProjectMemberRemovalForbiddenException.class)
+                .hasMessage("You cannot remove yourself from the project");
+    }
+
+    @Test
+    void removeMember_shouldRejectProjectManagerRemovingAnotherProjectManager() {
+        UsersRecord otherProjectManager = insertUser("member-other-pm", SysRole.USER);
+        UUID otherPmMemberId = insertMembership(
+                projectId, otherProjectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        authenticate(projectManager.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, otherPmMemberId))
+                .isInstanceOf(ProjectMemberRemovalForbiddenException.class)
+                .hasMessage("A project manager cannot remove another project manager");
+    }
+
+    @Test
+    void removeMember_shouldAllowAdministratorRemovingProjectManager() {
+        UsersRecord otherProjectManager = insertUser("member-admin-removable-pm", SysRole.USER);
+        insertMembership(projectId, otherProjectManager.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        authenticate(admin.getUsername());
+
+        projectMemberService.removeMember(projectId, projectManagerMemberId);
+
+        assertThat(dsl.select(PROJECT_MEMBERS.STATUS)
+                .from(PROJECT_MEMBERS)
+                .where(PROJECT_MEMBERS.ID.eq(projectManagerMemberId))
+                .fetchOne(PROJECT_MEMBERS.STATUS))
+                .isEqualTo(ProjectMemberStatus.INACTIVE);
+    }
+
+    @Test
+    void removeMember_shouldRejectRemovingLastActiveProjectManager() {
+        authenticate(admin.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, projectManagerMemberId))
+                .isInstanceOf(LastProjectManagerRemovalForbiddenException.class)
+                .hasMessage("A project must have at least one active project manager");
+    }
+
+    @Test
+    void removeMember_shouldRejectMemberWithAssignedTasks() {
+        insertTask(developer.getId(), TaskStatus.TODO);
+        authenticate(projectManager.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, developerMemberId))
+                .isInstanceOf(ProjectMemberHasAssignedTasksException.class)
+                .hasMessage("Cannot remove a member who is assigned to tasks. "
+                        + "Transfer or unassign the tasks first");
+    }
+
+    @Test
+    void removeMember_shouldRejectMemberWithDoneAssignedTasks() {
+        insertTask(developer.getId(), TaskStatus.DONE);
+        authenticate(projectManager.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, developerMemberId))
+                .isInstanceOf(ProjectMemberHasAssignedTasksException.class)
+                .hasMessage("Cannot remove a member who is assigned to tasks. "
+                        + "Transfer or unassign the tasks first");
+    }
+
+    @Test
+    void removeMember_shouldRejectAdministratorRemovingAnotherAdministrator() {
+        UsersRecord otherAdmin = insertUser("member-other-admin", SysRole.ADMIN);
+        UUID otherAdminMemberId = insertMembership(
+                projectId, otherAdmin.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        authenticate(admin.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, otherAdminMemberId))
+                .isInstanceOf(ProjectMemberRemovalForbiddenException.class)
+                .hasMessage("An administrator cannot be removed from a project");
+    }
+
+    @Test
+    void removeMember_shouldRejectAdministratorRemovingSelf() {
+        UUID adminMemberId = insertMembership(
+                projectId, admin.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        authenticate(admin.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, adminMemberId))
+                .isInstanceOf(ProjectMemberRemovalForbiddenException.class)
+                .hasMessage("You cannot remove yourself from the project");
     }
 
     @Test
@@ -193,6 +307,21 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
                 .set(PROJECT_MEMBERS.STATUS, status)
                 .returning(PROJECT_MEMBERS.ID)
                 .fetchOne(PROJECT_MEMBERS.ID);
+    }
+
+    private void insertTask(UUID assigneeId, TaskStatus taskStatus) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        dsl.insertInto(TASKS)
+                .set(TASKS.TASK_KEY, "MEM-" + suffix)
+                .set(TASKS.PROJECT_ID, projectId)
+                .set(TASKS.SUMMARY, "Member assignment test task")
+                .set(TASKS.TASK_TYPE, TaskType.TASK)
+                .set(TASKS.PRIORITY, TaskPriority.MEDIUM)
+                .set(TASKS.STATUS, taskStatus)
+                .set(TASKS.ASSIGNEE_ID, assigneeId)
+                .set(TASKS.REPORTER_ID, projectManager.getId())
+                .set(TASKS.CREATED_BY, projectManager.getId())
+                .execute();
     }
 
     private void authenticate(String username) {

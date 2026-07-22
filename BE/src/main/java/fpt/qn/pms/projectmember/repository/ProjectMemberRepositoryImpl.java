@@ -129,6 +129,7 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
                         USERS.EMPLOYEE_ID,
                         USERS.FULL_NAME,
                         USERS.EMAIL,
+                        USERS.ROLE,
                         PROJECT_MEMBERS.PROJECT_ROLE,
                         PROJECT_MEMBERS.STATUS,
                         PROJECT_MEMBERS.CREATED_AT)
@@ -145,6 +146,7 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
                 record.get(USERS.EMPLOYEE_ID),
                 record.get(USERS.FULL_NAME),
                 record.get(USERS.EMAIL),
+                record.get(USERS.ROLE),
                 record.get(PROJECT_MEMBERS.PROJECT_ROLE),
                 record.get(PROJECT_MEMBERS.STATUS),
                 record.get(PROJECT_MEMBERS.CREATED_AT));

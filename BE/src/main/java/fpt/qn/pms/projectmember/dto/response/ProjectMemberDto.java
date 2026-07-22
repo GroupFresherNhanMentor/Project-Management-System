@@ -25,6 +25,7 @@ public class ProjectMemberDto {
     String employeeId;
     String userFullName;
     String email;
+    String systemRole;
     String projectRole;
     String status;
     OffsetDateTime createdAt;

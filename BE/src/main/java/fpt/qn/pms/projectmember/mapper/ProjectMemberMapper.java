@@ -15,6 +15,7 @@ public interface ProjectMemberMapper {
 
     @Mapping(target = "projectRole", expression = "java(details.projectRole().getLiteral())")
     @Mapping(target = "status", expression = "java(details.status().getLiteral())")
+    @Mapping(target = "systemRole", expression = "java(details.systemRole().getLiteral())")
     ProjectMemberDto toDto(ProjectMemberDetails details);
 
     @Mapping(target = "id", ignore = true)

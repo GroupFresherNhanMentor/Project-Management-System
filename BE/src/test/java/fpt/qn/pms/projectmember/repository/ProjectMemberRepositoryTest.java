@@ -70,6 +70,7 @@ class ProjectMemberRepositoryTest extends BaseIntegrationTest {
         assertThat(details.employeeId()).startsWith("EMP-PM-");
         assertThat(details.userFullName()).isEqualTo("PM User");
         assertThat(details.email()).contains("pm-");
+        assertThat(details.systemRole()).isEqualTo(SysRole.USER);
         assertThat(details.projectRole()).isEqualTo(ProjectRole.PM);
     }
 
