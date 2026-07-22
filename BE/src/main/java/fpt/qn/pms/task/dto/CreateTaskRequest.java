@@ -16,6 +16,9 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateTaskRequest {
 
+    @NotNull(message = "Task key is required")
+    String taskKey;
+
     @NotNull(message = "Project ID is required")
     UUID projectId;
 

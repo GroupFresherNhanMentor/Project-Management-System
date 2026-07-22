@@ -10,6 +10,7 @@ import fpt.qn.pms.common.exception.NotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
 import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.TaskStatus;
+import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
@@ -53,19 +54,24 @@ public class TaskServiceImpl implements TaskService {
         UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        // 1. Retrieve Project and generate Task Key
-        ProjectsRecord project = projectRepository.findById(request.getProjectId())
+        if (request.getAssigneeId() ==null){
+            projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ProjectNotFoundException());
-
-        int nextNum = taskRepository.getNextTaskNumber(request.getProjectId());
-        String taskKey = project.getProjectCode() + "-" + nextNum;
+        }
+        else{
+            boolean isMember = projectMemberRepository.findByProjectIdAndUserId(request.getProjectId(), request.getAssigneeId())
+                .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
+                .orElse(false);
+            if (!isMember) {
+                throw new AssigneeNotInProjectException();
+            }
+        }
+ 
 
         // 3. Save TasksRecord
         TasksRecord record = taskMapper.toRecord(request);
 
         record.setReporterId(currentUserId);
-
-        record.setTaskKey(taskKey);
         record.setStatus(TaskStatus.TODO);
         record.setCreatedBy(currentUserId);
         record.setUpdatedBy(currentUserId);
@@ -130,14 +136,6 @@ public class TaskServiceImpl implements TaskService {
                 TaskStatus oldStatus = task.getStatus();
                 TaskStatus newStatus = request.getStatus();
                 boolean validTransition = false;
-                // if (oldStatus == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS)
-                // validTransition = true;
-                // else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TESTING)
-                // validTransition = true;
-                // else if (oldStatus == TaskStatus.TESTING && newStatus == TaskStatus.DONE)
-                // validTransition = true;
-                // else if (oldStatus == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.TODO)
-                // validTransition = true;
 
                 if (!validTransition) {
                     throw new InvalidTaskStatusTransitionException(
