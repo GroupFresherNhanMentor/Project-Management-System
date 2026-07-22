@@ -47,4 +47,22 @@ public class OpenApiConfig {
                 .packagesToScan("fpt.qn.pms.task")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi activityApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("activities")
+                .pathsToMatch("/api/tasks/{taskId}/activities/**", "/api/tasks/{taskId}/activities")
+                .packagesToScan("fpt.qn.pms.activity")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi dashboardApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("dashboard")
+                .pathsToMatch("/api/dashboard/**")
+                .packagesToScan("fpt.qn.pms.dashboard")
+                .build();
+    }
 }
