@@ -7,7 +7,6 @@ import { ProjectMemberDto } from '../../../../core/models/project-member.model';
 import { ProjectRole } from '../../../../core/models/api.model';
 import { AuthService } from '../../../../core/services/auth';
 import { ProjectService } from '../../../../core/services/project';
-import { ProjectContextService } from '../../../../core/services/project-context';
 import { ToastService } from '../../../../core/services/toast';
 import { InitialsPipe } from '../../../../shared/pipes/initials.pipe';
 
@@ -20,10 +19,8 @@ export class MemberList {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly projectService = inject(ProjectService);
-  private readonly projectContext = inject(ProjectContextService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
-  private loadedProjectId: string | null = null;
 
   readonly members = signal<ProjectMemberDto[]>([]);
   readonly projectId = signal<string | null>(null);
@@ -40,17 +37,18 @@ export class MemberList {
   keyword = '';
 
   constructor() {
-    effect(() => {
-      const id = this.route.snapshot.queryParamMap.get('projectId')
-        ?? this.projectContext.selectedProjectId();
-      if (id && id !== this.loadedProjectId) {
-        this.loadedProjectId = id;
+    // Read projectId from route: /projects/:id/members
+    let r: ActivatedRoute | null = this.route;
+    while (r) {
+      const id = r.snapshot.paramMap.get('id');
+      if (id) {
         this.projectId.set(id);
-        this.keyword = '';
         this.resolveCurrentMembership(id);
         this.load(id, 0);
+        break;
       }
-    });
+      r = r.parent;
+    }
   }
 
   load(projectId = this.projectId(), page = this.page()): void {
@@ -92,7 +90,7 @@ export class MemberList {
   }
 
   newMember(): void {
-    void this.router.navigate(['/members/new'], { queryParams: { projectId: this.projectId() } });
+    void this.router.navigate(['new'], { relativeTo: this.route });
   }
 
   removeMember(member: ProjectMemberDto): void {
@@ -145,7 +143,6 @@ export class MemberList {
     const currentUser = this.authService.getCurrentUser();
     if (currentUser?.role === 'ADMIN') {
       this.currentProjectRole.set(null);
-      this.projectContext.setCurrentUserRole(null);
       this.canManage.set(true);
       return;
     }
@@ -154,12 +151,10 @@ export class MemberList {
       next: membership => {
         const role = membership.status === 'ACTIVE' ? membership.projectRole : null;
         this.currentProjectRole.set(role);
-        this.projectContext.setCurrentUserRole(role);
         this.canManage.set(role === 'PM');
       },
       error: () => {
         this.currentProjectRole.set(null);
-        this.projectContext.setCurrentUserRole(null);
         this.canManage.set(false);
       },
     });

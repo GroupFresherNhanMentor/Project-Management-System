@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +38,7 @@ public class CommentController {
     CommentService commentService;
 
     @PostMapping("/tasks/{taskId}/comments")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasRole('ADMIN')")
     @Operation(summary = "Add a comment to a task (FR-CMT-01)")
     public ResponseEntity<ApiResponse<CommentDto>> createComment(
             @PathVariable UUID taskId,
@@ -47,6 +49,7 @@ public class CommentController {
     }
 
     @GetMapping("/tasks/{taskId}/comments")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasRole('ADMIN')")
     @Operation(summary = "Get paginated comments for a task (FR-CMT-02)")
     public ResponseEntity<ApiResponse<PageResponse<CommentDto>>> getCommentsByTaskId(
             @PathVariable UUID taskId,

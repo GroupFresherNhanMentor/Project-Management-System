@@ -6,7 +6,6 @@ import { finalize } from 'rxjs';
 import { ProjectRole } from '../../../../core/models/api.model';
 import { ProjectMemberCandidateDto } from '../../../../core/models/project-member.model';
 import { ProjectService } from '../../../../core/services/project';
-import { ProjectContextService } from '../../../../core/services/project-context';
 import { ToastService } from '../../../../core/services/toast';
 
 @Component({
@@ -18,14 +17,10 @@ export class MemberNew implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly projectService = inject(ProjectService);
-  private readonly projectContext = inject(ProjectContextService);
   private readonly toast = inject(ToastService);
 
   readonly roles: ProjectRole[] = ['PM', 'DEV', 'TESTER'];
-  readonly projectId = signal<string | null>(
-    this.route.snapshot.queryParamMap.get('projectId')
-      ?? this.projectContext.selectedProjectId(),
-  );
+  readonly projectId = signal<string | null>(null);
   readonly candidates = signal<ProjectMemberCandidateDto[]>([]);
   readonly loadingUsers = signal(false);
   readonly userLoadError = signal<string | null>(null);
@@ -39,8 +34,23 @@ export class MemberNew implements OnInit {
   role: ProjectRole = 'DEV';
   readonly submitting = signal(false);
 
+  constructor() {
+    const id = this.resolveProjectId();
+    if (id) this.projectId.set(id);
+  }
+
   ngOnInit(): void {
     this.loadCandidates();
+  }
+
+  private resolveProjectId(): string | null {
+    let r: ActivatedRoute | null = this.route;
+    while (r) {
+      const id = r.snapshot.paramMap.get('id');
+      if (id) return id;
+      r = r.parent;
+    }
+    return null;
   }
 
   loadCandidates(page = this.candidatePage()): void {
@@ -104,7 +114,7 @@ export class MemberNew implements OnInit {
     }).pipe(finalize(() => this.submitting.set(false))).subscribe({
       next: () => {
         this.toast.success('Member added.');
-        void this.router.navigate(['/members'], { queryParams: { projectId } });
+        void this.router.navigate(['../../members'], { relativeTo: this.route });
       },
       error: (error: HttpErrorResponse) =>
         this.toast.error(error.error?.message ?? 'Unable to add member.'),
@@ -112,6 +122,6 @@ export class MemberNew implements OnInit {
   }
 
   cancel(): void {
-    void this.router.navigate(['/members'], { queryParams: { projectId: this.projectId() } });
+    void this.router.navigate(['../../members'], { relativeTo: this.route });
   }
 }
