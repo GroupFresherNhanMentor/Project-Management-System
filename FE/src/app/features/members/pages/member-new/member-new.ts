@@ -29,8 +29,13 @@ export class MemberNew implements OnInit {
   readonly candidates = signal<ProjectMemberCandidateDto[]>([]);
   readonly loadingUsers = signal(false);
   readonly userLoadError = signal<string | null>(null);
+  readonly candidatePage = signal(0);
+  readonly candidateTotalPages = signal(0);
+  readonly candidateTotalElements = signal(0);
+  readonly candidatePageSize = 10;
 
   userId = '';
+  candidateKeyword = '';
   role: ProjectRole = 'DEV';
   readonly submitting = signal(false);
 
@@ -38,7 +43,7 @@ export class MemberNew implements OnInit {
     this.loadCandidates();
   }
 
-  loadCandidates(): void {
+  loadCandidates(page = this.candidatePage()): void {
     const projectId = this.projectId();
     if (!projectId) {
       this.userLoadError.set('No project selected.');
@@ -47,15 +52,44 @@ export class MemberNew implements OnInit {
 
     this.loadingUsers.set(true);
     this.userLoadError.set(null);
-    this.projectService.getMemberCandidates(projectId)
+    this.projectService.getMemberCandidates(
+      projectId,
+      page,
+      this.candidatePageSize,
+      this.candidateKeyword.trim() || undefined,
+    )
       .pipe(finalize(() => this.loadingUsers.set(false)))
       .subscribe({
-        next: page => this.candidates.set(page.items),
+        next: result => {
+          this.candidates.set(result.items);
+          this.candidatePage.set(result.pageNumber);
+          this.candidateTotalPages.set(result.totalPages);
+          this.candidateTotalElements.set(result.totalElements);
+          if (!result.items.some(candidate => candidate.id === this.userId)) {
+            this.userId = '';
+          }
+        },
         error: (error: HttpErrorResponse) => {
           this.candidates.set([]);
           this.userLoadError.set(error.error?.message ?? 'Unable to load available users.');
         },
       });
+  }
+
+  applyCandidateSearch(): void {
+    this.loadCandidates(0);
+  }
+
+  previousCandidatePage(): void {
+    if (this.candidatePage() > 0) {
+      this.loadCandidates(this.candidatePage() - 1);
+    }
+  }
+
+  nextCandidatePage(): void {
+    if (this.candidatePage() + 1 < this.candidateTotalPages()) {
+      this.loadCandidates(this.candidatePage() + 1);
+    }
   }
 
   submit(): void {

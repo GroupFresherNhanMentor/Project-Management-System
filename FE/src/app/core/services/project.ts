@@ -39,19 +39,33 @@ export class ProjectService {
     return this.http.put<ApiResponse<ProjectDto>>(API.projects.byId(id), body).pipe(map(r => r.data));
   }
 
-  getMembers(projectId: string, page = 0, size = 20): Observable<PageResponse<ProjectMemberDto>> {
-    const params = new HttpParams().set('page', page).set('size', size);
+  getMembers(
+    projectId: string,
+    page = 0,
+    size = 20,
+    keyword?: string,
+  ): Observable<PageResponse<ProjectMemberDto>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (keyword) params = params.set('keyword', keyword);
     return this.http
       .get<ApiResponse<PageResponse<ProjectMemberDto>>>(API.projects.members(projectId), { params })
+      .pipe(map(r => r.data));
+  }
+
+  getCurrentMember(projectId: string): Observable<ProjectMemberDto> {
+    return this.http
+      .get<ApiResponse<ProjectMemberDto>>(API.projects.currentMember(projectId))
       .pipe(map(r => r.data));
   }
 
   getMemberCandidates(
     projectId: string,
     page = 0,
-    size = 100,
+    size = 20,
+    keyword?: string,
   ): Observable<PageResponse<ProjectMemberCandidateDto>> {
-    const params = new HttpParams().set('page', page).set('size', size);
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (keyword) params = params.set('keyword', keyword);
     return this.http
       .get<ApiResponse<PageResponse<ProjectMemberCandidateDto>>>(
         API.projects.memberCandidates(projectId),

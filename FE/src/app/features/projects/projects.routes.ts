@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from '../../core/guards/admin-guard';
 
 export const PROJECTS_ROUTES: Routes = [
   {
@@ -9,12 +10,14 @@ export const PROJECTS_ROUTES: Routes = [
   },
   {
     path: 'new',
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./pages/project-new/project-new').then(m => m.ProjectNew),
     data: { title: 'New Project' },
   },
   {
     path: ':id/edit',
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./pages/project-edit/project-edit').then(m => m.ProjectEdit),
     data: { title: 'Edit Project' },

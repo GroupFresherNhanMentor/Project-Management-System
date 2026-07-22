@@ -74,13 +74,34 @@ describe('ProjectService', () => {
     };
     let actual: PageResponse<ProjectMemberDto> | undefined;
 
-    service.getMembers(project.id, 0, 20).subscribe(result => actual = result);
+    service.getMembers(project.id, 0, 20, 'Project Member').subscribe(result => actual = result);
 
     const request = http.expectOne(req => req.url === `/api/projects/${project.id}/members`);
     expect(request.request.method).toBe('GET');
     expect(request.request.params.get('page')).toBe('0');
+    expect(request.request.params.get('size')).toBe('20');
+    expect(request.request.params.get('keyword')).toBe('Project Member');
     request.flush({ success: true, message: null, data: page });
     expect(actual).toEqual(page);
+  });
+
+  it('loads the current project membership', () => {
+    const member: ProjectMemberDto = {
+      id: '598a36a2-4957-44c8-85d3-2a75badbdb70',
+      projectId: project.id,
+      userId: '76606760-8893-4461-986c-41e6784e3595',
+      userFullName: 'Project Manager',
+      projectRole: 'PM',
+      status: 'ACTIVE',
+    };
+    let actual: ProjectMemberDto | undefined;
+
+    service.getCurrentMember(project.id).subscribe(result => actual = result);
+
+    const request = http.expectOne(`/api/projects/${project.id}/members/me`);
+    expect(request.request.method).toBe('GET');
+    request.flush({ success: true, message: null, data: member });
+    expect(actual).toEqual(member);
   });
 
   it('loads available project member candidates', () => {
@@ -95,14 +116,15 @@ describe('ProjectService', () => {
     };
     let actual: PageResponse<ProjectMemberCandidateDto> | undefined;
 
-    service.getMemberCandidates(project.id).subscribe(result => actual = result);
+    service.getMemberCandidates(project.id, 0, 10, 'Available').subscribe(result => actual = result);
 
     const request = http.expectOne(
       req => req.url === `/api/projects/${project.id}/members/candidates`,
     );
     expect(request.request.method).toBe('GET');
     expect(request.request.params.get('page')).toBe('0');
-    expect(request.request.params.get('size')).toBe('100');
+    expect(request.request.params.get('size')).toBe('10');
+    expect(request.request.params.get('keyword')).toBe('Available');
     request.flush({ success: true, message: null, data: page });
     expect(actual).toEqual(page);
   });
