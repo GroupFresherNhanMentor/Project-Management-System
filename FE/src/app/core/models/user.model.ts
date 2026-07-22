@@ -44,3 +44,9 @@ export interface UpdateCurrentUserRequest {
   email?: string;
   password?: string;
 }
+
+export interface ResetPasswordResponse {
+  userId: string;
+  username: string;
+  generatedPassword: string;
+}

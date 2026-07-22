@@ -7,7 +7,7 @@ import { finalize } from 'rxjs';
 
 import { ToastService } from '../../../../core/services/toast';
 import { UserService } from '../../../../core/services/user';
-import type { UserDto } from '../../../../core/models/user.model';
+import type { UserDto, ResetPasswordResponse } from '../../../../core/models/user.model';
 import type { SystemRole, UserStatus } from '../../../../core/models/api.model';
 
 @Component({
@@ -35,6 +35,10 @@ export class UserList implements OnInit {
   editRole: SystemRole = 'USER';
 
   readonly roles: SystemRole[] = ['ADMIN', 'USER'];
+
+  resetTarget: UserDto | null = null;
+  resetResult = signal<ResetPasswordResponse | null>(null);
+  resetting = signal(false);
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -104,6 +108,42 @@ export class UserList implements OnInit {
       error: (err: HttpErrorResponse) => {
         this.toast.error(err.error?.message ?? 'Failed to update user status.');
       },
+    });
+  }
+
+  confirmReset(u: UserDto): void {
+    this.resetTarget = u;
+  }
+
+  cancelReset(): void {
+    this.resetTarget = null;
+  }
+
+  doReset(): void {
+    if (!this.resetTarget) return;
+    const id = this.resetTarget.id;
+    this.resetting.set(true);
+    this.userService.resetPassword(id)
+      .pipe(finalize(() => this.resetting.set(false)))
+      .subscribe({
+        next: (res) => {
+          this.resetTarget = null;
+          this.resetResult.set(res);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.toast.error(err.error?.message ?? 'Failed to reset password.');
+          this.resetTarget = null;
+        },
+      });
+  }
+
+  closeResetResult(): void {
+    this.resetResult.set(null);
+  }
+
+  copy(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success('Copied!');
     });
   }
 }
