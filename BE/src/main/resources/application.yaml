@@ -36,6 +36,13 @@ app:
     secret: ${JWT_SECRET:k8wT5KF1ZrFojvpXJbhXOcYVv44lCKvOwQudCRY6HjxxTGH3WQbQDHEFZjhS+mCE}
     access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}     # 15 minutes
     refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
+  seed:
+    admin:
+      username: ${SEED_ADMIN_USERNAME:admin}
+      password: ${SEED_ADMIN_PASSWORD:admin123}
+      full-name: ${SEED_ADMIN_FULL_NAME:Project Manager Admin}
+      email: ${SEED_ADMIN_EMAIL:admin@pms.com}
+      employee-id: ${SEED_ADMIN_EMPLOYEE_ID:EMP-001}
 
 logging:
   level:
