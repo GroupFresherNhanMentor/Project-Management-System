@@ -1,6 +1,5 @@
 package fpt.qn.pms.comment.service;
 
-import static fpt.qn.pms.jooq.Tables.TASK_ACTIVITIES;
 import static fpt.qn.pms.jooq.Tables.USERS;
 
 import java.util.List;
@@ -20,6 +19,7 @@ import fpt.qn.pms.comment.dto.CommentDto;
 import fpt.qn.pms.comment.dto.CommentSearchRequest;
 import fpt.qn.pms.comment.dto.CreateCommentRequest;
 import fpt.qn.pms.comment.dto.UpdateCommentRequest;
+import fpt.qn.pms.comment.exception.CommentNotOwnedException;
 import fpt.qn.pms.comment.exception.CommentNotFoundException;
 import fpt.qn.pms.comment.mapper.CommentMapper;
 import fpt.qn.pms.comment.repository.CommentRepository;
@@ -118,21 +118,54 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentDto updateComment(UUID id, UpdateCommentRequest request) {
+        // Single read — validate ownership in one pass
         TaskCommentsRecord record = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException());
 
-        commentMapper.updateRecord(record, request);
+        var currentUser = getCurrentUser();
+        if (!currentUser.getId().equals(record.getCreatedBy())) {
+            throw new CommentNotOwnedException();
+        }
 
+        commentMapper.updateRecord(record, request);
         TaskCommentsRecord saved = commentRepository.update(record);
+
+        // Record activity
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                saved.getTaskId(),
+                currentUser.getId(),
+                ActivityAction.COMMENT_ADDED,
+                "Comment updated",
+                saved.getContent()
+        ));
+
         return toDtoWithUserName(saved);
     }
 
     @Override
     @Transactional
     public void deleteComment(UUID id) {
-        commentRepository.findById(id)
+        TaskCommentsRecord record = commentRepository.findById(id)
                 .orElseThrow(() -> new CommentNotFoundException());
+
+        var currentUser = getCurrentUser();
+        if (!currentUser.getId().equals(record.getCreatedBy())) {
+            throw new CommentNotOwnedException();
+        }
+
+        UUID taskId = record.getTaskId();
+        String content = record.getContent();
+
         commentRepository.hardDeleteById(id);
+
+        // Record activity
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                taskId,
+                currentUser.getId(),
+                ActivityAction.COMMENT_ADDED,
+                content,
+                "Comment deleted"
+        ));
     }
 
     private CommentDto toDtoWithUserName(TaskCommentsRecord record) {
