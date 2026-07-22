@@ -74,17 +74,26 @@ public class SprintServiceImpl implements SprintService {
             throw new ProjectNotFoundException();
         }
 
+        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+                .orElseThrow(() -> new SprintAccessDeniedException());
+
         SprintsRecord record = sprintMapper.toRecord(request);
         record.setStatus(SprintStatus.PLANNED);
+        record.setCreatedBy(currentUserId);
+        record.setUpdatedBy(currentUserId);
 
         return sprintMapper.toDto(sprintRepository.create(record));
     }
 
     @Override
     @Transactional
-    public SprintDto updateSprint(UUID id, UpdateSprintRequest request) {
+    public SprintDto updateSprint(UUID projectId, UUID id, UpdateSprintRequest request) {
         SprintsRecord record = sprintRepository.findById(id)
                 .orElseThrow(() -> new SprintNotFoundException());
+
+        if (!record.getProjectId().equals(projectId)) {
+            throw new SprintNotFoundException();
+        }
 
         var startDate = request.getStartDate() != null ? request.getStartDate() : record.getStartDate();
         var endDate = request.getEndDate() != null ? request.getEndDate() : record.getEndDate();
@@ -92,15 +101,23 @@ public class SprintServiceImpl implements SprintService {
             throw new InvalidDateRangeException();
         }
 
+        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+                .orElseThrow(() -> new SprintAccessDeniedException());
+
         sprintMapper.updateRecord(record, request);
+        record.setUpdatedBy(currentUserId);
         return sprintMapper.toDto(sprintRepository.update(record));
     }
 
     @Override
     @Transactional
-    public SprintDto updateSprintStatus(UUID id, UpdateSprintStatusRequest request) {
+    public SprintDto updateSprintStatus(UUID projectId, UUID id, UpdateSprintStatusRequest request) {
         SprintsRecord record = sprintRepository.findById(id)
                 .orElseThrow(() -> new SprintNotFoundException());
+
+        if (!record.getProjectId().equals(projectId)) {
+            throw new SprintNotFoundException();
+        }
 
         SprintStatus currentStatus = record.getStatus();
         SprintStatus newStatus = request.getStatus();
@@ -112,7 +129,11 @@ public class SprintServiceImpl implements SprintService {
 
         validateStatusTransition(currentStatus, newStatus);
 
+        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+                .orElseThrow(() -> new SprintAccessDeniedException());
+
         record.setStatus(newStatus);
+        record.setUpdatedBy(currentUserId);
         return sprintMapper.toDto(sprintRepository.update(record));
     }
 

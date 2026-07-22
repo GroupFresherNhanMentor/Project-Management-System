@@ -17,7 +17,7 @@ public interface SprintService {
 
     SprintDto createSprint(CreateSprintRequest request);
 
-    SprintDto updateSprint(UUID id, UpdateSprintRequest request);
+    SprintDto updateSprint(UUID projectId, UUID id, UpdateSprintRequest request);
 
-    SprintDto updateSprintStatus(UUID id, UpdateSprintStatusRequest request);
+    SprintDto updateSprintStatus(UUID projectId, UUID id, UpdateSprintStatusRequest request);
 }

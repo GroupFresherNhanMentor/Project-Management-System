@@ -8,10 +8,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import java.util.List;
+
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.exception.AppException;
@@ -35,21 +41,26 @@ class SprintServiceTest extends BaseIntegrationTest {
     DSLContext dsl;
 
     UUID projectId;
+    UsersRecord savedUser;
 
     @BeforeEach
     void setUp() {
-        UsersRecord user = new UsersRecord();
-        user.setEmployeeId("SPRINT_EMP");
-        user.setUsername("sprint_tester");
-        user.setFullName("Sprint Tester");
-        user.setEmail("sprint_tester@test.com");
-        user.setPassword("$2a$10$dummyhash");
-        user.setRole(SysRole.ADMIN);
-        user.setStatus(UserStatus.ACTIVE);
-        UsersRecord savedUser = dsl.insertInto(USERS)
-                .set(user)
+        savedUser = new UsersRecord();
+        savedUser.setEmployeeId("SPRINT_EMP");
+        savedUser.setUsername("sprint_tester");
+        savedUser.setFullName("Sprint Tester");
+        savedUser.setEmail("sprint_tester@test.com");
+        savedUser.setPassword("$2a$10$dummyhash");
+        savedUser.setRole(SysRole.ADMIN);
+        savedUser.setStatus(UserStatus.ACTIVE);
+        savedUser = dsl.insertInto(USERS)
+                .set(savedUser)
                 .returning()
                 .fetchOne();
+
+        // Set authentication so projectSecurityEvaluator can resolve current user
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(savedUser.getUsername(), null, List.of()));
 
         ProjectsRecord project = new ProjectsRecord();
         project.setProjectCode("SPRINT-TEST");
@@ -64,6 +75,11 @@ class SprintServiceTest extends BaseIntegrationTest {
                 .fetchOne();
 
         projectId = savedProject.getId();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -131,6 +147,15 @@ class SprintServiceTest extends BaseIntegrationTest {
     }
 
     @Test
+    void getSprintById_shouldThrow_whenWrongProjectId() {
+        SprintDto created = sprintService.createSprint(buildCreateRequest("Sprint 5b"));
+
+        assertThatThrownBy(() -> sprintService.getSprintById(UUID.randomUUID(), created.getId()))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Sprint not found");
+    }
+
+    @Test
     void getSprintsByProject_shouldReturnPageResponse() {
         sprintService.createSprint(buildCreateRequest("Sprint 6"));
         sprintService.createSprint(buildCreateRequest("Sprint 7"));
@@ -172,7 +197,7 @@ class SprintServiceTest extends BaseIntegrationTest {
         req.setSprintName("Updated Sprint");
         req.setGoal("Updated goal");
 
-        SprintDto updated = sprintService.updateSprint(created.getId(), req);
+        SprintDto updated = sprintService.updateSprint(projectId, created.getId(), req);
 
         assertThat(updated.getSprintName()).isEqualTo("Updated Sprint");
         assertThat(updated.getGoal()).isEqualTo("Updated goal");
@@ -186,7 +211,7 @@ class SprintServiceTest extends BaseIntegrationTest {
 
         UpdateSprintRequest req = new UpdateSprintRequest();
 
-        SprintDto updated = sprintService.updateSprint(created.getId(), req);
+        SprintDto updated = sprintService.updateSprint(projectId, created.getId(), req);
 
         assertThat(updated.getSprintName()).isEqualTo("Sprint 12");
         assertThat(updated.getGoal()).isEqualTo("Goal 12");
@@ -197,7 +222,7 @@ class SprintServiceTest extends BaseIntegrationTest {
         UpdateSprintRequest req = new UpdateSprintRequest();
         req.setSprintName("Whatever");
 
-        assertThatThrownBy(() -> sprintService.updateSprint(UUID.randomUUID(), req))
+        assertThatThrownBy(() -> sprintService.updateSprint(projectId, UUID.randomUUID(), req))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Sprint not found");
     }
@@ -209,7 +234,7 @@ class SprintServiceTest extends BaseIntegrationTest {
         UpdateSprintStatusRequest req = new UpdateSprintStatusRequest();
         req.setStatus(SprintStatus.ACTIVE);
 
-        SprintDto updated = sprintService.updateSprintStatus(created.getId(), req);
+        SprintDto updated = sprintService.updateSprintStatus(projectId, created.getId(), req);
 
         assertThat(updated.getStatus()).isEqualTo("ACTIVE");
     }
@@ -219,12 +244,12 @@ class SprintServiceTest extends BaseIntegrationTest {
         SprintDto created = sprintService.createSprint(buildCreateRequest("Sprint 14"));
         UpdateSprintStatusRequest activateReq = new UpdateSprintStatusRequest();
         activateReq.setStatus(SprintStatus.ACTIVE);
-        sprintService.updateSprintStatus(created.getId(), activateReq);
+        sprintService.updateSprintStatus(projectId, created.getId(), activateReq);
 
         UpdateSprintStatusRequest closeReq = new UpdateSprintStatusRequest();
         closeReq.setStatus(SprintStatus.CLOSED);
 
-        SprintDto updated = sprintService.updateSprintStatus(created.getId(), closeReq);
+        SprintDto updated = sprintService.updateSprintStatus(projectId, created.getId(), closeReq);
 
         assertThat(updated.getStatus()).isEqualTo("CLOSED");
     }
@@ -236,7 +261,7 @@ class SprintServiceTest extends BaseIntegrationTest {
         UpdateSprintStatusRequest req = new UpdateSprintStatusRequest();
         req.setStatus(SprintStatus.CLOSED);
 
-        assertThatThrownBy(() -> sprintService.updateSprintStatus(created.getId(), req))
+        assertThatThrownBy(() -> sprintService.updateSprintStatus(projectId, created.getId(), req))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Invalid status transition");
     }
@@ -246,15 +271,15 @@ class SprintServiceTest extends BaseIntegrationTest {
         SprintDto created = sprintService.createSprint(buildCreateRequest("Sprint 16"));
         UpdateSprintStatusRequest activateReq = new UpdateSprintStatusRequest();
         activateReq.setStatus(SprintStatus.ACTIVE);
-        sprintService.updateSprintStatus(created.getId(), activateReq);
+        sprintService.updateSprintStatus(projectId, created.getId(), activateReq);
         UpdateSprintStatusRequest closeReq = new UpdateSprintStatusRequest();
         closeReq.setStatus(SprintStatus.CLOSED);
-        sprintService.updateSprintStatus(created.getId(), closeReq);
+        sprintService.updateSprintStatus(projectId, created.getId(), closeReq);
 
         UpdateSprintStatusRequest reactivateReq = new UpdateSprintStatusRequest();
         reactivateReq.setStatus(SprintStatus.ACTIVE);
 
-        assertThatThrownBy(() -> sprintService.updateSprintStatus(created.getId(), reactivateReq))
+        assertThatThrownBy(() -> sprintService.updateSprintStatus(projectId, created.getId(), reactivateReq))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Invalid status transition");
     }
@@ -264,7 +289,7 @@ class SprintServiceTest extends BaseIntegrationTest {
         UpdateSprintStatusRequest req = new UpdateSprintStatusRequest();
         req.setStatus(SprintStatus.ACTIVE);
 
-        assertThatThrownBy(() -> sprintService.updateSprintStatus(UUID.randomUUID(), req))
+        assertThatThrownBy(() -> sprintService.updateSprintStatus(projectId, UUID.randomUUID(), req))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Sprint not found");
     }
@@ -274,14 +299,14 @@ class SprintServiceTest extends BaseIntegrationTest {
         SprintDto sprint1 = sprintService.createSprint(buildCreateRequest("Sprint 17a"));
         UpdateSprintStatusRequest activate1 = new UpdateSprintStatusRequest();
         activate1.setStatus(SprintStatus.ACTIVE);
-        sprintService.updateSprintStatus(sprint1.getId(), activate1);
+        sprintService.updateSprintStatus(projectId, sprint1.getId(), activate1);
 
         SprintDto sprint2 = sprintService.createSprint(buildCreateRequest("Sprint 17b"));
 
         UpdateSprintStatusRequest activate2 = new UpdateSprintStatusRequest();
         activate2.setStatus(SprintStatus.ACTIVE);
 
-        assertThatThrownBy(() -> sprintService.updateSprintStatus(sprint2.getId(), activate2))
+        assertThatThrownBy(() -> sprintService.updateSprintStatus(projectId, sprint2.getId(), activate2))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("active sprint");
     }

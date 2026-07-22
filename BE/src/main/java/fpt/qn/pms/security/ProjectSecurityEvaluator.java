@@ -38,6 +38,9 @@ public class ProjectSecurityEvaluator {
             String username = jwt.getSubject();
             return userRepository.findByUsername(username).map(UsersRecord::getId);
         }
+        if (auth.getPrincipal() instanceof String username) {
+            return userRepository.findByUsername(username).map(UsersRecord::getId);
+        }
         return Optional.empty();
     }
 
