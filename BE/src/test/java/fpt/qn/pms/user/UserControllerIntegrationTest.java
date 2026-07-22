@@ -226,4 +226,21 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("LOCKED"));
     }
+
+    @Test
+    void resetPassword_shouldResetPassword_whenAdminTokenProvided() throws Exception {
+        mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(testUser.getId().toString()))
+                .andExpect(jsonPath("$.data.username").value(testUser.getUsername()))
+                .andExpect(jsonPath("$.data.generatedPassword").isNotEmpty());
+    }
+
+    @Test
+    void resetPassword_shouldReturn403_whenUserTokenProvided() throws Exception {
+        mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+    }
 }

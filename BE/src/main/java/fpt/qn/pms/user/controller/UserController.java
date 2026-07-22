@@ -24,6 +24,7 @@ import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
 import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -103,5 +104,15 @@ public class UserController {
             @Valid @RequestBody UpdateUserStatusRequest request) {
 
         return ResponseEntity.ok(ApiResponse.success(userService.updateUserStatus(id, request), null));
+    }
+
+    @PutMapping("/{id}/reset-password")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @Operation(summary = "Reset user password with auto-generated password (Admin only)")
+    public ResponseEntity<ApiResponse<ResetPasswordResponse>> resetPassword(
+            @PathVariable UUID id) {
+
+        ResetPasswordResponse response = userService.resetPasswordByAdmin(id);
+        return ResponseEntity.ok(ApiResponse.success(response, "User password reset successfully"));
     }
 }
