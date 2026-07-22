@@ -63,6 +63,9 @@ export class Profile {
   }
 
   closeChangePassword(): void {
+    this.oldPassword = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
     this.showChangePassword.set(false);
   }
 
@@ -85,7 +88,7 @@ export class Profile {
       .subscribe({
         next: () => {
           this.toast.success('Password changed successfully.');
-          this.showChangePassword.set(false);
+          this.closeChangePassword();
         },
         error: (err: HttpErrorResponse) => {
           this.toast.error(err.error?.message ?? 'Failed to change password.');
