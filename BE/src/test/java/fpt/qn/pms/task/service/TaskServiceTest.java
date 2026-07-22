@@ -181,8 +181,8 @@ class TaskServiceTest {
     @DisplayName("searchTasks - Should return paginated PageResponse")
     void searchTasks_success() {
         TaskSearchRequest request = new TaskSearchRequest();
-        request.setProject(projectId);
-        request.setSprint(sprintId);
+        request.setProjectId(projectId);
+        request.setSprintId(sprintId);
         request.setStatus(TaskStatus.TODO);
         request.setPriority(TaskPriority.HIGH);
         request.setPage(0);
