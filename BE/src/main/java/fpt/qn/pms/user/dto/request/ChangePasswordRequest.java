@@ -1,6 +1,6 @@
 package fpt.qn.pms.user.dto.request;
 
-import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,12 +16,13 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateCurrentUserRequest {
+public class ChangePasswordRequest {
 
-    @Size(max = 150)
-    String fullName;
+    @NotBlank
+    @Size(min = 6, max = 72)
+    String oldPassword;
 
-    @Email
-    @Size(max = 150)
-    String email;
+    @NotBlank
+    @Size(min = 6, max = 72)
+    String newPassword;
 }
