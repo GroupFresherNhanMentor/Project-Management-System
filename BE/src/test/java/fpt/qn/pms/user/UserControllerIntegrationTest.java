@@ -243,4 +243,14 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", "Bearer " + userToken))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void request_shouldFail_whenUserIsLocked() throws Exception {
+        testUser.setStatus(UserStatus.LOCKED);
+        userRepository.update(testUser);
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isUnauthorized());
+    }
 }

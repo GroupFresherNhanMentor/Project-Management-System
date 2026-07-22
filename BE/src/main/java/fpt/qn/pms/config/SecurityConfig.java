@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -81,9 +82,11 @@ public class SecurityConfig {
 
     @Bean
     public Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter(UserDetailsService userDetailsService) {
+        AccountStatusUserDetailsChecker detailsChecker = new AccountStatusUserDetailsChecker();
         return jwt -> {
             String username = jwt.getSubject();
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            detailsChecker.check(userDetails);
             return new UsernamePasswordAuthenticationToken(userDetails, jwt, userDetails.getAuthorities());
         };
     }
