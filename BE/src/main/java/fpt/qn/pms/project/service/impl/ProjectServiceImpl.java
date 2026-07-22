@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
+import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
@@ -49,6 +50,11 @@ public class ProjectServiceImpl implements ProjectService {
         UsersRecord currentUser = getCurrentUser();
         UUID memberUserId = currentUser.getRole() == SysRole.ADMIN ? null : currentUser.getId();
 
+        if (memberUserId != null
+                && !projectMemberRepository.existsActiveByUserIdAndRole(memberUserId, ProjectRole.PM)) {
+            throw new ProjectAccessDeniedException();
+        }
+
         PaginationResult<ProjectsRecord> result = projectRepository
                 .findAll(keyword, status, memberUserId, page, size);
         List<ProjectDto> items = projectMapper.toDtoList(result.getItems());
@@ -63,7 +69,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new ProjectNotFoundException());
 
         if (currentUser.getRole() != SysRole.ADMIN
-                && !projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, currentUser.getId())) {
+                && !projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
+                        projectId, currentUser.getId(), ProjectRole.PM)) {
             throw new ProjectAccessDeniedException();
         }
 

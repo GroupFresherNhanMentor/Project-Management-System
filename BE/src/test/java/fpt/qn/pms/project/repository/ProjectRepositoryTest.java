@@ -39,8 +39,8 @@ class ProjectRepositoryTest extends BaseIntegrationTest {
         userId = insertUser();
         activeProjectId = insertProject("ALPHA", "Alpha Project", ProjectStatus.ACTIVE);
         planningProjectId = insertProject("BETA", "Beta Project", ProjectStatus.PLANNING);
-        insertMembership(activeProjectId, ProjectMemberStatus.ACTIVE);
-        insertMembership(planningProjectId, ProjectMemberStatus.INACTIVE);
+        insertMembership(activeProjectId, ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        insertMembership(planningProjectId, ProjectRole.PM, ProjectMemberStatus.INACTIVE);
     }
 
     @Test
@@ -64,12 +64,23 @@ class ProjectRepositoryTest extends BaseIntegrationTest {
     }
 
     @Test
-    void findAll_shouldScopeUserToActiveMemberships() {
+    void findAll_shouldScopeUserToActiveProjectManagerMemberships() {
         PaginationResult<ProjectsRecord> result = projectRepository.findAll(null, null, userId, 0, 20);
 
         assertThat(result.getItems()).extracting(ProjectsRecord::getId)
                 .contains(activeProjectId)
                 .doesNotContain(planningProjectId);
+    }
+
+    @Test
+    void findAll_shouldExcludeActiveNonProjectManagerMembership() {
+        UUID developerProjectId = insertProject("DEV", "Developer Project", ProjectStatus.ACTIVE);
+        insertMembership(developerProjectId, ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
+
+        PaginationResult<ProjectsRecord> result = projectRepository.findAll(null, null, userId, 0, 20);
+
+        assertThat(result.getItems()).extracting(ProjectsRecord::getId)
+                .doesNotContain(developerProjectId);
     }
 
     @Test
@@ -106,11 +117,11 @@ class ProjectRepositoryTest extends BaseIntegrationTest {
                 .fetchOne(PROJECTS.ID);
     }
 
-    private void insertMembership(UUID projectId, ProjectMemberStatus status) {
+    private void insertMembership(UUID projectId, ProjectRole role, ProjectMemberStatus status) {
         dsl.insertInto(PROJECT_MEMBERS)
                 .set(PROJECT_MEMBERS.PROJECT_ID, projectId)
                 .set(PROJECT_MEMBERS.USER_ID, userId)
-                .set(PROJECT_MEMBERS.PROJECT_ROLE, ProjectRole.DEV)
+                .set(PROJECT_MEMBERS.PROJECT_ROLE, role)
                 .set(PROJECT_MEMBERS.STATUS, status)
                 .execute();
     }

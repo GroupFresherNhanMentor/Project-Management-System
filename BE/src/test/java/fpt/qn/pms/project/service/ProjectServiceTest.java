@@ -66,6 +66,9 @@ class ProjectServiceTest extends BaseIntegrationTest {
         assertThat(created.getProjectCode()).isEqualTo("WEB" + codeSuffix);
         assertThat(created.getStatus()).isEqualTo("PLANNING");
         assertThat(created.getCreatedAt()).isNotNull();
+        assertThat(dsl.fetchCount(PROJECT_MEMBERS, PROJECT_MEMBERS.PROJECT_ID.eq(created.getId())))
+                .as("a new project is allowed to have no project manager")
+                .isZero();
     }
 
     @Test
@@ -90,12 +93,12 @@ class ProjectServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getProjects_shouldReturnOnlyActiveMembershipsForUser() {
+    void getProjects_shouldReturnOnlyActiveProjectManagerMembershipsForUser() {
         authenticate(admin.getUsername());
         ProjectDto visible = projectService.createProject(createRequest("VISIBLE" + codeSuffix, "Visible"));
         ProjectDto hidden = projectService.createProject(createRequest("HIDDEN" + codeSuffix, "Hidden"));
-        insertMembership(visible.getId(), regularUser.getId(), ProjectMemberStatus.ACTIVE);
-        insertMembership(hidden.getId(), regularUser.getId(), ProjectMemberStatus.INACTIVE);
+        insertMembership(visible.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+        insertMembership(hidden.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.INACTIVE);
 
         authenticate(regularUser.getUsername());
         PageResponse<ProjectDto> page = projectService.getProjects(null, null, 0, 20);
@@ -103,6 +106,29 @@ class ProjectServiceTest extends BaseIntegrationTest {
         assertThat(page.getItems()).extracting(ProjectDto::getId)
                 .contains(visible.getId())
                 .doesNotContain(hidden.getId());
+    }
+
+    @Test
+    void getProjects_shouldRejectActiveDeveloper() {
+        authenticate(admin.getUsername());
+        ProjectDto project = projectService.createProject(createRequest("DEV" + codeSuffix, "Developer Project"));
+        insertMembership(project.getId(), regularUser.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
+
+        authenticate(regularUser.getUsername());
+
+        assertThatThrownBy(() -> projectService.getProjects(null, null, 0, 20))
+                .isInstanceOf(ProjectAccessDeniedException.class);
+    }
+
+    @Test
+    void getProjectById_shouldAllowActiveProjectManager() {
+        authenticate(admin.getUsername());
+        ProjectDto project = projectService.createProject(createRequest("PM" + codeSuffix, "PM Project"));
+        insertMembership(project.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
+
+        authenticate(regularUser.getUsername());
+
+        assertThat(projectService.getProjectById(project.getId()).getId()).isEqualTo(project.getId());
     }
 
     @Test
@@ -166,11 +192,12 @@ class ProjectServiceTest extends BaseIntegrationTest {
                 .fetchOne();
     }
 
-    private void insertMembership(UUID projectId, UUID userId, ProjectMemberStatus status) {
+    private void insertMembership(
+            UUID projectId, UUID userId, ProjectRole role, ProjectMemberStatus status) {
         dsl.insertInto(PROJECT_MEMBERS)
                 .set(PROJECT_MEMBERS.PROJECT_ID, projectId)
                 .set(PROJECT_MEMBERS.USER_ID, userId)
-                .set(PROJECT_MEMBERS.PROJECT_ROLE, ProjectRole.DEV)
+                .set(PROJECT_MEMBERS.PROJECT_ROLE, role)
                 .set(PROJECT_MEMBERS.STATUS, status)
                 .execute();
     }

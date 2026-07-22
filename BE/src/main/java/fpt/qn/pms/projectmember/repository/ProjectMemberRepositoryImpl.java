@@ -136,6 +136,14 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
     }
 
     @Override
+    public boolean existsActiveByUserIdAndRole(UUID userId, ProjectRole role) {
+        return dsl.fetchExists(PROJECT_MEMBERS,
+                PROJECT_MEMBERS.USER_ID.eq(userId)
+                        .and(PROJECT_MEMBERS.PROJECT_ROLE.eq(role))
+                        .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE)));
+    }
+
+    @Override
     public long countActiveByProjectIdAndRole(UUID projectId, ProjectRole role) {
         return dsl.fetchCount(PROJECT_MEMBERS,
                 PROJECT_MEMBERS.PROJECT_ID.eq(projectId)

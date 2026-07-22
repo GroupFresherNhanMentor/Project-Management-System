@@ -76,8 +76,8 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldAllowActiveMemberAndReturnPage() {
-        authenticate(developer.getUsername());
+    void getMembers_shouldAllowActiveProjectManagerAndReturnPage() {
+        authenticate(projectManager.getUsername());
 
         PageResponse<ProjectMemberDto> result = projectMemberService.getMembers(projectId, null, 0, 20);
 
@@ -88,7 +88,7 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
 
     @Test
     void getMembers_shouldFilterByMemberKeyword() {
-        authenticate(developer.getUsername());
+        authenticate(projectManager.getUsername());
 
         PageResponse<ProjectMemberDto> result = projectMemberService
                 .getMembers(projectId, projectManager.getEmail(), 0, 20);
@@ -96,6 +96,14 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getItems()).extracting(ProjectMemberDto::getUserId)
                 .containsExactly(projectManager.getId());
+    }
+
+    @Test
+    void getMembers_shouldRejectActiveDeveloper() {
+        authenticate(developer.getUsername());
+
+        assertThatThrownBy(() -> projectMemberService.getMembers(projectId, null, 0, 20))
+                .isInstanceOf(ProjectMemberAccessDeniedException.class);
     }
 
     @Test
