@@ -78,3 +78,6 @@ springdoc:
     - group: reports
       paths-to-match: /api/reports/**
       packages-to-scan: fpt.qn.pms.worklog
+    - group: projects
+      paths-to-match: /api/projects/**
+      packages-to-scan: fpt.qn.pms.project, fpt.qn.pms.projectmember
