@@ -45,10 +45,20 @@ public class ProjectMemberController {
     @Operation(summary = "Get project members", description = "Available to ADMIN or an active project member")
     public ResponseEntity<ApiResponse<PageResponse<ProjectMemberDto>>> getMembers(
             @PathVariable UUID projectId,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        PageResponse<ProjectMemberDto> members = projectMemberService.getMembers(projectId, page, size);
+        PageResponse<ProjectMemberDto> members = projectMemberService
+                .getMembers(projectId, keyword, page, size);
         return ResponseEntity.ok(ApiResponse.success(members, null));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current project membership", description = "Available to an active project member")
+    public ResponseEntity<ApiResponse<ProjectMemberDto>> getCurrentMember(
+            @PathVariable UUID projectId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                projectMemberService.getCurrentMember(projectId), null));
     }
 
     @GetMapping("/candidates")

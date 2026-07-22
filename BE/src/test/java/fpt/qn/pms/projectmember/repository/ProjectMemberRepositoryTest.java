@@ -83,7 +83,7 @@ class ProjectMemberRepositoryTest extends BaseIntegrationTest {
     @Test
     void findAllByProjectId_shouldReturnPaginatedDetails() {
         PaginationResult<ProjectMemberDetails> result = projectMemberRepository
-                .findAllByProjectId(projectId, 0, 2);
+                .findAllByProjectId(projectId, null, 0, 2);
 
         assertThat(result.getTotal()).isEqualTo(3);
         assertThat(result.getItems()).hasSize(2);

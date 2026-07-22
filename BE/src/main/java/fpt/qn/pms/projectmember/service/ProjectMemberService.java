@@ -9,7 +9,10 @@ import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 
 public interface ProjectMemberService {
 
-    PageResponse<ProjectMemberDto> getMembers(UUID projectId, int page, int size);
+    PageResponse<ProjectMemberDto> getMembers(
+            UUID projectId, String keyword, int page, int size);
+
+    ProjectMemberDto getCurrentMember(UUID projectId);
 
     PageResponse<ProjectMemberCandidateDto> getMemberCandidates(
             UUID projectId, String keyword, int page, int size);

@@ -79,11 +79,34 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     void getMembers_shouldAllowActiveMemberAndReturnPage() {
         authenticate(developer.getUsername());
 
-        PageResponse<ProjectMemberDto> result = projectMemberService.getMembers(projectId, 0, 20);
+        PageResponse<ProjectMemberDto> result = projectMemberService.getMembers(projectId, null, 0, 20);
 
         assertThat(result.getTotalElements()).isEqualTo(2);
         assertThat(result.getItems()).extracting(ProjectMemberDto::getUserId)
                 .containsExactlyInAnyOrder(projectManager.getId(), developer.getId());
+    }
+
+    @Test
+    void getMembers_shouldFilterByMemberKeyword() {
+        authenticate(developer.getUsername());
+
+        PageResponse<ProjectMemberDto> result = projectMemberService
+                .getMembers(projectId, projectManager.getEmail(), 0, 20);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getItems()).extracting(ProjectMemberDto::getUserId)
+                .containsExactly(projectManager.getId());
+    }
+
+    @Test
+    void getCurrentMember_shouldReturnAuthenticatedMembership() {
+        authenticate(projectManager.getUsername());
+
+        ProjectMemberDto result = projectMemberService.getCurrentMember(projectId);
+
+        assertThat(result.getUserId()).isEqualTo(projectManager.getId());
+        assertThat(result.getProjectRole()).isEqualTo("PM");
+        assertThat(result.getStatus()).isEqualTo("ACTIVE");
     }
 
     @Test
