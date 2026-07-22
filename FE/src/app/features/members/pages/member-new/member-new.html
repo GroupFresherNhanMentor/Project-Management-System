@@ -7,6 +7,22 @@
   <div class="flex flex-col gap-3">
     <div>
       <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">User *</label>
+      <div class="mb-2 flex gap-2">
+        <input
+          [(ngModel)]="candidateKeyword"
+          (keyup.enter)="applyCandidateSearch()"
+          type="search"
+          placeholder="Search by name, employee ID or email"
+          class="min-w-0 flex-1 rounded-lg border px-3 py-2.5 text-[13px] outline-none"
+          style="border-color:#E1E4E9"
+        />
+        <button
+          (click)="applyCandidateSearch()"
+          [disabled]="loadingUsers()"
+          class="rounded-lg border px-4 py-2.5 text-[13px] font-semibold disabled:opacity-60"
+          style="border-color:#E1E4E9;color:#4B5160"
+        >Search</button>
+      </div>
       @if (loadingUsers()) {
         <div class="rounded-lg border px-3 py-2.5 text-[13px]" style="border-color:#E1E4E9;color:#9AA1AC">Loading users...</div>
       } @else if (candidates().length) {
@@ -24,6 +40,19 @@
       } @else {
         <div class="rounded-lg border px-3 py-2.5 text-[13px]" style="border-color:#E1E4E9;color:#9AA1AC">
           No active users are available to add.
+        </div>
+      }
+
+      @if (!loadingUsers() && candidateTotalElements() > 0) {
+        <div class="mt-2 flex items-center justify-between text-[11px]" style="color:#9AA1AC">
+          <span>{{ candidateTotalElements() }} available user(s)</span>
+          @if (candidateTotalPages() > 1) {
+            <div class="flex items-center gap-2">
+              <button (click)="previousCandidatePage()" [disabled]="candidatePage() === 0" class="rounded border px-2 py-1 disabled:opacity-40">Previous</button>
+              <span>{{ candidatePage() + 1 }} / {{ candidateTotalPages() }}</span>
+              <button (click)="nextCandidatePage()" [disabled]="candidatePage() + 1 >= candidateTotalPages()" class="rounded border px-2 py-1 disabled:opacity-40">Next</button>
+            </div>
+          }
         </div>
       }
     </div>

@@ -1,9 +1,28 @@
 <div class="mb-4 flex items-center justify-between">
-  <span class="text-[12px]" style="color:#9AA1AC">Project ID: {{ projectId() || 'Select a project' }}</span>
+  <div>
+    <span class="block text-[12px]" style="color:#9AA1AC">Project ID: {{ projectId() || 'Select a project' }}</span>
+    @if (projectId()) {
+      <span class="mt-1 block text-[11px]" style="color:#9AA1AC">{{ totalElements() }} member(s)</span>
+    }
+  </div>
   @if (canManage() && projectId()) {
     <button (click)="newMember()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ Add Member</button>
   }
 </div>
+
+@if (projectId()) {
+  <div class="mb-4 flex gap-2">
+    <input
+      [(ngModel)]="keyword"
+      (keyup.enter)="applySearch()"
+      type="search"
+      placeholder="Search by name, employee ID or email"
+      class="min-w-0 flex-1 rounded-[8px] border px-3 py-2 text-[13px] outline-none"
+      style="border-color:#E1E4E9"
+    />
+    <button (click)="applySearch()" [disabled]="loading()" class="rounded-[8px] border px-4 py-2 text-[13px] font-semibold disabled:opacity-60" style="border-color:#E1E4E9;color:#4B5160">Search</button>
+  </div>
+}
 
 @if (!projectId()) {
   <div class="rounded-[10px] border p-6 text-center text-[13px]" style="border-color:#E6E8EC;color:#6B7280">Select a project before viewing members.</div>
@@ -51,6 +70,14 @@
       </tbody>
     </table>
   </div>
+
+  @if (totalPages() > 1) {
+    <div class="mt-4 flex items-center justify-center gap-3 text-[13px]">
+      <button (click)="previousPage()" [disabled]="page() === 0 || loading()" class="rounded border px-3 py-1.5 disabled:opacity-40">Previous</button>
+      <span style="color:#6B7280">Page {{ page() + 1 }} / {{ totalPages() }}</span>
+      <button (click)="nextPage()" [disabled]="page() + 1 >= totalPages() || loading()" class="rounded border px-3 py-1.5 disabled:opacity-40">Next</button>
+    </div>
+  }
 }
 
 @if (pendingRemoval(); as member) {

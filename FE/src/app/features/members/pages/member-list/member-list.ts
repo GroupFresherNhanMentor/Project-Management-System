@@ -1,4 +1,5 @@
 import { Component, signal, inject, effect } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -12,7 +13,7 @@ import { InitialsPipe } from '../../../../shared/pipes/initials.pipe';
 
 @Component({
   selector: 'app-member-list',
-  imports: [InitialsPipe],
+  imports: [FormsModule, InitialsPipe],
   templateUrl: './member-list.html',
 })
 export class MemberList {
@@ -32,6 +33,11 @@ export class MemberList {
   readonly currentProjectRole = signal<ProjectRole | null>(null);
   readonly pendingRemoval = signal<ProjectMemberDto | null>(null);
   readonly removingMemberId = signal<string | null>(null);
+  readonly page = signal(0);
+  readonly totalPages = signal(0);
+  readonly totalElements = signal(0);
+  readonly pageSize = 10;
+  keyword = '';
 
   constructor() {
     effect(() => {
@@ -40,26 +46,28 @@ export class MemberList {
       if (id && id !== this.loadedProjectId) {
         this.loadedProjectId = id;
         this.projectId.set(id);
-        this.load(id);
+        this.keyword = '';
+        this.resolveCurrentMembership(id);
+        this.load(id, 0);
       }
     });
   }
 
-  load(projectId = this.projectId()): void {
+  load(projectId = this.projectId(), page = this.page()): void {
     if (!projectId) return;
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.projectService.getMembers(projectId, 0, 100).subscribe({
-      next: page => {
-        this.members.set(page.items);
-        const currentUserId = this.authService.getCurrentUser()?.id;
-        const currentMembership = page.items.find(
-          item => item.userId === currentUserId && item.status === 'ACTIVE');
-        this.projectContext.setCurrentUserRole(currentMembership?.projectRole ?? null);
-        this.currentProjectRole.set(currentMembership?.projectRole ?? null);
-        this.canManage.set(
-          this.authService.getCurrentUser()?.role === 'ADMIN'
-          || currentMembership?.projectRole === 'PM');
+    this.projectService.getMembers(
+      projectId,
+      page,
+      this.pageSize,
+      this.keyword.trim() || undefined,
+    ).subscribe({
+      next: result => {
+        this.members.set(result.items);
+        this.page.set(result.pageNumber);
+        this.totalPages.set(result.totalPages);
+        this.totalElements.set(result.totalElements);
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
@@ -67,6 +75,20 @@ export class MemberList {
         this.loading.set(false);
       },
     });
+  }
+
+  applySearch(): void {
+    this.load(this.projectId(), 0);
+  }
+
+  previousPage(): void {
+    if (this.page() > 0) this.load(this.projectId(), this.page() - 1);
+  }
+
+  nextPage(): void {
+    if (this.page() + 1 < this.totalPages()) {
+      this.load(this.projectId(), this.page() + 1);
+    }
   }
 
   newMember(): void {
@@ -117,5 +139,29 @@ export class MemberList {
 
   statusBadge(s: string): string {
     return s === 'ACTIVE' ? 'badge badge-active' : 'badge badge-locked';
+  }
+
+  private resolveCurrentMembership(projectId: string): void {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser?.role === 'ADMIN') {
+      this.currentProjectRole.set(null);
+      this.projectContext.setCurrentUserRole(null);
+      this.canManage.set(true);
+      return;
+    }
+
+    this.projectService.getCurrentMember(projectId).subscribe({
+      next: membership => {
+        const role = membership.status === 'ACTIVE' ? membership.projectRole : null;
+        this.currentProjectRole.set(role);
+        this.projectContext.setCurrentUserRole(role);
+        this.canManage.set(role === 'PM');
+      },
+      error: () => {
+        this.currentProjectRole.set(null);
+        this.projectContext.setCurrentUserRole(null);
+        this.canManage.set(false);
+      },
+    });
   }
 }
