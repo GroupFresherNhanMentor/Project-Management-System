@@ -3,23 +3,29 @@ package fpt.qn.pms.user.service.impl;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.dao.DataAccessException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
+import fpt.qn.pms.user.util.PasswordGenerator;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
-import fpt.qn.pms.user.exception.EmployeeIdAlreadyExistsException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
+import fpt.qn.pms.user.helper.UserCreationTransactionHelper;
 import fpt.qn.pms.user.mapper.UserMapper;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.user.service.UserService;
@@ -35,26 +41,60 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+    UserCreationTransactionHelper userCreationTransactionHelper;
+    PasswordGenerator passwordGenerator;
 
     @Override
-    @Transactional
-    public UserDto createUser(CreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UsernameAlreadyExistsException();
-        }
+    public CreateUserResponse createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
-        if (userRepository.existsByEmployeeId(request.getEmployeeId())) {
-            throw new EmployeeIdAlreadyExistsException();
+
+        String tempPassword = passwordGenerator.generateSecurePassword();
+
+        int maxRetries = 10;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                UserDto userDto = userCreationTransactionHelper.executeAttempt(request, tempPassword);
+                return CreateUserResponse.builder()
+                        .user(userDto)
+                        .generatedPassword(tempPassword)
+                        .build();
+            } catch (DataAccessException e) {
+                if (isDuplicateEmailConstraint(e)) {
+                    throw new EmailAlreadyExistsException();
+                }
+                if (!isDuplicateUsernameConstraint(e)) {
+                    throw e;
+                }
+                if (attempt == maxRetries) {
+                    throw new UsernameAlreadyExistsException();
+                }
+            }
         }
+        throw new UsernameAlreadyExistsException();
+    }
 
-        UsersRecord record = userMapper.toRecord(request);
-        record.setPassword(passwordEncoder.encode(request.getPassword()));
-        record.setStatus(UserStatus.ACTIVE);
+    private boolean isDuplicateUsernameConstraint(DataAccessException e) {
+        String fullMsg = getFullExceptionMessage(e).toLowerCase();
+        return fullMsg.contains("users_username_key");
+    }
 
-        UsersRecord saved = userRepository.create(record);
-        return userMapper.toDto(saved);
+    private boolean isDuplicateEmailConstraint(DataAccessException e) {
+        String fullMsg = getFullExceptionMessage(e).toLowerCase();
+        return fullMsg.contains("users_email_key");
+    }
+
+    private String getFullExceptionMessage(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        Throwable curr = t;
+        while (curr != null) {
+            if (curr.getMessage() != null) {
+                sb.append(curr.getMessage()).append(" ");
+            }
+            curr = curr.getCause();
+        }
+        return sb.toString();
     }
 
     @Override
@@ -97,5 +137,59 @@ public class UserServiceImpl implements UserService {
         record.setStatus(request.getStatus());
         userRepository.update(record);
         return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public ResetPasswordResponse resetPasswordByAdmin(UUID id) {
+        UsersRecord record = userRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        String generatedPassword = passwordGenerator.generateSecurePassword();
+        record.setPassword(passwordEncoder.encode(generatedPassword));
+        userRepository.update(record);
+
+        return ResetPasswordResponse.builder()
+                .userId(record.getId())
+                .username(record.getUsername())
+                .generatedPassword(generatedPassword)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDto getCurrentUser() {
+        UsersRecord record = getCurrentUserRecord();
+        return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public UserDto updateCurrentUser(UpdateCurrentUserRequest request) {
+        UsersRecord record = getCurrentUserRecord();
+
+        if (request.getEmail() != null
+                && userRepository.existsByEmailAndIdNot(request.getEmail(), record.getId())) {
+            throw new EmailAlreadyExistsException();
+        }
+
+        if (request.getFullName() != null) {
+            record.setFullName(request.getFullName());
+        }
+        if (request.getEmail() != null) {
+            record.setEmail(request.getEmail());
+        }
+        if (request.getPassword() != null) {
+            record.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        userRepository.update(record);
+        return userMapper.toDto(record);
+    }
+
+    private UsersRecord getCurrentUserRecord() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException());
     }
 }

@@ -8,13 +8,15 @@ public interface Repository<R> {
 
     Optional<R> findById(UUID id);
 
+    Optional<R> findByIdForUpdate(UUID id);
+
     List<R> findAll();
 
     R create(R record);
 
     R update(R record);
 
-    void deleteById(UUID id);
+    void hardDeleteById(UUID id);
 
     boolean existsById(UUID id);
 }

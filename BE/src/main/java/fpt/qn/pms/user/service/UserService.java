@@ -6,8 +6,11 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
+import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserStatusRequest;
+import fpt.qn.pms.user.dto.response.CreateUserResponse;
+import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 
 public interface UserService {
@@ -16,9 +19,15 @@ public interface UserService {
 
     UserDto getUserById(UUID id);
 
-    UserDto createUser(CreateUserRequest request);
+    CreateUserResponse createUser(CreateUserRequest request);
 
     UserDto updateUser(UUID id, UpdateUserRequest request);
 
     UserDto updateUserStatus(UUID id, UpdateUserStatusRequest request);
+
+    ResetPasswordResponse resetPasswordByAdmin(UUID id);
+
+    UserDto getCurrentUser();
+
+    UserDto updateCurrentUser(UpdateCurrentUserRequest request);
 }

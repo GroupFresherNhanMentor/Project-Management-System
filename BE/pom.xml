@@ -30,7 +30,7 @@
     <properties>
         <java.version>25</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>2.8.5</springdoc.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <!-- override to match local DB when running codegen -->
         <db.url>jdbc:postgresql://localhost:5432/mini-project-management-system</db.url>
@@ -124,6 +124,12 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
 
@@ -195,18 +201,6 @@
                             <inputSchema>public</inputSchema>
                             <includes>.*</includes>
                             <excludes>flyway_schema_history</excludes>
-                            <!-- <schemaVersionProvider>
-                                SELECT CASE
-                                WHEN EXISTS (
-                                SELECT 1 FROM information_schema.tables
-                                WHERE table_schema = 'public' AND table_name =
-                                'flyway_schema_history'
-                                )
-                                THEN COALESCE((SELECT MAX(version) FROM flyway_schema_history WHERE
-                                success = true), '0')
-                                ELSE '0'
-                                END
-                            </schemaVersionProvider> -->
                         </database>
                         <generate>
                             <records>true</records>

@@ -50,6 +50,11 @@ export const routes: Routes = [
         canActivate: [adminGuard],
         loadChildren: () => import('./features/users/users.routes').then(m => m.USERS_ROUTES),
       },
+      {
+        path: 'profile',
+        loadComponent: () => import('./features/users/pages/profile/profile').then(m => m.Profile),
+        data: { title: 'My Profile' },
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

@@ -1,9 +1,8 @@
 package fpt.qn.pms.security;
 
-import java.util.Collections;
+import java.util.List;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,20 +20,27 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    UserRepository userRepository;
+        UserRepository userRepository;
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UsersRecord user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        @Override
+        public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+                UsersRecord user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new UsernameNotFoundException(
+                                                "User not found with username: " + username));
 
-        boolean enabled = user.getStatus() == UserStatus.ACTIVE;
+                boolean enabled = user.getStatus() == UserStatus.ACTIVE;
 
-        return User.withUsername(user.getUsername())
-                .password(user.getPassword())
-                .disabled(!enabled)
-                .accountLocked(!enabled)
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getLiteral())))
-                .build();
-    }
+                String roleStr = user.getRole().getLiteral();
+                List<SimpleGrantedAuthority> authorities = List.of(
+                                new SimpleGrantedAuthority(roleStr),
+                                new SimpleGrantedAuthority("ROLE_" + roleStr));
+
+                return UserPrincipal.builder()
+                                .id(user.getId())
+                                .username(user.getUsername())
+                                .password(user.getPassword())
+                                .enabled(enabled)
+                                .authorities(authorities)
+                                .build();
+        }
 }

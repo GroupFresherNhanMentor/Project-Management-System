@@ -11,12 +11,14 @@ export interface UserDto {
 }
 
 export interface CreateUserRequest {
-  employeeId: string;
-  username: string;
-  password: string;
   fullName: string;
   email: string;
   role: SystemRole;
+}
+
+export interface CreateUserResponse {
+  user: UserDto;
+  generatedPassword: string;
 }
 
 export interface UpdateUserRequest {
@@ -35,4 +37,16 @@ export interface UserListParams {
   status?: UserStatus;
   page?: number;
   size?: number;
+}
+
+export interface UpdateCurrentUserRequest {
+  fullName?: string;
+  email?: string;
+  password?: string;
+}
+
+export interface ResetPasswordResponse {
+  userId: string;
+  username: string;
+  generatedPassword: string;
 }

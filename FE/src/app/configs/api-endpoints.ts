@@ -6,8 +6,10 @@ export const API = {
   },
   users: {
     base: '/api/users',
+    me: '/api/users/me',
     byId: (id: string) => `/api/users/${id}`,
     lock: (id: string) => `/api/users/${id}/lock`,
+    resetPassword: (id: string) => `/api/users/${id}/reset-password`,
   },
   projects: {
     base: '/api/projects',

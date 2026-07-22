@@ -35,11 +35,11 @@ public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements T
     public PaginationResult<TasksRecord> findAll(TaskSearchRequest request) {
         Condition condition = DSL.noCondition();
 
-        if (request.getProject() != null) {
-            condition = condition.and(TASKS.PROJECT_ID.eq(request.getProject()));
+        if (request.getProjectId() != null) {
+            condition = condition.and(TASKS.PROJECT_ID.eq(request.getProjectId()));
         }
-        if (request.getSprint() != null) {
-            condition = condition.and(TASKS.SPRINT_ID.eq(request.getSprint()));
+        if (request.getSprintId() != null) {
+            condition = condition.and(TASKS.SPRINT_ID.eq(request.getSprintId()));
         }
         if (request.getStatus() != null) {
             condition = condition.and(TASKS.STATUS.eq(request.getStatus()));
@@ -47,8 +47,8 @@ public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements T
         if (request.getPriority() != null) {
             condition = condition.and(TASKS.PRIORITY.eq(request.getPriority()));
         }
-        if (request.getAssignee() != null) {
-            condition = condition.and(TASKS.ASSIGNEE_ID.eq(request.getAssignee()));
+        if (request.getAssigneeId() != null) {
+            condition = condition.and(TASKS.ASSIGNEE_ID.eq(request.getAssigneeId()));
         }
         if (request.getKeyword() != null && !request.getKeyword().isBlank()) {
             String pattern = "%" + request.getKeyword().toLowerCase() + "%";
