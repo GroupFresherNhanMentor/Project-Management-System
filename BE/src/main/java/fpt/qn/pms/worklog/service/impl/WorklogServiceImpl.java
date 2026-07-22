@@ -1,21 +1,17 @@
 package fpt.qn.pms.worklog.service.impl;
 
-import static fpt.qn.pms.jooq.Tables.USERS;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.jooq.DSLContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.common.util.SecurityUtils;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
 import fpt.qn.pms.task.repository.TaskRepository;
@@ -41,22 +37,13 @@ public class WorklogServiceImpl implements WorklogService {
     TaskRepository taskRepository;
     UserRepository userRepository;
     WorklogMapper worklogMapper;
-    DSLContext dsl;
 
     private UsersRecord getCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()
-                || "anonymousUser".equals(auth.getPrincipal())) {
-            UsersRecord mockUser = dsl.selectFrom(USERS).limit(1).fetchOne();
-            if (mockUser == null) {
-                throw new AppException(HttpStatus.NOT_FOUND,
-                        "No users found in database to mock authentication");
-            }
-            return mockUser;
-        }
-        String username = auth.getName();
-        return userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(HttpStatus.NOT_FOUND, "Current user not found"));
+        return SecurityUtils.getCurrentUsername()
+                .flatMap(userRepository::findByUsername)
+                .orElseGet(() -> userRepository.findAll().stream().findFirst()
+                        .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND,
+                                "No users found in database to mock authentication")));
     }
 
     @Override
@@ -71,8 +58,8 @@ public class WorklogServiceImpl implements WorklogService {
         return PageResponse.<WorklogDto>builder()
                 .items(result.getItems().stream().map(this::toDtoWithUserName).toList())
                 .totalElements(result.getTotal())
-                .totalPages((int) Math.ceil((double) result.getTotal() / size)).pageNumber(page)
-                .pageSize(size).build();
+                .totalPages((int) Math.ceil((double) result.getTotal() / size))
+                .pageNumber(page).pageSize(size).build();
     }
 
     @Override
@@ -139,8 +126,9 @@ public class WorklogServiceImpl implements WorklogService {
     private WorklogDto toDtoWithUserName(WorklogsRecord record) {
         WorklogDto dto = worklogMapper.toDto(record);
         if (record.getUserId() != null) {
-            String userName = dsl.select(USERS.FULL_NAME).from(USERS)
-                    .where(USERS.ID.eq(record.getUserId())).fetchOne(USERS.FULL_NAME);
+            String userName = userRepository.findById(record.getUserId())
+                    .map(UsersRecord::getFullName)
+                    .orElse(null);
             dto.setCreatedBy(userName);
         }
         return dto;

@@ -26,7 +26,7 @@ public class ProjectSecurityEvaluator {
     private final ProjectMemberRepository projectMemberRepository;
     private final TaskRepository taskRepository;
 
-    private Optional<UUID> getCurrentUserId() {
+    public Optional<UUID> getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof Jwt jwt)) {
             return Optional.empty();
