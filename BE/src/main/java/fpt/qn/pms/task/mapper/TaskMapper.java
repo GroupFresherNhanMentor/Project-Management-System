@@ -18,7 +18,6 @@ public interface TaskMapper {
     TaskDto toDto(TasksRecord record);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "taskKey", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "reporterId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
