@@ -15,6 +15,7 @@ import fpt.qn.pms.user.util.PasswordGenerator;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.user.dto.request.ChangePasswordRequest;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -23,6 +24,7 @@ import fpt.qn.pms.user.dto.response.CreateUserResponse;
 import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
+import fpt.qn.pms.user.exception.InvalidOldPasswordException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
 import fpt.qn.pms.user.helper.UserCreationTransactionHelper;
@@ -179,12 +181,22 @@ public class UserServiceImpl implements UserService {
         if (request.getEmail() != null) {
             record.setEmail(request.getEmail());
         }
-        if (request.getPassword() != null) {
-            record.setPassword(passwordEncoder.encode(request.getPassword()));
-        }
 
         userRepository.update(record);
         return userMapper.toDto(record);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        UsersRecord record = getCurrentUserRecord();
+
+        if (!passwordEncoder.matches(request.getOldPassword(), record.getPassword())) {
+            throw new InvalidOldPasswordException();
+        }
+
+        record.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.update(record);
     }
 
     private UsersRecord getCurrentUserRecord() {

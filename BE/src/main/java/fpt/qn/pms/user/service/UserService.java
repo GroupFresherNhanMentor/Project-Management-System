@@ -5,6 +5,7 @@ import java.util.UUID;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
+import fpt.qn.pms.user.dto.request.ChangePasswordRequest;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -30,4 +31,6 @@ public interface UserService {
     UserDto getCurrentUser();
 
     UserDto updateCurrentUser(UpdateCurrentUserRequest request);
+
+    void changePassword(ChangePasswordRequest request);
 }

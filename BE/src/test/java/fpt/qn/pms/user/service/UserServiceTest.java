@@ -31,6 +31,7 @@ import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.user.dto.request.ChangePasswordRequest;
 import fpt.qn.pms.user.dto.request.CreateUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateCurrentUserRequest;
 import fpt.qn.pms.user.dto.request.UpdateUserRequest;
@@ -39,6 +40,7 @@ import fpt.qn.pms.user.dto.response.CreateUserResponse;
 import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
+import fpt.qn.pms.user.exception.InvalidOldPasswordException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.repository.UserRepository;
 
@@ -505,16 +507,37 @@ class UserServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void updateCurrentUser_shouldEncodePassword() {
-        userService.createUser(buildRequest("023"));
-        setSecurityContext("user023", "USER");
+    void changePassword_shouldSucceed_whenOldPasswordMatches() {
+        CreateUserResponse created = userService.createUser(buildRequest("023"));
+        String username = created.getUser().getUsername();
+        String initialPassword = created.getGeneratedPassword();
+        setSecurityContext(username, "USER");
 
-        UpdateCurrentUserRequest req = new UpdateCurrentUserRequest();
-        req.setPassword("NewPass123!");
+        ChangePasswordRequest req = ChangePasswordRequest.builder()
+                .oldPassword(initialPassword)
+                .newPassword("NewPass123!")
+                .build();
 
-        UserDto updated = userService.updateCurrentUser(req);
+        userService.changePassword(req);
 
-        assertThat(updated).isNotNull();
+        UsersRecord updatedRecord = userRepository.findByUsername(username).orElseThrow();
+        assertThat(passwordEncoder.matches("NewPass123!", updatedRecord.getPassword())).isTrue();
+    }
+
+    @Test
+    void changePassword_shouldThrow_whenOldPasswordIncorrect() {
+        CreateUserResponse created = userService.createUser(buildRequest("023_err"));
+        String username = created.getUser().getUsername();
+        setSecurityContext(username, "USER");
+
+        ChangePasswordRequest req = ChangePasswordRequest.builder()
+                .oldPassword("WrongPassword123")
+                .newPassword("NewPass123!")
+                .build();
+
+        assertThatThrownBy(() -> userService.changePassword(req))
+                .isInstanceOf(InvalidOldPasswordException.class)
+                .hasMessageContaining("Current password is incorrect");
     }
 
     @Test

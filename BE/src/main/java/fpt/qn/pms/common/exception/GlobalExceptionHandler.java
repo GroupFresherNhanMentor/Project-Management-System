@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import fpt.qn.pms.common.dto.ApiResponse;
+import fpt.qn.pms.user.exception.InvalidOldPasswordException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,6 +59,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex,
             HttpServletRequest request) {
         log.warn("Bad request at {}: {}", request.getRequestURI(), ex.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidOldPasswordException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidOldPasswordException(InvalidOldPasswordException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid old password at {}: {}", request.getRequestURI(), ex.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
     }
 
