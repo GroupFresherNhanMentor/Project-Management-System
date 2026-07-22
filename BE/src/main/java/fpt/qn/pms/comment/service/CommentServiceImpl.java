@@ -9,11 +9,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.jooq.DSLContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import fpt.qn.pms.activity.event.TaskActivityEvent;
 import fpt.qn.pms.comment.dto.CommentDto;
 import fpt.qn.pms.comment.dto.CommentSearchRequest;
 import fpt.qn.pms.comment.dto.CreateCommentRequest;
@@ -24,7 +26,6 @@ import fpt.qn.pms.comment.repository.CommentRepository;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.enums.ActivityAction;
-import fpt.qn.pms.jooq.tables.records.TaskActivitiesRecord;
 import fpt.qn.pms.jooq.tables.records.TaskCommentsRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.user.exception.UserNotFoundException;
@@ -42,6 +43,7 @@ public class CommentServiceImpl implements CommentService {
     UserRepository userRepository;
     CommentMapper commentMapper;
     DSLContext dsl;
+    ApplicationEventPublisher eventPublisher;
 
     private UsersRecord getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -64,13 +66,14 @@ public class CommentServiceImpl implements CommentService {
 
         TaskCommentsRecord saved = commentRepository.create(record);
 
-        // Record activity
-        TaskActivitiesRecord activity = dsl.newRecord(TASK_ACTIVITIES);
-        activity.setTaskId(saved.getTaskId());
-        activity.setUserId(currentUser.getId());
-        activity.setAction(ActivityAction.COMMENT_ADDED);
-        activity.setNewValue("Comment added");
-        activity.store();
+        // Record activity via Spring Event
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                saved.getTaskId(),
+                currentUser.getId(),
+                ActivityAction.COMMENT_ADDED,
+                null,
+                saved.getContent()
+        ));
 
         return toDtoWithUserName(saved);
     }
