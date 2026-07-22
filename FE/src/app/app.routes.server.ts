@@ -2,6 +2,7 @@ import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
   { path: 'projects/new',              renderMode: RenderMode.Server },
+  { path: 'projects/:id',              renderMode: RenderMode.Server },
   { path: 'projects/:id/edit',         renderMode: RenderMode.Server },
   { path: 'projects/:id/board',        renderMode: RenderMode.Server },
   { path: 'projects/:id/backlog',      renderMode: RenderMode.Server },
