@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,13 +35,15 @@ public class TaskWorkflowController {
     TaskWorkflowService taskWorkflowService;
 
     @GetMapping
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
     @Operation(summary = "Get all workflow transitions for a project")
     public ResponseEntity<ApiResponse<List<TaskWorkflowDto>>> getByProject(@PathVariable UUID projectId) {
         return ResponseEntity.ok(ApiResponse.success(taskWorkflowService.getByProject(projectId), null));
     }
 
     @PostMapping
-    @Operation(summary = "Create workflow transitions", description = "Defines one or more allowed status transitions within a project in a single request.")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Create workflow transitions", description = "Defines allowed status transitions within a project in a single batch. PM only.")
     public ResponseEntity<ApiResponse<List<TaskWorkflowDto>>> create(
             @PathVariable UUID projectId,
             @RequestBody List<@Valid CreateTaskWorkflowRequest> requests) {
@@ -49,7 +52,8 @@ public class TaskWorkflowController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a workflow transition")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Delete a workflow transition. PM only.")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID projectId,
             @PathVariable UUID id) {

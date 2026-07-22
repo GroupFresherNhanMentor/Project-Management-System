@@ -25,6 +25,7 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
+import fpt.qn.pms.security.ProjectSecurityEvaluator;
 import fpt.qn.pms.task.repository.TaskRepository;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.worklog.dto.CreateWorklogRequest;
@@ -50,6 +51,9 @@ class WorklogServiceTest {
 
     @Mock
     WorklogMapper worklogMapper;
+
+    @Mock
+    ProjectSecurityEvaluator projectSecurityEvaluator;
 
     @InjectMocks
     WorklogServiceImpl worklogService;

@@ -22,7 +22,9 @@ public class TaskDto {
     String description;
     String taskType;
     String priority;
-    String status;
+    UUID statusId;
+    String statusName;
+    String statusColor;
     UUID assigneeId;
     String assigneeName;
     UUID reporterId;

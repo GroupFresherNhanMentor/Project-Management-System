@@ -11,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.exception.AppException;
-import fpt.qn.pms.common.util.SecurityUtils;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
+import fpt.qn.pms.security.ProjectSecurityEvaluator;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
 import fpt.qn.pms.task.repository.TaskRepository;
 import fpt.qn.pms.user.repository.UserRepository;
@@ -37,9 +37,11 @@ public class WorklogServiceImpl implements WorklogService {
     TaskRepository taskRepository;
     UserRepository userRepository;
     WorklogMapper worklogMapper;
+    ProjectSecurityEvaluator projectSecurityEvaluator;
 
     private UsersRecord getCurrentUser() {
-        return SecurityUtils.getCurrentUsername()
+        return projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getUsername())
                 .flatMap(userRepository::findByUsername)
                 .orElseGet(() -> userRepository.findAll().stream().findFirst()
                         .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND,

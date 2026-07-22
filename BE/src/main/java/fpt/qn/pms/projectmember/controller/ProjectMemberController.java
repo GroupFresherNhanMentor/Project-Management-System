@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,29 +43,28 @@ public class ProjectMemberController {
     ProjectMemberService projectMemberService;
 
     @GetMapping
-    @Operation(summary = "Get project members", description = "Available to ADMIN or an active PM of this project")
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
+    @Operation(summary = "Get project members")
     public ResponseEntity<ApiResponse<PageResponse<ProjectMemberDto>>> getMembers(
             @PathVariable UUID projectId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        PageResponse<ProjectMemberDto> members = projectMemberService
-                .getMembers(projectId, keyword, page, size);
+        PageResponse<ProjectMemberDto> members = projectMemberService.getMembers(projectId, keyword, page, size);
         return ResponseEntity.ok(ApiResponse.success(members, null));
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Get current project membership", description = "Available to an active project member")
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
+    @Operation(summary = "Get current user's membership in this project")
     public ResponseEntity<ApiResponse<ProjectMemberDto>> getCurrentMember(
             @PathVariable UUID projectId) {
-        return ResponseEntity.ok(ApiResponse.success(
-                projectMemberService.getCurrentMember(projectId), null));
+        return ResponseEntity.ok(ApiResponse.success(projectMemberService.getCurrentMember(projectId), null));
     }
 
     @GetMapping("/candidates")
-    @Operation(
-            summary = "Get available project member candidates",
-            description = "Returns active users who are not active members; available to ADMIN or an active PM")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Get available member candidates", description = "Active users not already in the project. PM only.")
     public ResponseEntity<ApiResponse<PageResponse<ProjectMemberCandidateDto>>> getMemberCandidates(
             @PathVariable UUID projectId,
             @RequestParam(required = false) String keyword,
@@ -76,7 +76,8 @@ public class ProjectMemberController {
     }
 
     @PostMapping
-    @Operation(summary = "Add a project member", description = "Available to ADMIN or an active PM of this project")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Add a project member", description = "PM only.")
     public ResponseEntity<ApiResponse<ProjectMemberDto>> addMember(
             @PathVariable UUID projectId,
             @Valid @RequestBody AddProjectMemberRequest request) {
@@ -86,7 +87,8 @@ public class ProjectMemberController {
     }
 
     @DeleteMapping("/{memberId}")
-    @Operation(summary = "Remove a project member", description = "Soft-deletes membership; ADMIN or active project PM only")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Remove a project member", description = "PM only.")
     public ResponseEntity<Void> removeMember(
             @PathVariable UUID projectId,
             @PathVariable UUID memberId) {
