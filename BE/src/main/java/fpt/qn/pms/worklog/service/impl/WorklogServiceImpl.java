@@ -71,7 +71,7 @@ public class WorklogServiceImpl implements WorklogService {
         }
 
         UserPrincipal userPrincipal = projectSecurityEvaluator.getCurrentPrincipal()
-                .orElseThrow(() -> new AppException(HttpStatus.UNAUTHORIZED, "User not authenticated"));
+                .orElseThrow(() -> new AccessDeniedException("User not authenticated"));
 
         WorklogsRecord record = worklogMapper.toRecord(request);
         record.setTaskId(taskId);
@@ -87,7 +87,7 @@ public class WorklogServiceImpl implements WorklogService {
     @Transactional
     public WorklogDto updateWorklog(UUID id, UpdateWorklogRequest request) {
         UserPrincipal userPrincipal = projectSecurityEvaluator.getCurrentPrincipal()
-                .orElseThrow(() -> new AppException(HttpStatus.UNAUTHORIZED, "User not authenticated"));
+                .orElseThrow(() -> new AccessDeniedException("User not authenticated"));
 
         WorklogsRecord worklog = worklogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Worklog not found"));
@@ -116,7 +116,7 @@ public class WorklogServiceImpl implements WorklogService {
     @Transactional
     public void deleteWorklog(UUID id) {
         UserPrincipal userPrincipal = projectSecurityEvaluator.getCurrentPrincipal()
-                .orElseThrow(() -> new AppException(HttpStatus.UNAUTHORIZED, "User not authenticated"));
+                .orElseThrow(() -> new AccessDeniedException("User not authenticated"));
 
         WorklogsRecord worklog = worklogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Worklog not found"));
