@@ -118,6 +118,21 @@ export class DashboardHome implements OnInit {
       });
     }
 
+  taskByStatusEntries(map: Record<string, number>): [string, number][] {
+    return Object.entries(map);
+  }
+
+  getActionLabel(action: string): string {
+    const map: Record<string, string> = {
+      TASK_CREATED:     'đã tạo task',
+      STATUS_CHANGED:   'đã chuyển trạng thái',
+      PRIORITY_CHANGED: 'đã đổi mức độ ưu tiên',
+      ASSIGNEE_CHANGED: 'đã thay đổi người xử lý',
+      COMMENT_ADDED:    'đã thêm bình luận vào'
+    };
+    return map[action] || action;
+  }
+
   isOverdue(dueDate: string | null): boolean {
     if (!dueDate) return false;
     return new Date(dueDate).getTime() < new Date().getTime();

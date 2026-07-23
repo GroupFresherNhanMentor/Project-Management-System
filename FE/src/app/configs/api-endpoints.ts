@@ -22,8 +22,8 @@ export const API = {
     sprints: (projectId: string) => `/api/projects/${projectId}/sprints`,
   },
   sprints: {
-    byId: (projectId: string, sprintId: string) => `/api/projects/${projectId}/sprints/${sprintId}`,
-    status: (projectId: string, sprintId: string) => `/api/projects/${projectId}/sprints/${sprintId}/status`,
+    byId: (projectId: string, id: string) => `/api/projects/${projectId}/sprints/${id}`,
+    status: (projectId: string, id: string) => `/api/projects/${projectId}/sprints/${id}/status`,
   },
   tasks: {
     base: '/api/tasks',
@@ -34,8 +34,13 @@ export const API = {
     activities: (taskId: string) => `/api/tasks/${taskId}/activities`,
     worklogs: (taskId: string) => `/api/tasks/${taskId}/worklogs`,
   },
-  comments: {
-    byId: (id: string) => `/api/comments/${id}`,
+  taskStatuses: {
+    base: (projectId: string) => `/api/projects/${projectId}/task-statuses`,
+    byId: (projectId: string, id: string) => `/api/projects/${projectId}/task-statuses/${id}`,
+  },
+  taskWorkflow: {
+    base: (projectId: string) => `/api/projects/${projectId}/task-workflow`,
+    byId: (projectId: string, id: string) => `/api/projects/${projectId}/task-workflow/${id}`,
   },
   worklogs: {
     byId: (id: string) => `/api/worklogs/${id}`,

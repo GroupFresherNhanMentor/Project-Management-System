@@ -1,0 +1,14 @@
+<div class="flex flex-col gap-3">
+  @for (a of activities(); track a.id) {
+    <div class="flex gap-3">
+      <div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
+        {{ a.userName | initials }}
+      </div>
+      <div>
+        <p class="text-[13px]" style="color:#14161C">{{ activityLabel(a) }}</p>
+        <p class="text-[11px]" style="color:#9AA1AC">{{ a.createdTime }}</p>
+      </div>
+    </div>
+  }
+  @empty { <p class="text-[13px]" style="color:#9AA1AC">No activity yet.</p> }
+</div>

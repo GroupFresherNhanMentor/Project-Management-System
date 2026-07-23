@@ -1,8 +1,10 @@
-@if (loading()) {
-  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading sprint...</div>
-} @else if (errorMessage()) {
-  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">{{ errorMessage() }}</div>
-} @else if (sprint(); as s) {
+<a routerLink="/sprints" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Sprints</a>
+
+@if (error()) {
+  <div class="mb-4 rounded-[8px] border px-4 py-3 text-[13px]" style="border-color:#F5C6CB;background:#FFF5F5;color:#D0342C">{{ error() }}</div>
+}
+
+@if (sprint(); as s) {
   <!-- Sprint header card -->
   <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
     <div class="flex items-start justify-between">
@@ -16,20 +18,16 @@
           {{ s.startDate }} → {{ s.endDate }} · {{ tasks().length }} tasks · {{ doneCount }} done
         </p>
       </div>
-      <div class="flex gap-2">
-        @if (s.status === 'PLANNED' && canManage()) {
-          <button (click)="startSprint()" [disabled]="statusLoading()"
-            class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#3B4FD9">
-            {{ statusLoading() ? 'Starting…' : 'Start Sprint' }}
-          </button>
-        }
-        @if (s.status === 'ACTIVE' && canManage()) {
-          <button (click)="closeSprint()" [disabled]="statusLoading()"
-            class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#4B5160">
-            {{ statusLoading() ? 'Closing…' : 'Close Sprint' }}
-          </button>
-        }
-      </div>
+      @if (isPm()) {
+        <div class="flex gap-2">
+          @if (s.status === 'PLANNED') {
+            <button (click)="startSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#3B4FD9">Start Sprint</button>
+          }
+          @if (s.status === 'ACTIVE') {
+            <button (click)="closeSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">Close Sprint</button>
+          }
+        </div>
+      }
     </div>
   </div>
 
@@ -52,7 +50,9 @@
           <tr class="cursor-pointer border-b hover:bg-[#FAFBFC]" style="border-color:#F0F1F3" (click)="openTask(task.id)">
             <td class="px-4 py-3 font-mono text-[12px]" style="color:#9AA1AC">{{ task.taskKey }}</td>
             <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</td>
-            <td class="px-4 py-3"><span [class]="taskStatusBadge(task.status)">{{ taskStatusLabel(task.status) }}</span></td>
+            <td class="px-4 py-3">
+              <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white" [style.background-color]="task.statusColor">{{ task.statusName }}</span>
+            </td>
             <td class="px-4 py-3 text-[13px] font-semibold" [style.color]="priorityColor(task.priority)">{{ task.priority }}</td>
             <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.assigneeName ?? '—' }}</td>
             <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ task.storyPoint ?? '—' }}</td>
@@ -65,4 +65,6 @@
       </tbody>
     </table>
   </div>
+} @else if (!error()) {
+  <p class="text-[13px]" style="color:#9AA1AC">Loading…</p>
 }

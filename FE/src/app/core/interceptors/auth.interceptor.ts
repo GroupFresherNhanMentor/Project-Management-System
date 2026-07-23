@@ -1,5 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse, HttpRequest } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
 import { AuthService } from '../services/auth';
 import { API } from '../../configs/api-endpoints';
@@ -13,6 +14,7 @@ function isAuthEndpoint(url: string): boolean {
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   const token = authService.getToken();
 
   const authReq = token && !isAuthEndpoint(req.url)
@@ -21,7 +23,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status !== 401 || isAuthEndpoint(req.url)) {
+      if (error.status !== 401 || isAuthEndpoint(req.url) || !isBrowser) {
         return throwError(() => error);
       }
 
