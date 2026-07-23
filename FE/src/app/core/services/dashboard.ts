@@ -1,24 +1,33 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
+import {
+  ApiResponse,
+  PersonalDashboardData,
+  ProjectDashboardData,
+  TaskSearchRequest,
+  TaskSearchResponse
+} from '../models/dashboard.model';
 
-import { API } from '../../configs/api-endpoints';
-import { ApiResponse } from '../models/api.model';
-import { DashboardPersonalResponse, DashboardProjectResponse } from '../models/dashboard.model';
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class DashboardService {
-  private readonly http = inject(HttpClient);
+  private http = inject(HttpClient);
+  private baseUrl = '/api/dashboard';
 
-  getPersonalDashboard(): Observable<DashboardPersonalResponse> {
-    return this.http
-      .get<ApiResponse<DashboardPersonalResponse>>(API.dashboard.me)
-      .pipe(map(r => r.data));
+  // Thống kê cá nhân /api/dashboard/me
+  getPersonalStats(): Observable<ApiResponse<PersonalDashboardData>> {
+    return this.http.get<ApiResponse<PersonalDashboardData>>(`${this.baseUrl}/me`);
   }
 
-  getProjectDashboard(projectId: string): Observable<DashboardProjectResponse> {
-    return this.http
-      .get<ApiResponse<DashboardProjectResponse>>(API.dashboard.project(projectId))
-      .pipe(map(r => r.data));
+  // Thống kê dự án /api/dashboard/project/{id}
+  getProjectStats(projectId: string): Observable<ApiResponse<ProjectDashboardData>> {
+    return this.http.get<ApiResponse<ProjectDashboardData>>(`${this.baseUrl}/project/${projectId}`);
+  }
+
+  // Tìm kiếm Task phân trang từ database /api/tasks/search
+  searchTasks(request: TaskSearchRequest): Observable<ApiResponse<TaskSearchResponse>> {
+    return this.http.post<ApiResponse<TaskSearchResponse>>('/api/tasks/search', request);
   }
 }
