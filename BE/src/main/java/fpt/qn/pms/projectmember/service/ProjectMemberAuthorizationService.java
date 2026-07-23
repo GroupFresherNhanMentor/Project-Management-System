@@ -32,8 +32,8 @@ public class ProjectMemberAuthorizationService {
     public UsersRecord assertCanViewMembers(UUID projectId) {
         UsersRecord currentUser = requireActiveCurrentUser();
         if (currentUser.getRole() == SysRole.ADMIN
-                || projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
-                        projectId, currentUser.getId(), ProjectRole.PM)) {
+                || projectMemberRepository.existsActiveByProjectIdAndUserId(
+                        projectId, currentUser.getId())) {
             return currentUser;
         }
         throw new ProjectMemberAccessDeniedException();
