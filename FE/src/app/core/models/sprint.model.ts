@@ -20,3 +20,10 @@ export interface CreateSprintRequest {
 export interface UpdateSprintStatusRequest {
   status: SprintStatus;
 }
+
+export interface UpdateSprintRequest {
+  sprintName?: string;
+  goal?: string;
+  startDate?: string;
+  endDate?: string;
+}

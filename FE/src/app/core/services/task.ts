@@ -5,7 +5,7 @@ import { Observable, map } from 'rxjs';
 import { API } from '../../configs/api-endpoints';
 import { ApiResponse, PageResponse } from '../models/api.model';
 import { TaskDto, CreateTaskRequest, UpdateTaskRequest, AssignTaskRequest, TaskSearchParams } from '../models/task.model';
-import { TaskCommentDto, CreateCommentRequest } from '../models/comment.model';
+import { TaskCommentDto, CreateCommentRequest, UpdateCommentRequest } from '../models/comment.model';
 import { TaskActivityDto } from '../models/activity.model';
 import { WorklogDto, CreateWorklogRequest, UpdateWorklogRequest } from '../models/worklog.model';
 
@@ -55,6 +55,16 @@ export class TaskService {
     return this.http
       .post<ApiResponse<TaskCommentDto>>(API.tasks.comments(taskId), body)
       .pipe(map(r => r.data));
+  }
+
+  updateComment(commentId: string, body: UpdateCommentRequest): Observable<TaskCommentDto> {
+    return this.http
+      .put<ApiResponse<TaskCommentDto>>(API.comments.byId(commentId), body)
+      .pipe(map(r => r.data));
+  }
+
+  deleteComment(commentId: string): Observable<void> {
+    return this.http.delete<void>(API.comments.byId(commentId));
   }
 
   getActivities(taskId: string, page = 0, size = 20): Observable<PageResponse<TaskActivityDto>> {
