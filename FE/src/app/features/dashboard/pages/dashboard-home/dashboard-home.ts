@@ -54,6 +54,9 @@ export class DashboardHome implements OnInit {
   devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status !== 'DONE'));
 
   ngOnInit(): void {
+    if (typeof window === 'undefined') {
+      return; // Skip fetching data on Server-Side Prerendering / SSR build
+    }
     this.extractLocalStorageData();
     this.loadDashboardData();
     this.fetchTasksFromApi();
