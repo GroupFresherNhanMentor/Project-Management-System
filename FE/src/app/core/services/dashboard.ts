@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   ApiResponse,
@@ -32,8 +32,30 @@ export class DashboardService {
     return this.http.get<ApiResponse<AdminDashboardData>>(`${this.baseUrl}/admin`);
   }
 
-  // Tìm kiếm Task phân trang từ database /api/tasks/search
   searchTasks(request: TaskSearchRequest): Observable<ApiResponse<TaskSearchResponse>> {
-    return this.http.post<ApiResponse<TaskSearchResponse>>('/api/tasks/search', request);
+    let params = new HttpParams()
+      .set('page', request.page.toString())
+      .set('size', request.size.toString());
+
+    if (request.projectId) {
+      params = params.set('projectId', request.projectId);
+    }
+    if (request.assigneeId) {
+      params = params.set('assigneeId', request.assigneeId);
+    }
+    if (request.sprintId) {
+      params = params.set('sprintId', request.sprintId);
+    }
+    if (request.status) {
+      params = params.set('status', request.status);
+    }
+    if (request.priority) {
+      params = params.set('priority', request.priority);
+    }
+    if (request.keyword) {
+      params = params.set('keyword', request.keyword);
+    }
+
+    return this.http.get<ApiResponse<TaskSearchResponse>>(`/api/tasks/search`, { params });
   }
 }

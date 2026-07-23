@@ -36,10 +36,10 @@ export class DashboardHome implements OnInit {
   adminStats = signal<AdminDashboardData | null>(null);
 
   statusOrder = [
-    { key: 'TODO', label: 'To Do', css: 'bg-slate-400' },
-    { key: 'IN_PROGRESS', label: 'In Progress', css: 'bg-blue-500' },
-    { key: 'TESTING', label: 'Testing', css: 'bg-amber-500' },
-    { key: 'DONE', label: 'Done', css: 'bg-emerald-500' }
+    { key: 'TODO', label: 'To Do', css: 'bg-slate-400 text-slate-400' },
+    { key: 'IN_PROGRESS', label: 'In Progress', css: 'bg-blue-500 text-blue-500' },
+    { key: 'TESTING', label: 'Testing', css: 'bg-amber-500 text-amber-500' },
+    { key: 'DONE', label: 'Done', css: 'bg-emerald-500 text-emerald-500' }
   ];
 
   priorityOrder = [
@@ -49,9 +49,18 @@ export class DashboardHome implements OnInit {
     { key: 'LOW', label: 'Low', css: 'text-slate-400 bg-slate-400' }
   ];
 
-  devTasks = computed(() => this.allTasks().filter(t => t.status === 'TODO' || t.status === 'IN_PROGRESS' || t.status === 'TESTING'));
-  devCompletedTasks = computed(() => this.allTasks().filter(t => t.status === 'DONE'));
-  devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status !== 'DONE'));
+  // Logic lọc không phân biệt hoa thường (Case-insensitive)
+  devTasks = computed(() =>
+    this.allTasks().filter(t => t.status.toLowerCase() !== 'completed')
+  );
+
+  devCompletedTasks = computed(() =>
+    this.allTasks().filter(t => t.status.toLowerCase() === 'completed')
+  );
+
+  devOverdueTasks = computed(() =>
+    this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status.toLowerCase() !== 'completed')
+  );
 
   ngOnInit(): void {
     if (typeof window === 'undefined') {
@@ -79,7 +88,7 @@ export class DashboardHome implements OnInit {
         this.currentUserId = userObj.id;
         if (userObj.role) this.role = userObj.role;
       } catch (e) {
-        console.error('Lỗi phân tích cú pháp JSON từ localStorage pms_user:', e);
+        console.error('Error parsing user storage:', e);
       }
     }
   }
@@ -109,24 +118,32 @@ export class DashboardHome implements OnInit {
   }
 
   fetchTasksFromApi(): void {
-      const searchPayload: TaskSearchRequest = {
-        page: 0,
-        size: 10,
-        projectId: this.currentProjectId,
-        assigneeId: this.currentUserId
-      };
+    const searchPayload: TaskSearchRequest = {
+      page: 0,
+      size: 10,
+      projectId: this.currentProjectId,
+      assigneeId: this.currentUserId
+    };
 
-      this.dashboardService.searchTasks(searchPayload).subscribe({
-        next: (res: ApiResponse<TaskSearchResponse>) => {
-          if (res && (res.isSuccess || res.success) && res.data?.items) {
-            this.allTasks.set(res.data.items);
-          }
-        },
-        error: (err: unknown) => {
-          console.error('Lỗi khi gọi API tìm kiếm Task:', err);
+    this.dashboardService.searchTasks(searchPayload).subscribe({
+      next: (res: ApiResponse<TaskSearchResponse>) => {
+        if (res && (res.isSuccess || res.success) && res.data?.items) {
+          const mappedItems: DevTaskItem[] = res.data.items.map((t: any) => {
+            return {
+              id: t.id,
+              taskKey: t.taskKey || 'TASK',
+              summary: t.summary || 'No Summary',
+              dueDate: t.dueDate,
+              priority: t.priority || 'MEDIUM',
+              status: t.statusName || t.status || 'To Do',
+              statusColor: t.statusColor || '#9AA1AC' // Giá trị fallback mặc định nếu null
+            };
+          });
+          this.allTasks.set(mappedItems);
         }
-      });
-    }
+      }
+    });
+  }
 
   taskByStatusEntries(map: Record<string, number>): [string, number][] {
     return Object.entries(map);
@@ -145,11 +162,10 @@ export class DashboardHome implements OnInit {
 
   isOverdue(dueDate: string | null): boolean {
     if (!dueDate) return false;
-    return new Date(dueDate).getTime() < new Date().getTime();
-  }
-
-  getStatusLabel(statusKey: string): string {
-    const status = this.statusOrder.find(s => s.key === statusKey);
-    return status ? status.label : statusKey;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const taskDate = new Date(dueDate);
+    taskDate.setHours(0, 0, 0, 0);
+    return taskDate.getTime() < today.getTime();
   }
 }

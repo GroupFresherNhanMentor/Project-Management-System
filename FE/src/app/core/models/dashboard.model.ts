@@ -65,12 +65,13 @@ export interface DevTaskItem {
   id: string;
   taskKey: string;
   summary: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'TESTING' | 'DONE';
+  status: string;       // Nhận tên trạng thái động (statusName)
+  statusColor: string;  // Bắt buộc phải có để render giao diện
+  statusId?: string | null;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   dueDate: string | null;
 }
-
-// Model dành cho API Task Search
+// Model dành cho API Task Search (Khớp params trên Swagger)
 export interface TaskSearchRequest {
   page: number;
   size: number;
@@ -82,9 +83,11 @@ export interface TaskSearchRequest {
   keyword?: string;
 }
 
+// Cập nhật cấu trúc Phân trang thực tế từ Swagger
 export interface TaskSearchResponse {
-  items: DevTaskItem[];
-  total: number;
-  page: number;
-  size: number;
+  items: any[];
+  totalElements: number; // Thay thế cho biến total cũ
+  totalPages: number;
+  pageNumber: number;
+  pageSize: number;
 }
