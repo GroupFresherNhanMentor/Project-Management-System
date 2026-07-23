@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
@@ -42,6 +43,7 @@ public class ProjectMemberController {
     ProjectMemberService projectMemberService;
 
     @GetMapping
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
     @Operation(summary = "Get project members", description = "Available to ADMIN or an active PM of this project")
     public ResponseEntity<ApiResponse<PageResponse<ProjectMemberDto>>> getMembers(
             @PathVariable UUID projectId,
