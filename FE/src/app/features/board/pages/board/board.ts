@@ -28,7 +28,7 @@ export class Board implements OnInit {
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
-    this.taskService.getTaskStatuses(this.projectId).subscribe({
+    this.taskService.getTaskStatuses(this.projectId, { isActive: true }).subscribe({
       next: list => this.statuses.set(list.filter(s => s.isActive)),
     });
     this.projectService.getSprints(this.projectId, 0, 50).subscribe({

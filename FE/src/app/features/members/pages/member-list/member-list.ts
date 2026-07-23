@@ -30,6 +30,7 @@ export class MemberList {
   readonly currentProjectRole = signal<ProjectRole | null>(null);
   readonly pendingRemoval = signal<ProjectMemberDto | null>(null);
   readonly removingMemberId = signal<string | null>(null);
+  readonly changingRoleId = signal<string | null>(null);
   readonly page = signal(0);
   readonly totalPages = signal(0);
   readonly totalElements = signal(0);
@@ -123,6 +124,52 @@ export class MemberList {
       },
       error: (error: HttpErrorResponse) =>
         this.toast.error(error.error?.message ?? 'Unable to remove member.'),
+      });
+  }
+
+  readonly roleDialogMember = signal<ProjectMemberDto | null>(null);
+  selectedRole: ProjectRole | '' = '';
+
+  canChangeRole(member: ProjectMemberDto): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser || !this.canManage() || member.status !== 'ACTIVE') return false;
+    if (currentUser.role === 'ADMIN') return true;
+    return this.currentProjectRole() === 'PM' && member.projectRole !== 'PM';
+  }
+
+  availableRoles(): ProjectRole[] {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser?.role === 'ADMIN' ? ['PM', 'DEV', 'TESTER'] : ['DEV', 'TESTER'];
+  }
+
+  openRoleDialog(member: ProjectMemberDto): void {
+    this.selectedRole = member.projectRole;
+    this.roleDialogMember.set(member);
+  }
+
+  closeRoleDialog(): void {
+    if (this.changingRoleId()) return;
+    this.roleDialogMember.set(null);
+  }
+
+  confirmRoleChange(): void {
+    const member = this.roleDialogMember();
+    const projectId = this.projectId();
+    if (!member || !projectId || !this.selectedRole || this.selectedRole === member.projectRole) {
+      this.roleDialogMember.set(null);
+      return;
+    }
+    this.changingRoleId.set(member.id);
+    this.projectService.updateMemberRole(projectId, member.id, { projectRole: this.selectedRole })
+      .pipe(finalize(() => this.changingRoleId.set(null)))
+      .subscribe({
+        next: updated => {
+          this.members.update(list => list.map(m => m.id === updated.id ? updated : m));
+          this.roleDialogMember.set(null);
+          this.toast.success('Role updated.');
+        },
+        error: (err: HttpErrorResponse) =>
+          this.toast.error(err.error?.message ?? 'Unable to update role.'),
       });
   }
 

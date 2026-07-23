@@ -58,9 +58,14 @@
             <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ m.projectRole }}</td>
             <td class="px-4 py-3"><span [class]="statusBadge(m.status)">{{ m.status }}</span></td>
             <td class="px-4 py-3 text-right">
-              @if (canRemove(m)) {
-                <button (click)="removeMember(m)" class="text-[13px] font-medium hover:underline" style="color:#D0342C">Remove</button>
-              }
+              <div class="flex items-center justify-end gap-3">
+                @if (canChangeRole(m)) {
+                  <button (click)="openRoleDialog(m)" class="text-[13px] font-medium hover:underline" style="color:#3B4FD9">Change role</button>
+                }
+                @if (canRemove(m)) {
+                  <button (click)="removeMember(m)" class="text-[13px] font-medium hover:underline" style="color:#D0342C">Remove</button>
+                }
+              </div>
             </td>
           </tr>
         }
@@ -78,6 +83,55 @@
       <button (click)="nextPage()" [disabled]="page() + 1 >= totalPages() || loading()" class="rounded border px-3 py-1.5 disabled:opacity-40">Next</button>
     </div>
   }
+}
+
+@if (roleDialogMember(); as member) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" (click)="closeRoleDialog()" role="presentation">
+    <div
+      class="w-full rounded-[12px] border bg-white p-6 shadow-xl"
+      style="border-color:#E6E8EC;max-width:420px"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="change-role-title"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="change-role-title" class="mb-1 text-[16px] font-extrabold" style="color:#14161C">Change role</h2>
+      <p class="mb-5 text-[13px]" style="color:#6B7280">
+        Update the project role for <span class="font-semibold" style="color:#14161C">{{ member.userFullName }}</span>.
+      </p>
+
+      <div class="flex flex-col gap-2">
+        @for (role of availableRoles(); track role) {
+          <label
+            class="flex cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 transition"
+            [style.border-color]="selectedRole === role ? '#3B4FD9' : '#E1E4E9'"
+            [style.background]="selectedRole === role ? '#EEF0FF' : 'white'"
+          >
+            <input type="radio" name="role" [value]="role" [(ngModel)]="selectedRole" class="accent-[#3B4FD9]" />
+            <span class="text-[13px] font-medium" [style.color]="selectedRole === role ? '#3B4FD9' : '#14161C'">{{ role }}</span>
+            @if (role === member.projectRole) {
+              <span class="ml-auto text-[11px] font-semibold" style="color:#9AA1AC">Current</span>
+            }
+          </label>
+        }
+      </div>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <button
+          (click)="closeRoleDialog()"
+          [disabled]="changingRoleId() !== null"
+          class="rounded-[8px] border px-4 py-2.5 text-[13px] font-medium disabled:opacity-60"
+          style="border-color:#E1E4E9;color:#4B5160"
+        >Cancel</button>
+        <button
+          (click)="confirmRoleChange()"
+          [disabled]="changingRoleId() !== null || selectedRole === member.projectRole"
+          class="rounded-[8px] px-4 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+          style="background:#3B4FD9"
+        >{{ changingRoleId() ? 'Saving…' : 'Save' }}</button>
+      </div>
+    </div>
+  </div>
 }
 
 @if (pendingRemoval(); as member) {

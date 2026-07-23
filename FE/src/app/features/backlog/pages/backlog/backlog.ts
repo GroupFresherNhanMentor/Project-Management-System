@@ -8,6 +8,7 @@ import { ProjectMemberDto } from '../../../../core/models/project-member.model';
 import { TaskPriority } from '../../../../core/models/api.model';
 import { TaskService } from '../../../../core/services/task';
 import { ProjectService } from '../../../../core/services/project';
+import { AuthService } from '../../../../core/services/auth';
 
 @Component({
   selector: 'app-backlog',
@@ -19,16 +20,20 @@ export class Backlog implements OnInit {
   private readonly route          = inject(ActivatedRoute);
   private readonly taskService    = inject(TaskService);
   private readonly projectService = inject(ProjectService);
+  private readonly authService    = inject(AuthService);
   private readonly platformId     = inject(PLATFORM_ID);
+
+  private readonly isAdmin = this.authService.getCurrentUser()?.role === 'ADMIN';
 
   private readonly projectId = this.resolveProjectId();
 
-  readonly tasks        = signal<TaskDto[]>([]);
-  readonly statuses     = signal<TaskStatusDto[]>([]);
-  readonly sprints      = signal<SprintDto[]>([]);
-  readonly members      = signal<ProjectMemberDto[]>([]);
-  readonly loading      = signal(false);
-  readonly error        = signal<string | null>(null);
+  readonly tasks          = signal<TaskDto[]>([]);
+  readonly statuses       = signal<TaskStatusDto[]>([]);
+  readonly sprints        = signal<SprintDto[]>([]);
+  readonly members        = signal<ProjectMemberDto[]>([]);
+  readonly loading        = signal(false);
+  readonly error          = signal<string | null>(null);
+  readonly canCreateTask  = signal(false);
 
   keyword = ''; statusId = ''; sprintId = ''; priority = ''; assigneeId = '';
   page = 0; size = 20;
@@ -41,6 +46,12 @@ export class Backlog implements OnInit {
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isAdmin) {
+      this.projectService.getCurrentMember(this.projectId).subscribe({
+        next: m => this.canCreateTask.set(m.status === 'ACTIVE' && m.projectRole === 'PM'),
+        error: () => this.canCreateTask.set(false),
+      });
+    }
     this.loadStatuses();
     this.loadSprints();
     this.loadMembers();
@@ -78,7 +89,7 @@ export class Backlog implements OnInit {
   }
 
   private loadStatuses(): void {
-    this.taskService.getTaskStatuses(this.projectId).subscribe({
+    this.taskService.getTaskStatuses(this.projectId, { isActive: true }).subscribe({
       next: list => this.statuses.set(list.filter(s => s.isActive)),
     });
   }

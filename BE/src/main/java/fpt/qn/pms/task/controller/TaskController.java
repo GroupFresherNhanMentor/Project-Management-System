@@ -40,7 +40,7 @@ public class TaskController {
     TaskService taskService;
 
     @PostMapping
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#request.projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#request.projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Create a new Task", description = "Requires PM role in project. Sets status to the project's initial status.")
     public ResponseEntity<ApiResponse<TaskDto>> createTask(@Valid @RequestBody CreateTaskRequest request) {
         TaskDto created = taskService.createTask(request);

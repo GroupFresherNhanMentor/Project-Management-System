@@ -52,8 +52,8 @@
       </div>
     </div>
 
-    <!-- Status + Assignee + Sprint -->
-    <div class="grid grid-cols-3 gap-3">
+    <!-- Status + Sprint -->
+    <div class="grid grid-cols-2 gap-3">
       <div>
         <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status *</label>
         <select [(ngModel)]="statusId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
@@ -66,19 +66,30 @@
         </select>
       </div>
       <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
-        <select [(ngModel)]="assigneeId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
-          <option value="">Unassigned</option>
-          @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
-        </select>
-      </div>
-      <div>
         <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Sprint</label>
         <select [(ngModel)]="sprintId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
           <option value="">No Sprint</option>
           @if (activeSprint(); as s) {
             <option [value]="s.id">{{ s.sprintName }} (Active)</option>
           }
+        </select>
+      </div>
+    </div>
+
+    <!-- Assignee + Reporter -->
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
+        <select [(ngModel)]="assigneeId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          <option value="">Unassigned</option>
+          @for (m of availableAssignees; track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Reporter *</label>
+        <select [(ngModel)]="reporterId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          <option value="" disabled>Select reporter</option>
+          @for (m of availableReporters; track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
         </select>
       </div>
     </div>
@@ -103,7 +114,7 @@
     <div class="flex gap-2 pt-1">
       <button
         (click)="submit()"
-        [disabled]="submitting || !taskKey.trim() || !summary.trim() || !statusId"
+        [disabled]="submitting || !taskKey.trim() || !summary.trim() || !statusId || !reporterId"
         class="rounded-lg px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
         style="background:#3B4FD9"
       >{{ submitting ? 'Creating…' : 'Create Task' }}</button>

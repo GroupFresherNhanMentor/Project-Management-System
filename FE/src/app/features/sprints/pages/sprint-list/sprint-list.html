@@ -13,8 +13,9 @@
   <div class="flex flex-col gap-3">
     @for (sprint of sprints(); track sprint.id) {
       <div
-        (click)="openEditSprintModal(sprint, $event)"
-        class="cursor-pointer rounded-[12px] border bg-white p-5 transition hover:border-primary"
+        [class.cursor-pointer]="canManage()"
+        (click)="canManage() && openEditSprintModal(sprint, $event)"
+        class="rounded-[12px] border bg-white p-5 transition hover:border-primary"
         style="border-color:#E6E8EC"
       >
         <div class="flex items-start justify-between">

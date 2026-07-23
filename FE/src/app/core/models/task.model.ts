@@ -69,6 +69,14 @@ export interface CreateTaskRequest {
   dueDate?: string;
 }
 
+export interface UpdateTaskStatusRequest {
+  name?: string;
+  color?: string;
+  isInitial?: boolean;
+  isFinal?: boolean;
+  isActive?: boolean;
+}
+
 export interface UpdateTaskRequest {
   statusId?: string;
   description?: string;

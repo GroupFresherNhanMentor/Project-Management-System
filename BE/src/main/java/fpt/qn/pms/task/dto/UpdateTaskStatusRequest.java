@@ -21,4 +21,6 @@ public class UpdateTaskStatusRequest {
     Boolean isInitial;
 
     Boolean isFinal;
+
+    Boolean isActive;
 }

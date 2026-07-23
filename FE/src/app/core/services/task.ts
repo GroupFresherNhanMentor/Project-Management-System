@@ -4,7 +4,7 @@ import { Observable, map } from 'rxjs';
 
 import { API } from '../../configs/api-endpoints';
 import { ApiResponse, PageResponse } from '../models/api.model';
-import { TaskDto, TaskStatusDto, TaskWorkflowDto, CreateTaskStatusRequest, CreateTaskWorkflowRequest, CreateTaskRequest, UpdateTaskRequest, AssignTaskRequest, TaskSearchParams } from '../models/task.model';
+import { TaskDto, TaskStatusDto, TaskWorkflowDto, CreateTaskStatusRequest, UpdateTaskStatusRequest, CreateTaskWorkflowRequest, CreateTaskRequest, UpdateTaskRequest, AssignTaskRequest, TaskSearchParams } from '../models/task.model';
 import { TaskCommentDto, CreateCommentRequest,UpdateCommentRequest } from '../models/comment.model';
 import { TaskActivityDto } from '../models/activity.model';
 import { WorklogDto, CreateWorklogRequest, UpdateWorklogRequest } from '../models/worklog.model';
@@ -40,6 +40,12 @@ export class TaskService {
   createTaskStatus(projectId: string, body: CreateTaskStatusRequest): Observable<TaskStatusDto> {
     return this.http
       .post<ApiResponse<TaskStatusDto>>(API.taskStatuses.base(projectId), body)
+      .pipe(map(r => r.data));
+  }
+
+  updateTaskStatus(projectId: string, id: string, body: UpdateTaskStatusRequest): Observable<TaskStatusDto> {
+    return this.http
+      .put<ApiResponse<TaskStatusDto>>(API.taskStatuses.byId(projectId, id), body)
       .pipe(map(r => r.data));
   }
 
