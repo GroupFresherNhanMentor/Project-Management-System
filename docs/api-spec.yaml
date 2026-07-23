@@ -281,6 +281,24 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /projects/{projectId}/members/candidates:
+    get:
+      tags: [ProjectMember]
+      summary: Lấy danh sách ứng viên có thể thêm vào dự án
+      description: "Trả về danh sách người dùng ACTIVE chưa phải là thành viên ACTIVE của dự án. Yêu cầu System Role: ADMIN hoặc PM"
+      parameters:
+        - { $ref: '#/components/parameters/ProjectIdPath' }
+        - name: keyword
+          in: query
+          required: false
+          schema: { type: string }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200': { $ref: '#/components/responses/ProjectMemberCandidatePageResponse' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /projects/{projectId}/members/{memberId}:
     delete:
       tags: [ProjectMember]
@@ -291,7 +309,7 @@ paths:
         - name: memberId
           in: path
           required: true
-          schema: { type: integer, format: int64 }
+          schema: { type: string, format: uuid }
       responses:
         '204': { description: Xoá thành công (thực tế chuyển trạng thái thành INACTIVE) }
         '403': { $ref: '#/components/responses/Forbidden' }
