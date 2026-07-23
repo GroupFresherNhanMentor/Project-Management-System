@@ -21,11 +21,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.dashboard.dto.DashboardAdminResponse;
 import fpt.qn.pms.dashboard.dto.DashboardPersonalResponse;
 import fpt.qn.pms.dashboard.dto.DashboardProjectResponse;
 import fpt.qn.pms.dashboard.dto.SprintProgressDto;
+import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SprintStatus;
+import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
+import fpt.qn.pms.jooq.enums.TaskType;
+import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.SprintsRecord;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -189,6 +194,108 @@ public class DashboardServiceImpl implements DashboardService {
                 .taskByPriority(taskByPriority)
                 .totalLoggedHours(totalHours)
                 .sprintProgress(sprintProgress)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardAdminResponse getAdminDashboard() {
+        Long totalUsersCount = dsl.selectCount().from(USERS).fetchOne(0, Long.class);
+        long totalUsers = totalUsersCount != null ? totalUsersCount : 0L;
+
+        Long activeUsersCount = dsl.selectCount()
+                .from(USERS)
+                .where(USERS.STATUS.eq(UserStatus.ACTIVE))
+                .fetchOne(0, Long.class);
+        long activeUsers = activeUsersCount != null ? activeUsersCount : 0L;
+
+        Long lockedUsersCount = dsl.selectCount()
+                .from(USERS)
+                .where(USERS.STATUS.eq(UserStatus.LOCKED))
+                .fetchOne(0, Long.class);
+        long lockedUsers = lockedUsersCount != null ? lockedUsersCount : 0L;
+
+        Long totalProjectsCount = dsl.selectCount().from(PROJECTS).fetchOne(0, Long.class);
+        long totalProjects = totalProjectsCount != null ? totalProjectsCount : 0L;
+
+        Long activeProjectsCount = dsl.selectCount()
+                .from(PROJECTS)
+                .where(PROJECTS.STATUS.eq(ProjectStatus.ACTIVE))
+                .fetchOne(0, Long.class);
+        long activeProjects = activeProjectsCount != null ? activeProjectsCount : 0L;
+
+        Long totalTasksCount = dsl.selectCount().from(TASKS).fetchOne(0, Long.class);
+        long totalTasks = totalTasksCount != null ? totalTasksCount : 0L;
+
+        BigDecimal totalHours = dsl.select(DSL.sum(WORKLOGS.HOURS))
+                .from(WORKLOGS)
+                .fetchOne(0, BigDecimal.class);
+        if (totalHours == null) {
+            totalHours = BigDecimal.ZERO;
+        }
+
+        // Project Status Breakdown
+        Map<String, Integer> projectByStatus = new HashMap<>();
+        for (ProjectStatus status : ProjectStatus.values()) {
+            projectByStatus.put(status.getLiteral(), 0);
+        }
+        dsl.select(PROJECTS.STATUS, DSL.count())
+                .from(PROJECTS)
+                .groupBy(PROJECTS.STATUS)
+                .fetch()
+                .forEach(r -> {
+                    ProjectStatus status = r.get(PROJECTS.STATUS);
+                    Long countVal = r.get(1, Long.class);
+                    if (status != null && countVal != null) {
+                        projectByStatus.put(status.getLiteral(), countVal.intValue());
+                    }
+                });
+
+        // Task Type Breakdown
+        Map<String, Integer> taskByType = new HashMap<>();
+        for (TaskType type : TaskType.values()) {
+            taskByType.put(type.getLiteral(), 0);
+        }
+        dsl.select(TASKS.TASK_TYPE, DSL.count())
+                .from(TASKS)
+                .groupBy(TASKS.TASK_TYPE)
+                .fetch()
+                .forEach(r -> {
+                    TaskType type = r.get(TASKS.TASK_TYPE);
+                    Long countVal = r.get(1, Long.class);
+                    if (type != null && countVal != null) {
+                        taskByType.put(type.getLiteral(), countVal.intValue());
+                    }
+                });
+
+        // User System Role Breakdown
+        Map<String, Integer> userByRole = new HashMap<>();
+        for (SysRole role : SysRole.values()) {
+            userByRole.put(role.getLiteral(), 0);
+        }
+        dsl.select(USERS.ROLE, DSL.count())
+                .from(USERS)
+                .groupBy(USERS.ROLE)
+                .fetch()
+                .forEach(r -> {
+                    SysRole role = r.get(USERS.ROLE);
+                    Long countVal = r.get(1, Long.class);
+                    if (role != null && countVal != null) {
+                        userByRole.put(role.getLiteral(), countVal.intValue());
+                    }
+                });
+
+        return DashboardAdminResponse.builder()
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .lockedUsers(lockedUsers)
+                .totalProjects(totalProjects)
+                .activeProjects(activeProjects)
+                .totalTasks(totalTasks)
+                .totalLoggedHours(totalHours)
+                .projectByStatus(projectByStatus)
+                .taskByType(taskByType)
+                .userByRole(userByRole)
                 .build();
     }
 }

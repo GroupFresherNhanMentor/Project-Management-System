@@ -5,6 +5,7 @@ import {
   ApiResponse,
   PersonalDashboardData,
   ProjectDashboardData,
+  AdminDashboardData,
   TaskSearchRequest,
   TaskSearchResponse
 } from '../models/dashboard.model';
@@ -24,6 +25,11 @@ export class DashboardService {
   // Thống kê dự án /api/dashboard/project/{id}
   getProjectStats(projectId: string): Observable<ApiResponse<ProjectDashboardData>> {
     return this.http.get<ApiResponse<ProjectDashboardData>>(`${this.baseUrl}/project/${projectId}`);
+  }
+
+  // Thống kê tổng quan hệ thống cho Admin /api/dashboard/admin
+  getAdminStats(): Observable<ApiResponse<AdminDashboardData>> {
+    return this.http.get<ApiResponse<AdminDashboardData>>(`${this.baseUrl}/admin`);
   }
 
   // Tìm kiếm Task phân trang từ database /api/tasks/search
