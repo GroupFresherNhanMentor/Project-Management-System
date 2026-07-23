@@ -1,121 +1,86 @@
-import { Component, signal, inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { finalize } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
-import { SprintDto, UpdateSprintStatusRequest } from '../../../../core/models/sprint.model';
-import { TaskDto } from '../../../../core/models/task.model';
-import { ProjectService } from '../../../../core/services/project';
+import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
+import { SprintDto } from '../../../../core/models/sprint.model';
+import { TaskDto, TaskStatusDto } from '../../../../core/models/task.model';
 import { TaskService } from '../../../../core/services/task';
+import { ProjectService } from '../../../../core/services/project';
 import { ToastService } from '../../../../core/services/toast';
-import { AuthService } from '../../../../core/services/auth';
-import { SprintStatus } from '../../../../core/models/api.model';
 
 @Component({
   selector: 'app-sprint-detail',
   imports: [],
   templateUrl: './sprint-detail.html',
 })
-export class SprintDetail {
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+export class SprintDetail implements OnInit {
+  private readonly router         = inject(Router);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly taskService    = inject(TaskService);
   private readonly projectService = inject(ProjectService);
-  private readonly taskService = inject(TaskService);
-  private readonly toast = inject(ToastService);
-  private readonly authService = inject(AuthService);
+  private readonly toast          = inject(ToastService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
-  readonly sprint = signal<SprintDto | null>(null);
-  readonly tasks = signal<TaskDto[]>([]);
-  readonly loading = signal(true);
-  readonly statusLoading = signal(false);
-  readonly errorMessage = signal<string | null>(null);
-  readonly canManage = signal(this.authService.getCurrentUser()?.role === 'ADMIN');
+  private readonly projectId = this.resolveProjectId();
+  private readonly sprintId  = this.route.snapshot.paramMap.get('id') ?? '';
 
-  private projectId = '';
-  private sprintId = '';
+  readonly sprint   = signal<SprintDto | null>(null);
+  readonly tasks    = signal<TaskDto[]>([]);
+  readonly statuses = signal<TaskStatusDto[]>([]);
+  readonly isPm     = signal(false);
+  readonly loading  = signal(true);
+  readonly error    = signal<string | null>(null);
 
-  constructor() {
-    // Route: /projects/:id/sprints/:sprintId
-    this.sprintId = this.route.snapshot.paramMap.get('id') ?? '';
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.loadSprint();
+    this.loadStatuses();
+    this.loadTasks();
+    this.projectService.getCurrentMember(this.projectId).subscribe({
+      next: member => this.isPm.set(member.projectRole === 'PM'),
+    });
+  }
 
-    // Get projectId from parent route
+  private resolveProjectId(): string {
     let r: ActivatedRoute | null = this.route.parent;
     while (r) {
       const id = r.snapshot.paramMap.get('id');
-      if (id) { this.projectId = id; break; }
+      if (id) return id;
       r = r.parent;
     }
-
-    if (!this.projectId || !this.sprintId) {
-      this.errorMessage.set('Invalid sprint URL.');
-      this.loading.set(false);
-      return;
-    }
-
-    this.loadData();
-    this.resolvePermissions();
+    return '';
   }
 
-  private resolvePermissions(): void {
-    const user = this.authService.getCurrentUser();
-    if (user?.role === 'ADMIN') {
-      this.canManage.set(true);
-      return;
-    }
-    this.projectService.getCurrentMember(this.projectId).subscribe({
-      next: membership => this.canManage.set(membership.status === 'ACTIVE' && membership.projectRole === 'PM'),
-      error: () => this.canManage.set(false),
-    });
-  }
-
-  private loadData(): void {
-    this.loading.set(true);
+  private loadSprint(): void {
     this.projectService.getSprintById(this.projectId, this.sprintId).subscribe({
-      next: sprint => {
-        this.sprint.set(sprint);
-        this.loading.set(false);
-      },
-      error: (err: HttpErrorResponse) => {
-        this.errorMessage.set(err.error?.message ?? 'Sprint not found.');
-        this.loading.set(false);
-      },
+      next: s => { this.sprint.set(s); this.loading.set(false); },
+      error: () => { this.error.set('Failed to load sprint.'); this.loading.set(false); },
     });
+  }
 
-    // Load tasks for this sprint
-    this.taskService.searchTasks({ sprint: this.sprintId, size: 200 }).subscribe({
-      next: result => this.tasks.set(result.items),
-      error: () => {/* non-critical */},
+  private loadStatuses(): void {
+    this.taskService.getTaskStatuses(this.projectId).subscribe({
+      next: list => this.statuses.set(list),
+    });
+  }
+
+  private loadTasks(): void {
+    this.taskService.searchTasks({ projectId: this.projectId, sprintId: this.sprintId, size: 200 }).subscribe({
+      next: res => this.tasks.set(res.items),
     });
   }
 
   startSprint(): void {
-    const s = this.sprint();
-    if (!s) return;
-    this.statusLoading.set(true);
-    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'ACTIVE' })
-      .pipe(finalize(() => this.statusLoading.set(false)))
-      .subscribe({
-        next: updated => {
-          this.sprint.set(updated);
-          this.toast.success(`"${s.sprintName}" started.`);
-        },
-        error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Unable to start sprint.'),
-      });
+    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'ACTIVE' }).subscribe({
+      next: s => { this.sprint.set(s); this.toast.success('Sprint started.'); },
+      error: () => this.toast.error('Failed to start sprint.'),
+    });
   }
 
   closeSprint(): void {
-    const s = this.sprint();
-    if (!s) return;
-    this.statusLoading.set(true);
-    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'CLOSED' })
-      .pipe(finalize(() => this.statusLoading.set(false)))
-      .subscribe({
-        next: updated => {
-          this.sprint.set(updated);
-          this.toast.success(`"${s.sprintName}" closed.`);
-        },
-        error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Unable to close sprint.'),
-      });
+    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'CLOSED' }).subscribe({
+      next: s => { this.sprint.set(s); this.toast.success('Sprint closed.'); },
+      error: () => this.toast.error('Failed to close sprint.'),
+    });
   }
 
   openTask(id: string): void { void this.router.navigate(['/tasks', id]); }
@@ -123,14 +88,13 @@ export class SprintDetail {
   statusBadge(s: string): string {
     return 'badge ' + ({ PLANNED: 'badge-planned', ACTIVE: 'badge-active', CLOSED: 'badge-closed' }[s] ?? '');
   }
-  taskStatusBadge(s: string): string {
-    return 'badge ' + ({ TODO: 'badge-todo', IN_PROGRESS: 'badge-inprogress', TESTING: 'badge-testing', DONE: 'badge-done' }[s] ?? '');
-  }
-  taskStatusLabel(s: string): string {
-    return ({ TODO: 'To Do', IN_PROGRESS: 'In Progress', TESTING: 'Testing', DONE: 'Done' })[s] ?? s;
-  }
+
   priorityColor(p: string): string {
     return ({ LOW: '#5B6472', MEDIUM: '#2A5CD9', HIGH: '#C4720A', CRITICAL: '#D0342C' })[p] ?? '#9AA1AC';
   }
-  get doneCount(): number { return this.tasks().filter(t => t.status === 'DONE').length; }
+
+  get doneCount(): number {
+    const finalIds = new Set(this.statuses().filter(s => s.isFinal).map(s => s.id));
+    return this.tasks().filter(t => finalIds.has(t.statusId)).length;
+  }
 }

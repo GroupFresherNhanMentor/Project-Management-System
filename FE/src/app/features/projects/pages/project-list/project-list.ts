@@ -1,4 +1,5 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -14,10 +15,11 @@ import { ToastService } from '../../../../core/services/toast';
   templateUrl: './project-list.html',
 })
 export class ProjectList implements OnInit {
-  private readonly authService = inject(AuthService);
-  private readonly router      = inject(Router);
+  private readonly authService    = inject(AuthService);
+  private readonly router         = inject(Router);
   private readonly projectService = inject(ProjectService);
-  private readonly toast = inject(ToastService);
+  private readonly toast          = inject(ToastService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
   readonly projects = signal<ProjectDto[]>([]);
   readonly loading = signal(true);
@@ -31,7 +33,9 @@ export class ProjectList implements OnInit {
   readonly size = 12;
   totalPages = 0;
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) this.load();
+  }
 
   load(page = this.page): void {
     this.loading.set(true);

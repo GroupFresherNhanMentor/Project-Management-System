@@ -97,7 +97,7 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void createProject_shouldRejectCompletedInitialStatus() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         CreateProjectRequest request = createRequest("DONE" + codeSuffix, "Completed Project");
         request.setStatus(ProjectStatus.COMPLETED);
 

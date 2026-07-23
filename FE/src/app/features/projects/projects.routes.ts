@@ -55,6 +55,16 @@ export const PROJECTS_ROUTES: Routes = [
         path: 'worklog',
         loadChildren: () => import('../worklog/worklog.routes').then(m => m.WORKLOG_ROUTES),
       },
+      {
+        path: 'tasks/new',
+        loadComponent: () => import('../tasks/pages/task-new/task-new').then(m => m.TaskNew),
+        data: { title: 'New Task' },
+      },
+      {
+        path: 'task-statuses',
+        loadComponent: () => import('./pages/task-status/task-status').then(m => m.TaskStatusManagement),
+        data: { title: 'Task Statuses' },
+      },
     ],
   },
 ];
