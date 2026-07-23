@@ -468,7 +468,9 @@ class UserServiceTest extends BaseIntegrationTest {
 
     @Test
     void updateUserStatus_shouldThrow_whenAdminLocksSelf() {
-        UserDto admin = userService.createUser(buildRequest("020b")).getUser();
+        CreateUserRequest reqAdmin = buildRequest("020b");
+        reqAdmin.setRole(SysRole.ADMIN);
+        UserDto admin = userService.createUser(reqAdmin).getUser();
         setSecurityContext(admin.getUsername(), "ADMIN");
 
         UpdateUserStatusRequest req = new UpdateUserStatusRequest();
