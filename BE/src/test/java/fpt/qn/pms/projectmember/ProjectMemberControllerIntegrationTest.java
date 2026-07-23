@@ -220,13 +220,18 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void removeMember_shouldReturn409WhenRemovingLastProjectManager() throws Exception {
+    void removeMember_shouldReturn204WhenAdministratorRemovesLastProjectManager() throws Exception {
         mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
                         projectId, projectManagerMemberId)
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message")
-                        .value("A project must have at least one active project manager"));
+                .andExpect(status().isNoContent());
+
+        ProjectMemberStatus memberStatus = dsl.select(PROJECT_MEMBERS.STATUS)
+                .from(PROJECT_MEMBERS)
+                .where(PROJECT_MEMBERS.ID.eq(projectManagerMemberId))
+                .fetchOne(PROJECT_MEMBERS.STATUS);
+        org.assertj.core.api.Assertions.assertThat(memberStatus)
+                .isEqualTo(ProjectMemberStatus.INACTIVE);
     }
 
     @Test

@@ -28,6 +28,7 @@ import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.project.dto.request.CreateProjectRequest;
 import fpt.qn.pms.project.dto.request.UpdateProjectRequest;
 import fpt.qn.pms.project.dto.response.ProjectDto;
+import fpt.qn.pms.project.exception.InvalidInitialProjectStatusException;
 import fpt.qn.pms.project.exception.InvalidProjectDateRangeException;
 import fpt.qn.pms.project.exception.ProjectAccessDeniedException;
 import fpt.qn.pms.project.exception.ProjectCodeAlreadyExistsException;
@@ -90,6 +91,17 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
         assertThatThrownBy(() -> projectService.createProject(request))
                 .isInstanceOf(InvalidProjectDateRangeException.class);
+    }
+
+    @Test
+    void createProject_shouldRejectCompletedInitialStatus() {
+        authenticate(admin.getUsername());
+        CreateProjectRequest request = createRequest("DONE" + codeSuffix, "Completed Project");
+        request.setStatus(ProjectStatus.COMPLETED);
+
+        assertThatThrownBy(() -> projectService.createProject(request))
+                .isInstanceOf(InvalidInitialProjectStatusException.class)
+                .hasMessage("A new project cannot have COMPLETED status");
     }
 
     @Test

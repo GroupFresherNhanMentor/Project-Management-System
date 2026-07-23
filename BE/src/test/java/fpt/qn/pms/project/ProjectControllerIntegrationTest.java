@@ -100,6 +100,20 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void createProject_shouldReturn400ForCompletedInitialStatus() throws Exception {
+        CreateProjectRequest request = createRequest("COMPLETED", "Completed Project");
+        request.setStatus(ProjectStatus.COMPLETED);
+
+        mockMvc.perform(post("/api/projects")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("A new project cannot have COMPLETED status"));
+    }
+
+    @Test
     void getProjects_shouldReturnOnlyActivePmMembershipsForRegularUser() throws Exception {
         UUID visibleProjectId = insertProject("VISIBLE", "Visible Project");
         UUID hiddenProjectId = insertProject("HIDDEN", "Hidden Project");

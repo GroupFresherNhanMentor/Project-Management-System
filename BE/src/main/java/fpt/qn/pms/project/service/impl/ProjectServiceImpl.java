@@ -20,6 +20,7 @@ import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.project.dto.request.CreateProjectRequest;
 import fpt.qn.pms.project.dto.request.UpdateProjectRequest;
 import fpt.qn.pms.project.dto.response.ProjectDto;
+import fpt.qn.pms.project.exception.InvalidInitialProjectStatusException;
 import fpt.qn.pms.project.exception.InvalidProjectDateRangeException;
 import fpt.qn.pms.project.exception.ProjectAccessDeniedException;
 import fpt.qn.pms.project.exception.ProjectCodeAlreadyExistsException;
@@ -82,6 +83,9 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectDto createProject(CreateProjectRequest request) {
         UsersRecord currentUser = getCurrentUser();
         validateDateRange(request.getStartDate(), request.getEndDate());
+        if (request.getStatus() == ProjectStatus.COMPLETED) {
+            throw new InvalidInitialProjectStatusException();
+        }
 
         String normalizedCode = request.getProjectCode().trim().toUpperCase(Locale.ROOT);
         if (projectRepository.existsByProjectCodeIgnoreCase(normalizedCode)) {

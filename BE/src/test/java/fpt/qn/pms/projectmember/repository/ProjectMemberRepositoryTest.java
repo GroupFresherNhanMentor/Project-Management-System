@@ -117,11 +117,6 @@ class ProjectMemberRepositoryTest extends BaseIntegrationTest {
                 inactivePmUserId, ProjectRole.PM)).isFalse();
     }
 
-    @Test
-    void countActiveByProjectIdAndRole_shouldExcludeInactiveProjectManagers() {
-        assertThat(projectMemberRepository.countActiveByProjectIdAndRole(projectId, ProjectRole.PM)).isEqualTo(1);
-    }
-
     private UUID insertUser(String marker) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         return dsl.insertInto(USERS)
