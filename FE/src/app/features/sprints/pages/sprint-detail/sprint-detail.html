@@ -1,6 +1,8 @@
-<a routerLink="/sprints" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Sprints</a>
-
-@if (sprint(); as s) {
+@if (loading()) {
+  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading sprint...</div>
+} @else if (errorMessage()) {
+  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">{{ errorMessage() }}</div>
+} @else if (sprint(); as s) {
   <!-- Sprint header card -->
   <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
     <div class="flex items-start justify-between">
@@ -15,11 +17,17 @@
         </p>
       </div>
       <div class="flex gap-2">
-        @if (s.status === 'PLANNED') {
-          <button (click)="startSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#3B4FD9">Start Sprint</button>
+        @if (s.status === 'PLANNED' && canManage()) {
+          <button (click)="startSprint()" [disabled]="statusLoading()"
+            class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#3B4FD9">
+            {{ statusLoading() ? 'Starting…' : 'Start Sprint' }}
+          </button>
         }
-        @if (s.status === 'ACTIVE') {
-          <button (click)="closeSprint()" class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">Close Sprint</button>
+        @if (s.status === 'ACTIVE' && canManage()) {
+          <button (click)="closeSprint()" [disabled]="statusLoading()"
+            class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#4B5160">
+            {{ statusLoading() ? 'Closing…' : 'Close Sprint' }}
+          </button>
         }
       </div>
     </div>
@@ -57,6 +65,4 @@
       </tbody>
     </table>
   </div>
-} @else {
-  <p class="text-[13px]" style="color:#9AA1AC">Loading…</p>
 }
