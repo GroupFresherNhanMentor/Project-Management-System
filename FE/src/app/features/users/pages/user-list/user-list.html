@@ -60,7 +60,11 @@
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-2">
               <button (click)="openEdit(u)" class="rounded-[6px] border px-2.5 py-1 text-[12px] font-medium hover:bg-gray-50" style="border-color:#E1E4E9;color:#4B5160">Edit</button>
-              <button (click)="toggleLock(u)" class="rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-white" [style.background]="u.status === 'ACTIVE' ? '#D0342C' : '#1C8A4B'">
+              <button (click)="toggleLock(u)"
+                      [disabled]="isCurrentUser(u) && u.status === 'ACTIVE'"
+                      class="rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                      [style.background]="u.status === 'ACTIVE' ? '#D0342C' : '#1C8A4B'"
+                      [attr.title]="isCurrentUser(u) && u.status === 'ACTIVE' ? 'You cannot lock your own account' : null">
                 {{ u.status === 'ACTIVE' ? 'Lock' : 'Unlock' }}
               </button>
               <button (click)="confirmReset(u)" class="rounded-[6px] border px-2.5 py-1 text-[12px] font-medium" style="border-color:#E1E4E9;color:#B8860B">Reset PW</button>

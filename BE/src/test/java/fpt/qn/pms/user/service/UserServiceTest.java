@@ -41,6 +41,7 @@ import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.InvalidOldPasswordException;
+import fpt.qn.pms.user.exception.SelfLockoutException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.repository.UserRepository;
 
@@ -463,6 +464,19 @@ class UserServiceTest extends BaseIntegrationTest {
         assertThatThrownBy(() -> userService.updateUserStatus(UUID.randomUUID(), req))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("User not found");
+    }
+
+    @Test
+    void updateUserStatus_shouldThrow_whenAdminLocksSelf() {
+        UserDto admin = userService.createUser(buildRequest("020b")).getUser();
+        setSecurityContext(admin.getUsername(), "ADMIN");
+
+        UpdateUserStatusRequest req = new UpdateUserStatusRequest();
+        req.setStatus(UserStatus.LOCKED);
+
+        assertThatThrownBy(() -> userService.updateUserStatus(admin.getId(), req))
+                .isInstanceOf(SelfLockoutException.class)
+                .hasMessageContaining("Admin cannot lock their own account");
     }
 
     // ── getCurrentUser ─────────────────────────────────────────────────────────

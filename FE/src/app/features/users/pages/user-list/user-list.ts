@@ -7,6 +7,7 @@ import { finalize } from 'rxjs';
 
 import { ToastService } from '../../../../core/services/toast';
 import { UserService } from '../../../../core/services/user';
+import { AuthService } from '../../../../core/services/auth';
 import type { UserDto, ResetPasswordResponse } from '../../../../core/models/user.model';
 import type { SystemRole, UserStatus } from '../../../../core/models/api.model';
 
@@ -18,6 +19,7 @@ import type { SystemRole, UserStatus } from '../../../../core/models/api.model';
 export class UserList implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly userService = inject(UserService);
+  private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   readonly users = signal<UserDto[]>([]);
@@ -97,7 +99,16 @@ export class UserList implements OnInit {
     });
   }
 
+  isCurrentUser(u: UserDto): boolean {
+    const current = this.authService.getCurrentUser();
+    return !!current && current.id === u.id;
+  }
+
   toggleLock(u: UserDto): void {
+    if (this.isCurrentUser(u) && u.status === 'ACTIVE') {
+      this.toast.error('You cannot lock your own account.');
+      return;
+    }
     const newStatus: UserStatus = u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE';
     this.userService.updateUserStatus(u.id, { status: newStatus })
     .subscribe({
