@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.web.client.HttpClientErrorException.NotFound;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.exception.AppException;
@@ -47,7 +47,7 @@ public class WorklogServiceImpl implements WorklogService {
     @Transactional(readOnly = true)
     public PageResponse<WorklogDto> getWorklogsByTask(UUID taskId, int page, int size) {
         if (!taskRepository.existsById(taskId)) {
-            throw new IllegalArgumentException("Task not found");
+            throw new NotFoundException("Task not found");
         }
 
         PaginationResult<WorklogDto> result = worklogRepository.findByTaskId(taskId, page, size);
@@ -90,7 +90,7 @@ public class WorklogServiceImpl implements WorklogService {
                 .orElseThrow(() -> new AccessDeniedException("User not authenticated"));
 
         WorklogsRecord worklog = worklogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Worklog not found"));
+                .orElseThrow(() -> new NotFoundException("Worklog not found"));
 
         TasksRecord task = taskRepository.findById(worklog.getTaskId())
                 .orElseThrow(() -> new NotFoundException("Task not found for worklog"));
@@ -119,7 +119,7 @@ public class WorklogServiceImpl implements WorklogService {
                 .orElseThrow(() -> new AccessDeniedException("User not authenticated"));
 
         WorklogsRecord worklog = worklogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Worklog not found"));
+                .orElseThrow(() -> new NotFoundException("Worklog not found"));
 
         TasksRecord task = taskRepository.findById(worklog.getTaskId())
                 .orElseThrow(() -> new NotFoundException("Task not found for worklog"));
