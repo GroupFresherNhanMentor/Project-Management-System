@@ -60,7 +60,14 @@
           <td class="px-4 py-3 text-right">
             <div class="flex items-center justify-end gap-2">
               <button (click)="openEdit(u)" class="rounded-[6px] border px-2.5 py-1 text-[12px] font-medium hover:bg-gray-50" style="border-color:#E1E4E9;color:#4B5160">Edit</button>
-              <button (click)="toggleLock(u)" class="rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-white" [style.background]="u.status === 'ACTIVE' ? '#D0342C' : '#1C8A4B'">
+              <button (click)="toggleLock(u)"
+                      [attr.aria-disabled]="isCurrentUser(u) && u.status === 'ACTIVE'"
+                      [attr.aria-label]="isCurrentUser(u) && u.status === 'ACTIVE' ? 'Lock user - You cannot lock your own account' : (u.status === 'ACTIVE' ? 'Lock user' : 'Unlock user')"
+                      [attr.title]="isCurrentUser(u) && u.status === 'ACTIVE' ? 'You cannot lock your own account' : null"
+                      class="rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-white transition-opacity"
+                      [class.opacity-40]="isCurrentUser(u) && u.status === 'ACTIVE'"
+                      [class.cursor-not-allowed]="isCurrentUser(u) && u.status === 'ACTIVE'"
+                      [style.background]="u.status === 'ACTIVE' ? '#D0342C' : '#1C8A4B'">
                 {{ u.status === 'ACTIVE' ? 'Lock' : 'Unlock' }}
               </button>
               <button (click)="confirmReset(u)" class="rounded-[6px] border px-2.5 py-1 text-[12px] font-medium" style="border-color:#E1E4E9;color:#B8860B">Reset PW</button>

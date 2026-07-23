@@ -103,11 +103,11 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldReturn403ForActiveDeveloper() throws Exception {
+    void getMembers_shouldReturn200ForActiveDeveloper() throws Exception {
         mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
                         .header("Authorization", "Bearer " + developerToken))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test
@@ -220,13 +220,18 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void removeMember_shouldReturn409WhenRemovingLastProjectManager() throws Exception {
+    void removeMember_shouldReturn204WhenAdministratorRemovesLastProjectManager() throws Exception {
         mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
                         projectId, projectManagerMemberId)
                         .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message")
-                        .value("A project must have at least one active project manager"));
+                .andExpect(status().isNoContent());
+
+        ProjectMemberStatus memberStatus = dsl.select(PROJECT_MEMBERS.STATUS)
+                .from(PROJECT_MEMBERS)
+                .where(PROJECT_MEMBERS.ID.eq(projectManagerMemberId))
+                .fetchOne(PROJECT_MEMBERS.STATUS);
+        org.assertj.core.api.Assertions.assertThat(memberStatus)
+                .isEqualTo(ProjectMemberStatus.INACTIVE);
     }
 
     @Test

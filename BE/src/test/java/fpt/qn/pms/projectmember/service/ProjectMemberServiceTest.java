@@ -34,7 +34,6 @@ import fpt.qn.pms.projectmember.dto.response.ProjectMemberCandidateDto;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAccessDeniedException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAlreadyActiveException;
-import fpt.qn.pms.projectmember.exception.LastProjectManagerRemovalForbiddenException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberHasAssignedTasksException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberNotFoundException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberRemovalForbiddenException;
@@ -98,11 +97,12 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldRejectActiveDeveloper() {
+    void getMembers_shouldAllowActiveDeveloper() {
         authenticate(developer.getUsername());
 
-        assertThatThrownBy(() -> projectMemberService.getMembers(projectId, null, 0, 20))
-                .isInstanceOf(ProjectMemberAccessDeniedException.class);
+        PageResponse<ProjectMemberDto> result = projectMemberService.getMembers(projectId, null, 0, 20);
+
+        assertThat(result.getTotalElements()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -227,12 +227,16 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void removeMember_shouldRejectRemovingLastActiveProjectManager() {
+    void removeMember_shouldAllowAdministratorRemovingLastActiveProjectManager() {
         authenticate(admin.getUsername());
 
-        assertThatThrownBy(() -> projectMemberService.removeMember(projectId, projectManagerMemberId))
-                .isInstanceOf(LastProjectManagerRemovalForbiddenException.class)
-                .hasMessage("A project must have at least one active project manager");
+        projectMemberService.removeMember(projectId, projectManagerMemberId);
+
+        assertThat(dsl.select(PROJECT_MEMBERS.STATUS)
+                .from(PROJECT_MEMBERS)
+                .where(PROJECT_MEMBERS.ID.eq(projectManagerMemberId))
+                .fetchOne(PROJECT_MEMBERS.STATUS))
+                .isEqualTo(ProjectMemberStatus.INACTIVE);
     }
 
     @Test

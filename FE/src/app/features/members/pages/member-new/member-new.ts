@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,10 +15,11 @@ import { ToastService } from '../../../../core/services/toast';
   templateUrl: './member-new.html',
 })
 export class MemberNew implements OnInit {
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+  private readonly router         = inject(Router);
+  private readonly route          = inject(ActivatedRoute);
   private readonly projectService = inject(ProjectService);
-  private readonly toast = inject(ToastService);
+  private readonly toast          = inject(ToastService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
   readonly roles: ProjectRole[] = ['PM', 'DEV', 'TESTER'];
   readonly projectId = signal<string | null>(null);
@@ -40,7 +42,7 @@ export class MemberNew implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadCandidates();
+    if (isPlatformBrowser(this.platformId)) this.loadCandidates();
   }
 
   private resolveProjectId(): string | null {

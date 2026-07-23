@@ -15,7 +15,6 @@ import org.springframework.stereotype.Repository;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.repository.BaseRepository;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
-import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
 
@@ -78,7 +77,6 @@ public class ProjectRepositoryImpl extends BaseRepository<ProjectsRecord> implem
                             .from(PROJECT_MEMBERS)
                             .where(PROJECT_MEMBERS.PROJECT_ID.eq(PROJECTS.ID))
                             .and(PROJECT_MEMBERS.USER_ID.eq(memberUserId))
-                            .and(PROJECT_MEMBERS.PROJECT_ROLE.eq(ProjectRole.PM))
                             .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE)));
         }
 

@@ -19,7 +19,6 @@ import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberCandidateDto;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAlreadyActiveException;
-import fpt.qn.pms.projectmember.exception.LastProjectManagerRemovalForbiddenException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberHasAssignedTasksException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberNotFoundException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberUserInactiveException;
@@ -124,11 +123,6 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
         if (record.getStatus() == ProjectMemberStatus.INACTIVE) {
             return;
-        }
-        if (record.getProjectRole() == fpt.qn.pms.jooq.enums.ProjectRole.PM
-                && projectMemberRepository.countActiveByProjectIdAndRole(
-                        projectId, fpt.qn.pms.jooq.enums.ProjectRole.PM) <= 1) {
-            throw new LastProjectManagerRemovalForbiddenException();
         }
         if (taskRepository.existsAssignedTaskByProjectIdAndAssigneeId(projectId, record.getUserId())) {
             throw new ProjectMemberHasAssignedTasksException();

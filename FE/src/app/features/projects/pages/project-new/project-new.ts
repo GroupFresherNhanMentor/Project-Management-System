@@ -23,7 +23,7 @@ export class ProjectNew {
   startDate   = '';
   endDate     = '';
   status: ProjectStatus = 'PLANNING';
-  readonly statuses: ProjectStatus[] = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED'];
+  readonly statuses: ProjectStatus[] = ['PLANNING', 'ACTIVE', 'ON_HOLD'];
   submitting  = false;
 
   submit(): void {

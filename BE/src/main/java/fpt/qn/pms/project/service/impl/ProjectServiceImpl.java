@@ -4,22 +4,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
-import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.SysRole;
-import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
-import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.project.dto.request.CreateProjectRequest;
 import fpt.qn.pms.project.dto.request.UpdateProjectRequest;
 import fpt.qn.pms.project.dto.response.ProjectDto;
+import fpt.qn.pms.project.exception.InvalidInitialProjectStatusException;
 import fpt.qn.pms.project.exception.InvalidProjectDateRangeException;
 import fpt.qn.pms.project.exception.ProjectAccessDeniedException;
 import fpt.qn.pms.project.exception.ProjectCodeAlreadyExistsException;
@@ -28,8 +24,8 @@ import fpt.qn.pms.project.mapper.ProjectMapper;
 import fpt.qn.pms.project.repository.ProjectRepository;
 import fpt.qn.pms.project.service.ProjectService;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
-import fpt.qn.pms.user.exception.UserNotFoundException;
-import fpt.qn.pms.user.repository.UserRepository;
+import fpt.qn.pms.security.ProjectSecurityEvaluator;
+import fpt.qn.pms.security.UserPrincipal;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,19 +37,14 @@ public class ProjectServiceImpl implements ProjectService {
 
     ProjectRepository projectRepository;
     ProjectMemberRepository projectMemberRepository;
-    UserRepository userRepository;
     ProjectMapper projectMapper;
+    ProjectSecurityEvaluator securityEvaluator;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ProjectDto> getProjects(String keyword, ProjectStatus status, int page, int size) {
-        UsersRecord currentUser = getCurrentUser();
-        UUID memberUserId = currentUser.getRole() == SysRole.ADMIN ? null : currentUser.getId();
-
-        if (memberUserId != null
-                && !projectMemberRepository.existsActiveByUserIdAndRole(memberUserId, ProjectRole.PM)) {
-            throw new ProjectAccessDeniedException();
-        }
+        UserPrincipal principal = getCurrentPrincipal();
+        UUID memberUserId = isAdmin(principal) ? null : principal.getId();
 
         PaginationResult<ProjectsRecord> result = projectRepository
                 .findAll(keyword, status, memberUserId, page, size);
@@ -64,13 +55,12 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public ProjectDto getProjectById(UUID projectId) {
-        UsersRecord currentUser = getCurrentUser();
+        UserPrincipal principal = getCurrentPrincipal();
         ProjectsRecord project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException());
 
-        if (currentUser.getRole() != SysRole.ADMIN
-                && !projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
-                        projectId, currentUser.getId(), ProjectRole.PM)) {
+        if (!isAdmin(principal)
+                && !projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, principal.getId())) {
             throw new ProjectAccessDeniedException();
         }
 
@@ -80,8 +70,11 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectDto createProject(CreateProjectRequest request) {
-        UsersRecord currentUser = getCurrentUser();
+        UserPrincipal principal = getCurrentPrincipal();
         validateDateRange(request.getStartDate(), request.getEndDate());
+        if (request.getStatus() == ProjectStatus.COMPLETED) {
+            throw new InvalidInitialProjectStatusException();
+        }
 
         String normalizedCode = request.getProjectCode().trim().toUpperCase(Locale.ROOT);
         if (projectRepository.existsByProjectCodeIgnoreCase(normalizedCode)) {
@@ -91,8 +84,8 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectsRecord record = projectMapper.toRecord(request);
         record.setProjectCode(normalizedCode);
         record.setProjectName(request.getProjectName().trim());
-        record.setCreatedBy(currentUser.getId());
-        record.setUpdatedBy(currentUser.getId());
+        record.setCreatedBy(principal.getId());
+        record.setUpdatedBy(principal.getId());
 
         return projectMapper.toDto(projectRepository.create(record));
     }
@@ -100,14 +93,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectDto updateProject(UUID projectId, UpdateProjectRequest request) {
-        UsersRecord currentUser = getCurrentUser();
+        UserPrincipal principal = getCurrentPrincipal();
         ProjectsRecord record = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ProjectNotFoundException());
 
         validateDateRange(request.getStartDate(), request.getEndDate());
         projectMapper.updateRecord(record, request);
         record.setProjectName(request.getProjectName().trim());
-        record.setUpdatedBy(currentUser.getId());
+        record.setUpdatedBy(principal.getId());
 
         return projectMapper.toDto(projectRepository.update(record));
     }
@@ -118,18 +111,13 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-    private UsersRecord getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new ProjectAccessDeniedException();
-        }
+    private UserPrincipal getCurrentPrincipal() {
+        return securityEvaluator.getCurrentPrincipal()
+                .orElseThrow(() -> new ProjectAccessDeniedException());
+    }
 
-        UsersRecord currentUser = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new UserNotFoundException());
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new ProjectAccessDeniedException();
-        }
-        return currentUser;
+    private boolean isAdmin(UserPrincipal principal) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> SysRole.ADMIN.getLiteral().equals(a.getAuthority()));
     }
 }

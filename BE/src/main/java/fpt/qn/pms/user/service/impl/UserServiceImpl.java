@@ -25,6 +25,7 @@ import fpt.qn.pms.user.dto.response.ResetPasswordResponse;
 import fpt.qn.pms.user.dto.response.UserDto;
 import fpt.qn.pms.user.exception.EmailAlreadyExistsException;
 import fpt.qn.pms.user.exception.InvalidOldPasswordException;
+import fpt.qn.pms.user.exception.SelfLockoutException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
 import fpt.qn.pms.user.helper.UserCreationTransactionHelper;
@@ -133,6 +134,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto updateUserStatus(UUID id, UpdateUserStatusRequest request) {
+        if (request.getStatus() == UserStatus.LOCKED && SecurityContextHolder.getContext().getAuthentication() != null) {
+            String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+            if (currentUsername != null && !currentUsername.isBlank()) {
+                userRepository.findByUsername(currentUsername).ifPresent(currentAdmin -> {
+                    if (currentAdmin.getId().equals(id)) {
+                        throw new SelfLockoutException();
+                    }
+                });
+            }
+        }
+
         UsersRecord record = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException());
 

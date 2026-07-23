@@ -42,19 +42,15 @@ export interface ProjectDashboardData {
 
 export interface AdminDashboardData {
   totalUsers: number;
+  activeUsers: number;
   lockedUsers: number;
   totalProjects: number;
   activeProjects: number;
-  taskDistribution: {
-    STORY: number;
-    TASK: number;
-    BUG: number;
-  };
-  roleBreakdown: {
-    PM: number;
-    DEV: number;
-    TESTER: number;
-  };
+  totalTasks: number;
+  totalLoggedHours: number;
+  projectByStatus: Record<string, number>;
+  taskByType: Record<string, number>;
+  userByRole: Record<string, number>;
 }
 
 export interface SystemActivity {

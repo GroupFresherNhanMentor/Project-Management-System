@@ -63,12 +63,19 @@ export class DashboardHome implements OnInit {
   );
 
   ngOnInit(): void {
+    if (typeof window === 'undefined') {
+      return; // Skip fetching data on Server-Side Prerendering / SSR build
+    }
     this.extractLocalStorageData();
     this.loadDashboardData();
     this.fetchTasksFromApi();
   }
 
   private extractLocalStorageData(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
     const savedProject = localStorage.getItem('pms_selected_project');
     if (savedProject) {
       this.currentProjectId = savedProject.replace(/"/g, '');
@@ -87,6 +94,14 @@ export class DashboardHome implements OnInit {
   }
 
   loadDashboardData(): void {
+    if (this.role === 'ADMIN') {
+      this.dashboardService.getAdminStats().subscribe({
+        next: (res: ApiResponse<AdminDashboardData>) => {
+          if (res && (res.isSuccess || res.success)) this.adminStats.set(res.data);
+        }
+      });
+    }
+
     this.dashboardService.getPersonalStats().subscribe({
       next: (res: ApiResponse<PersonalDashboardData>) => {
         if (res && (res.isSuccess || res.success)) this.devData.set(res.data);
@@ -128,6 +143,21 @@ export class DashboardHome implements OnInit {
         }
       }
     });
+  }
+
+  taskByStatusEntries(map: Record<string, number>): [string, number][] {
+    return Object.entries(map);
+  }
+
+  getActionLabel(action: string): string {
+    const map: Record<string, string> = {
+      TASK_CREATED:     'đã tạo task',
+      STATUS_CHANGED:   'đã chuyển trạng thái',
+      PRIORITY_CHANGED: 'đã đổi mức độ ưu tiên',
+      ASSIGNEE_CHANGED: 'đã thay đổi người xử lý',
+      COMMENT_ADDED:    'đã thêm bình luận vào'
+    };
+    return map[action] || action;
   }
 
   isOverdue(dueDate: string | null): boolean {

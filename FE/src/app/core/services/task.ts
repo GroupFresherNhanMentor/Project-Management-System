@@ -4,8 +4,8 @@ import { Observable, map } from 'rxjs';
 
 import { API } from '../../configs/api-endpoints';
 import { ApiResponse, PageResponse } from '../models/api.model';
-import { TaskDto, CreateTaskRequest, UpdateTaskRequest, AssignTaskRequest, TaskSearchParams } from '../models/task.model';
-import { TaskCommentDto, CreateCommentRequest } from '../models/comment.model';
+import { TaskDto, TaskStatusDto, TaskWorkflowDto, CreateTaskStatusRequest, CreateTaskWorkflowRequest, CreateTaskRequest, UpdateTaskRequest, AssignTaskRequest, TaskSearchParams } from '../models/task.model';
+import { TaskCommentDto, CreateCommentRequest,UpdateCommentRequest } from '../models/comment.model';
 import { TaskActivityDto } from '../models/activity.model';
 import { WorklogDto, CreateWorklogRequest, UpdateWorklogRequest } from '../models/worklog.model';
 
@@ -15,17 +15,56 @@ export class TaskService {
 
   searchTasks(params?: TaskSearchParams): Observable<PageResponse<TaskDto>> {
     let httpParams = new HttpParams();
-    if (params?.project) httpParams = httpParams.set('project', params.project);
-    if (params?.sprint) httpParams = httpParams.set('sprint', params.sprint);
-    if (params?.status) httpParams = httpParams.set('status', params.status);
-    if (params?.priority) httpParams = httpParams.set('priority', params.priority);
-    if (params?.assignee) httpParams = httpParams.set('assignee', params.assignee);
-    if (params?.keyword) httpParams = httpParams.set('keyword', params.keyword);
+    if (params?.projectId)  httpParams = httpParams.set('projectId',  params.projectId);
+    if (params?.sprintId)   httpParams = httpParams.set('sprintId',   params.sprintId);
+    if (params?.statusId)   httpParams = httpParams.set('statusId',   params.statusId);
+    if (params?.priority)   httpParams = httpParams.set('priority',   params.priority);
+    if (params?.assigneeId) httpParams = httpParams.set('assigneeId', params.assigneeId);
+    if (params?.keyword)    httpParams = httpParams.set('keyword',    params.keyword);
     if (params?.page != null) httpParams = httpParams.set('page', params.page);
     if (params?.size != null) httpParams = httpParams.set('size', params.size);
     return this.http
       .get<ApiResponse<PageResponse<TaskDto>>>(API.tasks.search, { params: httpParams })
       .pipe(map(r => r.data));
+  }
+
+  getTaskStatuses(projectId: string, filters?: { isInitial?: boolean; isActive?: boolean }): Observable<TaskStatusDto[]> {
+    let params = new HttpParams();
+    if (filters?.isInitial != null) params = params.set('isInitial', filters.isInitial);
+    if (filters?.isActive  != null) params = params.set('isActive',  filters.isActive);
+    return this.http
+      .get<ApiResponse<TaskStatusDto[]>>(API.taskStatuses.base(projectId), { params })
+      .pipe(map(r => r.data));
+  }
+
+  createTaskStatus(projectId: string, body: CreateTaskStatusRequest): Observable<TaskStatusDto> {
+    return this.http
+      .post<ApiResponse<TaskStatusDto>>(API.taskStatuses.base(projectId), body)
+      .pipe(map(r => r.data));
+  }
+
+  deleteTaskStatus(projectId: string, id: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse<void>>(API.taskStatuses.byId(projectId, id))
+      .pipe(map(() => void 0));
+  }
+
+  getWorkflow(projectId: string): Observable<TaskWorkflowDto[]> {
+    return this.http
+      .get<ApiResponse<TaskWorkflowDto[]>>(API.taskWorkflow.base(projectId))
+      .pipe(map(r => r.data));
+  }
+
+  createWorkflow(projectId: string, entries: CreateTaskWorkflowRequest[]): Observable<TaskWorkflowDto[]> {
+    return this.http
+      .post<ApiResponse<TaskWorkflowDto[]>>(API.taskWorkflow.base(projectId), entries)
+      .pipe(map(r => r.data));
+  }
+
+  deleteWorkflow(projectId: string, id: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse<void>>(API.taskWorkflow.byId(projectId, id))
+      .pipe(map(() => void 0));
   }
 
   getTaskById(id: string): Observable<TaskDto> {
@@ -56,6 +95,16 @@ export class TaskService {
       .post<ApiResponse<TaskCommentDto>>(API.tasks.comments(taskId), body)
       .pipe(map(r => r.data));
   }
+
+  // updateComment(commentId: string, body: UpdateCommentRequest): Observable<TaskCommentDto> {
+  //   return this.http
+  //     .put<ApiResponse<TaskCommentDto>>(API.comments.byId(commentId), body)
+  //     .pipe(map(r => r.data));
+  // }
+
+  // deleteComment(commentId: string): Observable<void> {
+  //   return this.http.delete<void>(API.comments.byId(commentId));
+  // }
 
   getActivities(taskId: string, page = 0, size = 20): Observable<PageResponse<TaskActivityDto>> {
     const params = new HttpParams().set('page', page).set('size', size);

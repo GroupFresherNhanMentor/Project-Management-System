@@ -1,47 +1,100 @@
-import { Component, signal, inject } from '@angular/core';
-import { RouterLink, Router } from '@angular/router';
+import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { SprintDto } from '../../../../core/models/sprint.model';
-import { TaskDto } from '../../../../core/models/task.model';
-
-const MOCK_TASKS: TaskDto[] = [
-  { id: 't1', taskKey: 'WEB-101', projectId: 'p1', sprintId: 's1', summary: 'Redesign checkout flow',               description: null, taskType: 'STORY', priority: 'HIGH',     status: 'IN_PROGRESS', assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 8,    estimateHour: 40,   dueDate: '2026-07-18', createdAt: '2026-07-01' },
-  { id: 't2', taskKey: 'WEB-102', projectId: 'p1', sprintId: 's1', summary: 'Integrate payment gateway webhook',    description: null, taskType: 'TASK',  priority: 'CRITICAL', status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 5,    estimateHour: null, dueDate: '2026-07-20', createdAt: '2026-07-01' },
-  { id: 't3', taskKey: 'WEB-103', projectId: 'p1', sprintId: 's1', summary: 'Cart total miscalculates with coupon', description: null, taskType: 'BUG',   priority: 'HIGH',     status: 'TESTING',     assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 3,    estimateHour: null, dueDate: '2026-07-19', createdAt: '2026-07-01' },
-  { id: 't4', taskKey: 'WEB-104', projectId: 'p1', sprintId: 's1', summary: 'Add empty-state illustration to cart', description: null, taskType: 'TASK',  priority: 'LOW',      status: 'DONE',        assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 2,    estimateHour: null, dueDate: '2026-07-15', createdAt: '2026-07-01' },
-  { id: 't5', taskKey: 'WEB-105', projectId: 'p1', sprintId: 's1', summary: 'Guest checkout',                       description: null, taskType: 'STORY', priority: 'MEDIUM',   status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-21', createdAt: '2026-07-02' },
-  { id: 't6', taskKey: 'WEB-106', projectId: 'p1', sprintId: 's1', summary: 'Session expires mid-checkout',         description: null, taskType: 'BUG',   priority: 'CRITICAL', status: 'IN_PROGRESS', assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-22', createdAt: '2026-07-03' },
-];
+import { TaskDto, TaskStatusDto } from '../../../../core/models/task.model';
+import { TaskService } from '../../../../core/services/task';
+import { ProjectService } from '../../../../core/services/project';
+import { ToastService } from '../../../../core/services/toast';
 
 @Component({
   selector: 'app-sprint-detail',
-  imports: [RouterLink],
+  imports: [],
   templateUrl: './sprint-detail.html',
 })
-export class SprintDetail {
-  private readonly router = inject(Router);
+export class SprintDetail implements OnInit {
+  private readonly router         = inject(Router);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly taskService    = inject(TaskService);
+  private readonly projectService = inject(ProjectService);
+  private readonly toast          = inject(ToastService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
-  readonly sprint = signal<SprintDto>({
-    id: 's1', projectId: 'p1', sprintName: 'Sprint 12', goal: 'Ship checkout redesign',
-    startDate: '2026-07-07', endDate: '2026-07-21', status: 'ACTIVE',
-  });
+  private readonly projectId = this.resolveProjectId();
+  private readonly sprintId  = this.route.snapshot.paramMap.get('id') ?? '';
 
-  readonly tasks = signal<TaskDto[]>(MOCK_TASKS);
+  readonly sprint   = signal<SprintDto | null>(null);
+  readonly tasks    = signal<TaskDto[]>([]);
+  readonly statuses = signal<TaskStatusDto[]>([]);
+  readonly isPm     = signal(false);
+  readonly loading  = signal(true);
+  readonly error    = signal<string | null>(null);
 
-  closeSprint(): void { this.sprint.update(s => ({ ...s, status: 'CLOSED' })); }
-  startSprint(): void { this.sprint.update(s => ({ ...s, status: 'ACTIVE' })); }
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.loadSprint();
+    this.loadStatuses();
+    this.loadTasks();
+    this.projectService.getCurrentMember(this.projectId).subscribe({
+      next: member => this.isPm.set(member.projectRole === 'PM'),
+    });
+  }
+
+  private resolveProjectId(): string {
+    let r: ActivatedRoute | null = this.route.parent;
+    while (r) {
+      const id = r.snapshot.paramMap.get('id');
+      if (id) return id;
+      r = r.parent;
+    }
+    return '';
+  }
+
+  private loadSprint(): void {
+    this.projectService.getSprintById(this.projectId, this.sprintId).subscribe({
+      next: s => { this.sprint.set(s); this.loading.set(false); },
+      error: () => { this.error.set('Failed to load sprint.'); this.loading.set(false); },
+    });
+  }
+
+  private loadStatuses(): void {
+    this.taskService.getTaskStatuses(this.projectId).subscribe({
+      next: list => this.statuses.set(list),
+    });
+  }
+
+  private loadTasks(): void {
+    this.taskService.searchTasks({ projectId: this.projectId, sprintId: this.sprintId, size: 200 }).subscribe({
+      next: res => this.tasks.set(res.items),
+    });
+  }
+
+  startSprint(): void {
+    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'ACTIVE' }).subscribe({
+      next: s => { this.sprint.set(s); this.toast.success('Sprint started.'); },
+      error: () => this.toast.error('Failed to start sprint.'),
+    });
+  }
+
+  closeSprint(): void {
+    this.projectService.updateSprintStatus(this.projectId, this.sprintId, { status: 'CLOSED' }).subscribe({
+      next: s => { this.sprint.set(s); this.toast.success('Sprint closed.'); },
+      error: () => this.toast.error('Failed to close sprint.'),
+    });
+  }
+
   openTask(id: string): void { void this.router.navigate(['/tasks', id]); }
 
   statusBadge(s: string): string {
     return 'badge ' + ({ PLANNED: 'badge-planned', ACTIVE: 'badge-active', CLOSED: 'badge-closed' }[s] ?? '');
   }
-  taskStatusBadge(s: string): string {
-    return 'badge ' + ({ TODO: 'badge-todo', IN_PROGRESS: 'badge-inprogress', TESTING: 'badge-testing', DONE: 'badge-done' }[s] ?? '');
-  }
-  taskStatusLabel(s: string): string {
-    return ({ TODO: 'To Do', IN_PROGRESS: 'In Progress', TESTING: 'Testing', DONE: 'Done' })[s] ?? s;
-  }
+
   priorityColor(p: string): string {
     return ({ LOW: '#5B6472', MEDIUM: '#2A5CD9', HIGH: '#C4720A', CRITICAL: '#D0342C' })[p] ?? '#9AA1AC';
   }
-  get doneCount(): number { return this.tasks().filter(t => t.status === 'DONE').length; }
+
+  get doneCount(): number {
+    const finalIds = new Set(this.statuses().filter(s => s.isFinal).map(s => s.id));
+    return this.tasks().filter(t => finalIds.has(t.statusId)).length;
+  }
 }

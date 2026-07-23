@@ -23,5 +23,6 @@ public class TaskActivityDto {
     ActivityAction action;
     String oldValue;
     String newValue;
+    String message;
     OffsetDateTime createdTime;
 }

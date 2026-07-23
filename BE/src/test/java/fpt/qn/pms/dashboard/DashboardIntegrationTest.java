@@ -310,6 +310,18 @@ class DashboardIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void getAdminDashboard_shouldReturnCorrectMetrics_whenUserIsAdmin() throws Exception {
+        mockMvc.perform(get("/api/dashboard/admin")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalUsers").value(org.hamcrest.Matchers.greaterThanOrEqualTo(4)))
+                .andExpect(jsonPath("$.data.activeUsers").value(org.hamcrest.Matchers.greaterThanOrEqualTo(4)))
+                .andExpect(jsonPath("$.data.totalProjects").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.data.activeProjects").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1)));
+    }
+
+    @Test
     void getProjectDashboard_shouldReturn403_whenUserIsDevOrOutsider() throws Exception {
         mockMvc.perform(get("/api/dashboard/project/" + project.getId())
                         .header("Authorization", "Bearer " + devToken))

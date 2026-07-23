@@ -115,16 +115,20 @@ class ProjectProjectMemberFlowIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.data.totalElements").value(2));
 
         mockMvc.perform(get("/api/projects")
+                        .param("keyword", projectCode)
                         .header("Authorization", "Bearer " + developerToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1));
 
         mockMvc.perform(get("/api/projects/{projectId}", projectId)
                         .header("Authorization", "Bearer " + developerToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(projectId.toString()));
 
         mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
                         .header("Authorization", "Bearer " + developerToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(2));
 
         mockMvc.perform(get("/api/projects/{projectId}", projectId)
                         .header("Authorization", "Bearer " + adminToken))

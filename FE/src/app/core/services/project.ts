@@ -10,7 +10,7 @@ import {
   ProjectMemberCandidateDto,
   AddProjectMemberRequest,
 } from '../models/project-member.model';
-import { SprintDto, CreateSprintRequest, UpdateSprintStatusRequest } from '../models/sprint.model';
+import { SprintDto, CreateSprintRequest, UpdateSprintRequest, UpdateSprintStatusRequest } from '../models/sprint.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -91,15 +91,27 @@ export class ProjectService {
       .pipe(map(r => r.data));
   }
 
+  getSprintById(projectId: string, sprintId: string): Observable<SprintDto> {
+    return this.http
+      .get<ApiResponse<SprintDto>>(API.sprints.byId(projectId, sprintId))
+      .pipe(map(r => r.data));
+  }
+
   createSprint(projectId: string, body: CreateSprintRequest): Observable<SprintDto> {
     return this.http
       .post<ApiResponse<SprintDto>>(API.projects.sprints(projectId), body)
       .pipe(map(r => r.data));
   }
 
-  updateSprintStatus(sprintId: string, body: UpdateSprintStatusRequest): Observable<SprintDto> {
+  updateSprint(projectId: string, sprintId: string, body: UpdateSprintRequest): Observable<SprintDto> {
     return this.http
-      .patch<ApiResponse<SprintDto>>(API.sprints.status(sprintId), body)
+      .put<ApiResponse<SprintDto>>(API.sprints.byId(projectId, sprintId), body)
+      .pipe(map(r => r.data));
+  }
+
+  updateSprintStatus(projectId: string, sprintId: string, body: UpdateSprintStatusRequest): Observable<SprintDto> {
+    return this.http
+      .patch<ApiResponse<SprintDto>>(API.sprints.status(projectId, sprintId), body)
       .pipe(map(r => r.data));
   }
 }
