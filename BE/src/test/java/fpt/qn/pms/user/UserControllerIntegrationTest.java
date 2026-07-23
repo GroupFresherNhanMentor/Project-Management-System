@@ -229,6 +229,22 @@ class UserControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void updateUserStatus_shouldReturnBadRequest_whenAdminLocksSelf() throws Exception {
+        UsersRecord adminUser = userRepository.findByUsername("admin").orElseThrow();
+
+        UpdateUserStatusRequest request = UpdateUserStatusRequest.builder()
+                .status(UserStatus.LOCKED)
+                .build();
+
+        mockMvc.perform(patch("/api/users/" + adminUser.getId() + "/lock")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Admin cannot lock their own account"));
+    }
+
+    @Test
     void resetPassword_shouldResetPassword_whenAdminTokenProvided() throws Exception {
         mockMvc.perform(put("/api/users/" + testUser.getId() + "/reset-password")
                         .header("Authorization", "Bearer " + adminToken))
