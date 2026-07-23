@@ -33,12 +33,7 @@ export class DashboardHome implements OnInit {
   pmData = signal<ProjectDashboardData | null>(null);
   allTasks = signal<DevTaskItem[]>([]);
 
-  adminStats = signal<AdminDashboardData>({
-    totalUsers: 0, lockedUsers: 0, totalProjects: 0, activeProjects: 0,
-    taskDistribution: { STORY: 0, TASK: 0, BUG: 0 },
-    roleBreakdown: { PM: 0, DEV: 0, TESTER: 0 }
-  });
-  adminActivities = signal<SystemActivity[]>([]);
+  adminStats = signal<AdminDashboardData | null>(null);
 
   statusOrder = [
     { key: 'TODO', label: 'To Do', css: 'bg-slate-400' },
@@ -65,6 +60,10 @@ export class DashboardHome implements OnInit {
   }
 
   private extractLocalStorageData(): void {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+
     const savedProject = localStorage.getItem('pms_selected_project');
     if (savedProject) {
       this.currentProjectId = savedProject.replace(/"/g, '');
@@ -83,6 +82,14 @@ export class DashboardHome implements OnInit {
   }
 
   loadDashboardData(): void {
+    if (this.role === 'ADMIN') {
+      this.dashboardService.getAdminStats().subscribe({
+        next: (res: ApiResponse<AdminDashboardData>) => {
+          if (res && (res.isSuccess || res.success)) this.adminStats.set(res.data);
+        }
+      });
+    }
+
     this.dashboardService.getPersonalStats().subscribe({
       next: (res: ApiResponse<PersonalDashboardData>) => {
         if (res && (res.isSuccess || res.success)) this.devData.set(res.data);

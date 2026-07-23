@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import fpt.qn.pms.common.dto.ApiResponse;
+import fpt.qn.pms.dashboard.dto.DashboardAdminResponse;
 import fpt.qn.pms.dashboard.dto.DashboardPersonalResponse;
 import fpt.qn.pms.dashboard.dto.DashboardProjectResponse;
 import fpt.qn.pms.dashboard.service.DashboardService;
@@ -34,9 +35,16 @@ public class DashboardController {
     }
 
     @GetMapping("/project/{projectId}")
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.isPm(#projectId) or hasAuthority('ADMIN')")
     public ApiResponse<DashboardProjectResponse> getProjectDashboard(@PathVariable UUID projectId) {
         DashboardProjectResponse response = dashboardService.getProjectDashboard(projectId);
         return ApiResponse.success(response, "Retrieve project dashboard successfully");
+    }
+
+    @GetMapping("/admin")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ApiResponse<DashboardAdminResponse> getAdminDashboard() {
+        DashboardAdminResponse response = dashboardService.getAdminDashboard();
+        return ApiResponse.success(response, "Retrieve admin dashboard successfully");
     }
 }
