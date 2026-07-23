@@ -1,7 +1,7 @@
 import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Location } from '@angular/common';
-import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TaskService } from '../../../../core/services/task';
 import { TaskDetailService } from './task-detail.service';
 
@@ -15,6 +15,7 @@ type Tab = 'details' | 'comments' | 'worklog' | 'activity';
 })
 export class TaskDetail implements OnInit {
   private readonly route       = inject(ActivatedRoute);
+  private readonly router      = inject(Router);
   private readonly location    = inject(Location);
   private readonly taskService = inject(TaskService);
   readonly taskSvc             = inject(TaskDetailService);
@@ -36,7 +37,14 @@ export class TaskDetail implements OnInit {
     });
   }
 
-  goBack(): void { this.location.back(); }
+  goBack(): void {
+    const projectId = this.taskSvc.task()?.projectId;
+    if (projectId) {
+      void this.router.navigate(['/projects', projectId, 'backlog']);
+    } else {
+      this.location.back();
+    }
+  }
 
   typeLabel(t: string): string {
     return ({ STORY: 'Story', TASK: 'Task', BUG: 'Bug' } as Record<string, string>)[t] ?? t;

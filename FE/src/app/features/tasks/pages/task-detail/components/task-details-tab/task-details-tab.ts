@@ -78,7 +78,7 @@ export class TaskDetailsTab implements OnInit {
 
   private loadFormData(projectId: string): void {
     forkJoin([
-      this.taskService.getTaskStatuses(projectId),
+      this.taskService.getTaskStatuses(projectId, { isActive: true }),
       this.taskService.getWorkflow(projectId),
       this.projectService.getCurrentMember(projectId),
       this.projectService.getMembers(projectId, 0, 100),

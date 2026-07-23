@@ -51,14 +51,26 @@ export class TaskNew implements OnInit {
   priority: TaskPriority = 'MEDIUM';
   statusId     = '';
   assigneeId   = '';
+  reporterId   = '';
   sprintId     = '';
   storyPoint:   number | null = null;
   estimateHour: number | null = null;
   dueDate      = '';
   submitting   = false;
 
+  get availableAssignees(): ProjectMemberDto[] {
+    return this.members().filter(m => m.userId !== this.reporterId);
+  }
+
+  get availableReporters(): ProjectMemberDto[] {
+    return this.members().filter(m => m.userId !== this.assigneeId);
+  }
+
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
+    const currentUser = this.authService.getCurrentUser();
+    this.reporterId = currentUser?.id ?? '';
+
     this.taskService.getTaskStatuses(this.projectId, { isInitial: true, isActive: true }).subscribe({
       next: list => {
         this.statuses.set(list);
@@ -77,9 +89,11 @@ export class TaskNew implements OnInit {
   }
 
   submit(): void {
-    if (!this.taskKey.trim() || !this.summary.trim() || !this.statusId) return;
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser) return;
+    if (!this.taskKey.trim() || !this.summary.trim() || !this.statusId || !this.reporterId) return;
+    if (this.assigneeId && this.assigneeId === this.reporterId) {
+      this.toast.error('Assignee and reporter cannot be the same person.');
+      return;
+    }
 
     const body: CreateTaskRequest = {
       taskKey:      this.taskKey.trim(),
@@ -88,7 +102,7 @@ export class TaskNew implements OnInit {
       taskType:     this.taskType,
       priority:     this.priority,
       taskStatusId: this.statusId,
-      reporterId:   currentUser.id,
+      reporterId:   this.reporterId,
       ...(this.sprintId                && { sprintId:     this.sprintId }),
       ...(this.assigneeId              && { assigneeId:   this.assigneeId }),
       ...(this.description.trim()      && { description:  this.description.trim() }),

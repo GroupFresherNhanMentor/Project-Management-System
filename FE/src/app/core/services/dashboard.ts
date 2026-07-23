@@ -34,28 +34,14 @@ export class DashboardService {
 
   searchTasks(request: TaskSearchRequest): Observable<ApiResponse<TaskSearchResponse>> {
     let params = new HttpParams()
-      .set('page', request.page.toString())
-      .set('size', request.size.toString());
-
-    if (request.projectId) {
-      params = params.set('projectId', request.projectId);
-    }
-    if (request.assigneeId) {
-      params = params.set('assigneeId', request.assigneeId);
-    }
-    if (request.sprintId) {
-      params = params.set('sprintId', request.sprintId);
-    }
-    if (request.status) {
-      params = params.set('status', request.status);
-    }
-    if (request.priority) {
-      params = params.set('priority', request.priority);
-    }
-    if (request.keyword) {
-      params = params.set('keyword', request.keyword);
-    }
-
-    return this.http.get<ApiResponse<TaskSearchResponse>>(`/api/tasks/search`, { params });
+      .set('page', request.page)
+      .set('size', request.size);
+    if (request.projectId)  params = params.set('projectId',  request.projectId);
+    if (request.sprintId)   params = params.set('sprintId',   request.sprintId);
+    if (request.status)     params = params.set('statusId',   request.status);
+    if (request.priority)   params = params.set('priority',   request.priority);
+    if (request.assigneeId) params = params.set('assigneeId', request.assigneeId);
+    if (request.keyword)    params = params.set('keyword',    request.keyword);
+    return this.http.get<ApiResponse<TaskSearchResponse>>('/api/tasks/search', { params });
   }
 }

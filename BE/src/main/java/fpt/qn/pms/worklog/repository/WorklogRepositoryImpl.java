@@ -71,14 +71,11 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
     public PaginationResult<WorklogReportItem> getWorklogReport(WorklogReportFilterDto filter) {
         Condition condition = DSL.noCondition();
 
-        if (filter.getProjectId() != null) {
-            condition = condition.and(TASKS.PROJECT_ID.eq(filter.getProjectId()));
+        if (filter.getProject() != null) {
+            condition = condition.and(TASKS.PROJECT_ID.eq(filter.getProject()));
         }
-        if (filter.getUserId() != null) {
-            condition = condition.and(WORKLOGS.USER_ID.eq(filter.getUserId()));
-        }
-        if (filter.getUsername() != null && !filter.getUsername().isBlank()) {
-            condition = condition.and(USERS.USERNAME.likeIgnoreCase("%" + filter.getUsername().trim() + "%"));
+        if (filter.getUser() != null) {
+            condition = condition.and(WORKLOGS.USER_ID.eq(filter.getUser()));
         }
         if (filter.getFromDate() != null) {
             condition = condition.and(WORKLOGS.WORK_DATE.greaterOrEqual(filter.getFromDate()));
@@ -87,7 +84,7 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
             condition = condition.and(WORKLOGS.WORK_DATE.lessOrEqual(filter.getToDate()));
         }
 
-        long total = dsl.selectCount()
+        long total = dsl.select(DSL.countDistinct(WORKLOGS.USER_ID))
                 .from(WORKLOGS)
                 .join(TASKS).on(WORKLOGS.TASK_ID.eq(TASKS.ID))
                 .join(USERS).on(WORKLOGS.USER_ID.eq(USERS.ID))
@@ -98,21 +95,17 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
         int size = filter.getSize();
 
         List<WorklogReportItem> items = dsl.select(
-                        WORKLOGS.ID.as("id"),
-                        WORKLOGS.TASK_ID.as("taskId"),
-                        TASKS.TASK_KEY.as("taskKey"),
-                        TASKS.SUMMARY.as("taskSummary"),
                         WORKLOGS.USER_ID.as("userId"),
-                        USERS.USERNAME.as("userName"),
-                        WORKLOGS.WORK_DATE.as("workDate"),
-                        WORKLOGS.HOURS.as("hour"),
-                        WORKLOGS.DESCRIPTION.as("description")
+                        USERS.FULL_NAME.as("userName"),
+                        DSL.sum(WORKLOGS.HOURS).as("totalHours"),
+                        DSL.countDistinct(WORKLOGS.TASK_ID).as("numberOfTasks")
                 )
                 .from(WORKLOGS)
                 .join(TASKS).on(WORKLOGS.TASK_ID.eq(TASKS.ID))
                 .join(USERS).on(WORKLOGS.USER_ID.eq(USERS.ID))
                 .where(condition)
-                .orderBy(WORKLOGS.WORK_DATE.desc(), WORKLOGS.CREATED_AT.desc())
+                .groupBy(WORKLOGS.USER_ID, USERS.FULL_NAME)
+                .orderBy(DSL.sum(WORKLOGS.HOURS).desc())
                 .limit(size)
                 .offset((long) page * size)
                 .fetchInto(WorklogReportItem.class);

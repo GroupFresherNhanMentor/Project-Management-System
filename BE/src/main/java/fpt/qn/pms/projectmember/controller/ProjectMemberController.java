@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import fpt.qn.pms.common.dto.ApiResponse;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
+import fpt.qn.pms.projectmember.dto.request.UpdateProjectMemberRoleRequest;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberCandidateDto;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 import fpt.qn.pms.projectmember.service.ProjectMemberService;
@@ -84,6 +86,19 @@ public class ProjectMemberController {
         ProjectMemberDto member = projectMemberService.addMember(projectId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(member, "Project member added successfully"));
+    }
+
+    @PatchMapping("/{memberId}/role")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(
+        summary = "Change a project member's role",
+        description = "Admin can change any member to any role. PM can only change DEV↔TESTER — cannot touch PM members or promote to PM.")
+    public ResponseEntity<ApiResponse<ProjectMemberDto>> updateMemberRole(
+            @PathVariable UUID projectId,
+            @PathVariable UUID memberId,
+            @Valid @RequestBody UpdateProjectMemberRoleRequest request) {
+        ProjectMemberDto updated = projectMemberService.updateMemberRole(projectId, memberId, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Member role updated successfully"));
     }
 
     @DeleteMapping("/{memberId}")

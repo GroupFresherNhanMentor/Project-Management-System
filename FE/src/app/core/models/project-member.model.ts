@@ -18,6 +18,10 @@ export interface AddProjectMemberRequest {
   projectRole: ProjectRole;
 }
 
+export interface UpdateProjectMemberRoleRequest {
+  projectRole: ProjectRole;
+}
+
 export interface ProjectMemberCandidateDto {
   id: string;
   employeeId: string;

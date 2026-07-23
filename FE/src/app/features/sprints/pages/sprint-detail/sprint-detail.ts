@@ -58,7 +58,7 @@ export class SprintDetail implements OnInit {
   }
 
   private loadStatuses(): void {
-    this.taskService.getTaskStatuses(this.projectId).subscribe({
+    this.taskService.getTaskStatuses(this.projectId, { isActive: true }).subscribe({
       next: list => this.statuses.set(list),
     });
   }

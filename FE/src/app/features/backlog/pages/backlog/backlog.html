@@ -31,11 +31,13 @@
     @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
   </select>
 
-  <div class="ml-auto">
-    <button (click)="newTask()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">
-      + New Task
-    </button>
-  </div>
+  @if (canCreateTask()) {
+    <div class="ml-auto">
+      <button (click)="newTask()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">
+        + New Task
+      </button>
+    </div>
+  }
 </div>
 
 @if (error()) {

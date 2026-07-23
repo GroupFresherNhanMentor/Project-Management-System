@@ -4,6 +4,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import fpt.qn.pms.jooq.tables.records.TaskStatusesRecord;
+import fpt.qn.pms.jooq.tables.records.TaskWorkflowRecord;
+import fpt.qn.pms.task.repository.TaskStatusRepository;
+import fpt.qn.pms.task.repository.TaskWorkflowRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +42,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     ProjectRepository projectRepository;
     ProjectMemberRepository projectMemberRepository;
+    TaskStatusRepository taskStatusRepository;
+    TaskWorkflowRepository taskWorkflowRepository;
     ProjectMapper projectMapper;
     ProjectSecurityEvaluator securityEvaluator;
 
@@ -87,7 +94,39 @@ public class ProjectServiceImpl implements ProjectService {
         record.setCreatedBy(principal.getId());
         record.setUpdatedBy(principal.getId());
 
-        return projectMapper.toDto(projectRepository.create(record));
+        ProjectsRecord created = projectRepository.create(record);
+        seedDefaultStatuses(created.getId());
+        return projectMapper.toDto(created);
+    }
+
+    private void seedDefaultStatuses(UUID projectId) {
+        TaskStatusesRecord todo       = createStatus(projectId, "Todo",       "#6B7280", true,  false);
+        TaskStatusesRecord processing = createStatus(projectId, "Processing", "#3B4FD9", false, false);
+        TaskStatusesRecord done       = createStatus(projectId, "Done",       "#16A34A", false, true);
+
+        taskWorkflowRepository.createAll(List.of(
+                workflowRecord(todo.getId(),       processing.getId()),
+                workflowRecord(processing.getId(), done.getId())
+        ));
+    }
+
+    private TaskStatusesRecord createStatus(UUID projectId, String name, String color,
+                                            boolean isInitial, boolean isFinal) {
+        TaskStatusesRecord r = new TaskStatusesRecord();
+        r.setProjectId(projectId);
+        r.setName(name);
+        r.setColor(color);
+        r.setIsInitial(isInitial);
+        r.setIsFinal(isFinal);
+        r.setIsActive(true);
+        return taskStatusRepository.create(r);
+    }
+
+    private TaskWorkflowRecord workflowRecord(UUID fromStatusId, UUID toStatusId) {
+        TaskWorkflowRecord r = new TaskWorkflowRecord();
+        r.setFromStatusId(fromStatusId);
+        r.setToStatusId(toStatusId);
+        return r;
     }
 
     @Override

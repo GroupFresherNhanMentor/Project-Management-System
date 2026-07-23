@@ -6,6 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { TaskStatusDto, TaskWorkflowDto, CreateTaskWorkflowRequest } from '../../../../core/models/task.model';
 import { TaskService } from '../../../../core/services/task';
 import { ToastService } from '../../../../core/services/toast';
+import { AuthService } from '../../../../core/services/auth';
 
 @Component({
   selector: 'app-task-status',
@@ -16,7 +17,10 @@ export class TaskStatusManagement implements OnInit {
   private readonly route       = inject(ActivatedRoute);
   private readonly taskService = inject(TaskService);
   private readonly toast       = inject(ToastService);
+  private readonly authService = inject(AuthService);
   private readonly platformId  = inject(PLATFORM_ID);
+
+  readonly isAdmin = this.authService.getCurrentUser()?.role === 'ADMIN';
 
   private readonly projectId = this.route.parent?.snapshot.paramMap.get('id') ?? '';
 
@@ -170,5 +174,16 @@ export class TaskStatusManagement implements OnInit {
 
   cancelEdit(): void {
     this.editingId.set(null);
+  }
+
+  toggleActive(status: TaskStatusDto): void {
+    const next = !status.isActive;
+    this.taskService.updateTaskStatus(this.projectId, status.id, { isActive: next }).subscribe({
+      next: updated => {
+        this.statuses.update(list => list.map(s => s.id === updated.id ? updated : s));
+        this.toast.success(next ? 'Status enabled.' : 'Status disabled.');
+      },
+      error: () => this.toast.error('Failed to update status.'),
+    });
   }
 }

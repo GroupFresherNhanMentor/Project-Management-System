@@ -231,15 +231,10 @@ class WorklogServiceTest {
         filter.setSize(10);
 
         WorklogReportItem item = WorklogReportItem.builder()
-                .id(worklogId)
-                .taskId(taskId)
-                .taskKey("WEB-1")
-                .taskSummary("Setup Task Test")
                 .userId(userId)
                 .userName("Developer One")
-                .workDate(LocalDate.now())
-                .hour(BigDecimal.valueOf(4.5))
-                .description("Implemented core logic")
+                .totalHours(BigDecimal.valueOf(4.5))
+                .numberOfTasks(1)
                 .build();
 
         PaginationResult<WorklogReportItem> paginationResult =
