@@ -2,10 +2,8 @@
 <!-- CASE 1: ADMIN DASHBOARD (Chỉ hiển thị phần chung & Chỉ dẫn) -->
 <!-- ========================================== -->
 @if (role === 'ADMIN') {
-<!-- Phần chỉ dẫn (Waypoints) thay thế cho biểu đồ cũ -->
 <div class="mt-6 grid gap-4 sm:grid-cols-2">
-  <!-- Waypoint: Projects Management -->
-  <div routerLink="/projects" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm" style="border-color:#E6E8EC">
+  <div [routerLink]="['/projects']" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm cursor-pointer" style="border-color:#E6E8EC">
     <div class="flex items-center gap-3 mb-2">
       <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -15,15 +13,12 @@
       <h4 class="text-[15px] font-bold" style="color:#14161C">Waypoint Projects</h4>
     </div>
     <p class="text-[13px] mb-4" style="color:#4B5160">Quản lý danh sách toàn bộ dự án trong hệ thống, cấu hình thành viên, phân bổ tài nguyên và theo dõi tiến độ tổng quát.</p>
-
-    <!-- THÊM routerLink Ở ĐÂY -->
     <button class="text-[13px] font-semibold flex items-center gap-1 transition-colors hover:text-blue-700" style="color:#3B4FD9">
       Go to Projects Management &rarr;
     </button>
   </div>
 
-  <!-- Waypoint: Users Management -->
-  <div routerLink="/users" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm" style="border-color:#E6E8EC">
+  <div [routerLink]="['/users']" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm cursor-pointer" style="border-color:#E6E8EC">
     <div class="flex items-center gap-3 mb-2">
       <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -33,8 +28,6 @@
       <h4 class="text-[15px] font-bold" style="color:#14161C">Waypoint Users</h4>
     </div>
     <p class="text-[13px] mb-4" style="color:#4B5160">Quản trị danh sách người dùng, cấp quyền hệ thống (ADMIN, PM, DEV), kích hoạt hoặc khóa tài khoản thành viên.</p>
-
-    <!-- THÊM routerLink Ở ĐÂY -->
     <button class="text-[13px] font-semibold flex items-center gap-1 transition-colors hover:text-emerald-700" style="color:#1C8A4B">
       Go to Users Management &rarr;
     </button>
@@ -43,11 +36,11 @@
 }
 
 <!-- ========================================== -->
-<!-- CASE 2: PM & DEV DASHBOARD (Hiển thị cả cá nhân & dự án đang chọn) -->
+<!-- CASE 2: PM & DEV DASHBOARD -->
 <!-- ========================================== -->
 @if (role !== 'ADMIN') {
 
-<!-- [PHẦN CÁ NHÂN] Thống kê số liệu & Danh sách Task được phân công -->
+<!-- [PHẦN CÁ NHÂN] -->
 @if (devData(); as dev) {
 <div class="mb-6">
   <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">My Personal Workspace</h3>
@@ -99,12 +92,16 @@
       <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/50 transition-colors">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</span>
-        <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
-                  {{ getStatusLabel(task.status) }}
-                </span>
+
+        <!-- ĐÃ SỬA: Dùng trực tiếp task.status và màu nền động từ API -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
         <span class="text-[12px] flex-shrink-0" [style.color]="isOverdue(task.dueDate) ? '#D0342C' : '#9AA1AC'">
-                  {{ task.dueDate ?? '—' }}
-                </span>
+          {{ task.dueDate ?? '—' }}
+        </span>
       </div>
       } @empty {
       <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">No open tasks assigned.</div>
@@ -117,10 +114,16 @@
       <div class="flex items-center gap-4 px-5 py-3 bg-slate-50/20 opacity-80">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono line-through" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium line-through text-slate-500">{{ task.summary }}</span>
-        <span class="badge badge-done">Done</span>
+
+        <!-- ĐÃ SỬA: Hiển thị trạng thái completed động -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
         <span class="text-[12px] flex-shrink-0 text-slate-400">
-                  {{ task.dueDate ?? '—' }}
-                </span>
+          {{ task.dueDate ?? '—' }}
+        </span>
       </div>
       } @empty {
       <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">No completed tasks yet.</div>
@@ -133,12 +136,16 @@
       <div class="flex items-center gap-4 px-5 py-3 hover:bg-red-50/10 transition-colors">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono text-red-500" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium font-semibold" style="color:#D0342C">{{ task.summary }}</span>
-        <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
-                  {{ getStatusLabel(task.status) }}
-                </span>
+
+        <!-- ĐÃ SỬA: Hiển thị trạng thái động cho task trễ hạn -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
         <span class="text-[12px] flex-shrink-0 font-bold" style="color:#D0342C">
-                  Overdue: {{ task.dueDate ?? '—' }}
-                </span>
+          Overdue: {{ task.dueDate ?? '—' }}
+        </span>
       </div>
       } @empty {
       <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">Great! No overdue tasks.</div>
@@ -153,7 +160,7 @@
 
 <hr class="my-6 border-dashed" style="border-color: #E6E8EC" />
 
-<!-- [PHẦN DỰ ÁN ĐANG CHỌN] Thống kê trạng thái chi tiết của Dự án -->
+<!-- [PHẦN DỰ ÁN ĐANG CHỌN] -->
 @if (pmData(); as pm) {
 <div class="mt-4">
   <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">Selected Project Analytics</h3>
@@ -180,15 +187,15 @@
     <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
       <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Status</p>
       @for (s of statusOrder; track s.key) {
-      @let statusCount = pm.taskByStatus[s.key];
+      @let statusCount = pm.taskByStatus ? pm.taskByStatus[s.key] : 0;
       <div class="mb-3 flex items-center gap-3">
         <span class="w-24 shrink-0 text-[13px]" style="color:#4B5160">{{ s.label }}</span>
         <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
           <div class="absolute inset-y-0 left-0 rounded-full"
                [class]="s.css"
-               [style.width.%]="pm.totalTasks ? (statusCount / pm.totalTasks * 100) : 0"></div>
+               [style.width.%]="pm.totalTasks ? ((statusCount || 0) / pm.totalTasks * 100) : 0"></div>
         </div>
-        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ statusCount }}</span>
+        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ statusCount || 0 }}</span>
       </div>
       }
     </div>
@@ -197,15 +204,15 @@
     <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
       <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Priority</p>
       @for (p of priorityOrder; track p.key) {
-      @let priorityCount = pm.taskByPriority[p.key];
+      @let priorityCount = pm.taskByPriority ? pm.taskByPriority[p.key] : 0;
       <div class="mb-3 flex items-center gap-3">
         <span class="w-20 shrink-0 text-[13px]" style="color:#4B5160">{{ p.label }}</span>
         <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
           <div class="absolute inset-y-0 left-0 rounded-full bg-current"
                [class]="p.css"
-               [style.width.%]="pm.totalTasks ? (priorityCount / pm.totalTasks * 100) : 0"></div>
+               [style.width.%]="pm.totalTasks ? ((priorityCount || 0) / pm.totalTasks * 100) : 0"></div>
         </div>
-        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ priorityCount }}</span>
+        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ priorityCount || 0 }}</span>
       </div>
       }
     </div>
@@ -217,8 +224,8 @@
     <div class="flex items-center justify-between">
       <p class="text-[14px] font-bold" style="color:#14161C">Active Sprint: {{ sp.sprintName }}</p>
       <span class="text-[13px] font-medium" style="color:#3B4FD9">
-              {{ sp.percentComplete }}% Complete
-            </span>
+        {{ sp.percentComplete }}% Complete
+      </span>
     </div>
     <div class="mt-3 h-1.5 w-full rounded-full" style="background:#F0F1F3">
       <div class="h-full rounded-full transition-all duration-500" style="background:#3B4FD9" [style.width.%]="sp.percentComplete"></div>
