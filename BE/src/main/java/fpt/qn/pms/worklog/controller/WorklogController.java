@@ -50,7 +50,7 @@ public class WorklogController {
 
     @PostMapping("/api/tasks/{taskId}/worklogs")
     @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasAuthority('ADMIN')")
-    @Operation(summary = "Log time on a Task", description = "Hours must be > 0 and ≤ 24.")
+    @Operation(summary = "Log time on a Task", description = "Hours must be > 0 and <= 24.")
     public ResponseEntity<ApiResponse<WorklogDto>> createWorklog(
             @PathVariable UUID taskId,
             @Valid @RequestBody CreateWorklogRequest request) {
@@ -61,7 +61,7 @@ public class WorklogController {
 
     @PutMapping("/api/worklogs/{id}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Update Worklog", description = "Only the worklog creator can update.")
+    @Operation(summary = "Update Worklog", description = "Allowed for the worklog creator, project PM, or Admin.")
     public ResponseEntity<ApiResponse<WorklogDto>> updateWorklog(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateWorklogRequest request) {
@@ -71,7 +71,7 @@ public class WorklogController {
 
     @DeleteMapping("/api/worklogs/{id}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Delete Worklog", description = "Only the worklog creator can delete.")
+    @Operation(summary = "Delete Worklog", description = "Allowed for the worklog creator, project PM, or Admin.")
     public ResponseEntity<ApiResponse<Void>> deleteWorklog(@PathVariable UUID id) {
         worklogService.deleteWorklog(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
@@ -79,7 +79,6 @@ public class WorklogController {
     }
 
     @GetMapping("/api/reports/worklog")
-    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get Worklog Report")
     public ResponseEntity<ApiResponse<PageResponse<WorklogReportItem>>> getWorklogReport(
             @Valid WorklogReportFilterDto filter) {

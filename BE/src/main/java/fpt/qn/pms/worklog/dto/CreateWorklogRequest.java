@@ -3,8 +3,7 @@ package fpt.qn.pms.worklog.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
+import fpt.qn.pms.worklog.validator.ValidWorklogHour;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -18,8 +17,7 @@ public class CreateWorklogRequest {
     LocalDate workDate;
 
     @NotNull(message = "Hour is required")
-    @DecimalMin(value = "0.01", message = "Hour must be greater than 0")
-    @DecimalMax(value = "24.0", message = "Hour must be less than or equal to 24")
+    @ValidWorklogHour
     BigDecimal hour;
 
     String description;
