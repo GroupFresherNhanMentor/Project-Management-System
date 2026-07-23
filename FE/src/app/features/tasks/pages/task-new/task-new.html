@@ -4,13 +4,28 @@
   <h2 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">New Task</h2>
 
   <div class="flex flex-col gap-3">
-    <!-- Summary -->
-    <input
-      [(ngModel)]="summary"
-      placeholder="Summary *"
-      class="rounded-lg border px-3 py-2.5 text-[13px] outline-none"
-      style="border-color:#E1E4E9"
-    />
+
+    <!-- Task Key + Summary -->
+    <div class="grid grid-cols-[160px_1fr] gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Task Key *</label>
+        <input
+          [(ngModel)]="taskKey"
+          placeholder="e.g. PROJ-1"
+          class="w-full rounded-lg border px-3 py-2.5 text-[13px] font-mono outline-none"
+          style="border-color:#E1E4E9"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Summary *</label>
+        <input
+          [(ngModel)]="summary"
+          placeholder="Short description of the task"
+          class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none"
+          style="border-color:#E1E4E9"
+        />
+      </div>
+    </div>
 
     <!-- Description -->
     <textarea
@@ -37,20 +52,33 @@
       </div>
     </div>
 
-    <!-- Assignee + Sprint -->
-    <div class="grid grid-cols-2 gap-3">
+    <!-- Status + Assignee + Sprint -->
+    <div class="grid grid-cols-3 gap-3">
+      <div>
+        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status *</label>
+        <select [(ngModel)]="statusId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
+          @for (s of statuses(); track s.id) {
+            <option [value]="s.id">{{ s.name }}</option>
+          }
+          @empty {
+            <option value="" disabled>No initial statuses</option>
+          }
+        </select>
+      </div>
       <div>
         <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
         <select [(ngModel)]="assigneeId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
           <option value="">Unassigned</option>
-          @for (m of members; track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+          @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
         </select>
       </div>
       <div>
         <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Sprint</label>
         <select [(ngModel)]="sprintId" class="w-full rounded-lg border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
           <option value="">No Sprint</option>
-          @for (s of sprints; track s.id) { <option [value]="s.id">{{ s.sprintName }}</option> }
+          @if (activeSprint(); as s) {
+            <option [value]="s.id">{{ s.sprintName }} (Active)</option>
+          }
         </select>
       </div>
     </div>
@@ -73,7 +101,12 @@
 
     <!-- Actions -->
     <div class="flex gap-2 pt-1">
-      <button (click)="submit()" [disabled]="submitting || !summary.trim()" class="rounded-lg px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">Create Task</button>
+      <button
+        (click)="submit()"
+        [disabled]="submitting || !taskKey.trim() || !summary.trim() || !statusId"
+        class="rounded-lg px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+        style="background:#3B4FD9"
+      >{{ submitting ? 'Creating…' : 'Create Task' }}</button>
       <button (click)="cancel()" class="rounded-lg border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Cancel</button>
     </div>
   </div>

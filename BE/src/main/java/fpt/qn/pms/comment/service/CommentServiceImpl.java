@@ -127,15 +127,15 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentNotOwnedException();
         }
 
+        String oldContent = record.getContent();
         commentMapper.updateRecord(record, request);
         TaskCommentsRecord saved = commentRepository.update(record);
 
-        // Record activity
         eventPublisher.publishEvent(new TaskActivityEvent(
                 saved.getTaskId(),
                 currentUser.getId(),
                 ActivityAction.COMMENT_ADDED,
-                "Comment updated",
+                oldContent,
                 saved.getContent()
         ));
 
@@ -158,13 +158,12 @@ public class CommentServiceImpl implements CommentService {
 
         commentRepository.hardDeleteById(id);
 
-        // Record activity
         eventPublisher.publishEvent(new TaskActivityEvent(
                 taskId,
                 currentUser.getId(),
-                ActivityAction.COMMENT_ADDED,
+                ActivityAction.COMMENT_DELETED,
                 content,
-                "Comment deleted"
+                null
         ));
     }
 

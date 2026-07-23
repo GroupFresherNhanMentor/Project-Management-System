@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import fpt.qn.pms.jooq.enums.TaskPriority;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
@@ -13,6 +14,8 @@ import lombok.experimental.FieldDefaults;
 public class UpdateTaskRequest {
 
     UUID statusId;
+
+    TaskPriority priority;
 
     String description;
 

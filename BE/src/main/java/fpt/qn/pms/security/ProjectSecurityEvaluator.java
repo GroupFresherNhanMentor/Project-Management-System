@@ -15,9 +15,11 @@ import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.task.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component("projectSecurityEvaluator")
 @RequiredArgsConstructor
+@Slf4j
 public class ProjectSecurityEvaluator {
 
     private final ProjectMemberRepository projectMemberRepository;
@@ -42,11 +44,13 @@ public class ProjectSecurityEvaluator {
     }
 
     public boolean isMember(UUID projectId) {
-        if (projectId == null) return false;
+        if (projectId == null)
+            return false;
         return getCurrentPrincipal()
                 .flatMap(p -> projectMemberRepository.findByProjectIdAndUserId(projectId, p.getId()))
                 .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
                 .orElse(false);
+
     }
 
     public boolean isPm(UUID projectId) {
@@ -58,7 +62,8 @@ public class ProjectSecurityEvaluator {
     }
 
     public boolean requireRole(UUID projectId, List<ProjectRole> roles) {
-        if (projectId == null) return false;
+        if (projectId == null)
+            return false;
         return getCurrentPrincipal()
                 .flatMap(p -> projectMemberRepository.findByProjectIdAndUserId(projectId, p.getId()))
                 .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE
@@ -68,13 +73,15 @@ public class ProjectSecurityEvaluator {
 
     public boolean hasAccessToTask(UUID taskId) {
         Optional<TasksRecord> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) return false;
+        if (taskOpt.isEmpty())
+            return false;
         return isMember(taskOpt.get().getProjectId());
     }
 
     public boolean isPmOfTask(UUID taskId) {
         Optional<TasksRecord> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) return false;
+        if (taskOpt.isEmpty())
+            return false;
         return isPm(taskOpt.get().getProjectId());
     }
 }

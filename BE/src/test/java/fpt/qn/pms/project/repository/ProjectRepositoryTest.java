@@ -73,14 +73,14 @@ class ProjectRepositoryTest extends BaseIntegrationTest {
     }
 
     @Test
-    void findAll_shouldExcludeActiveNonProjectManagerMembership() {
+    void findAll_shouldIncludeActiveNonProjectManagerMembership() {
         UUID developerProjectId = insertProject("DEV", "Developer Project", ProjectStatus.ACTIVE);
         insertMembership(developerProjectId, ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
 
         PaginationResult<ProjectsRecord> result = projectRepository.findAll(null, null, userId, 0, 20);
 
         assertThat(result.getItems()).extracting(ProjectsRecord::getId)
-                .doesNotContain(developerProjectId);
+                .contains(developerProjectId);
     }
 
     @Test

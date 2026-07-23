@@ -33,7 +33,7 @@ public interface TaskMapper {
     TaskDto toDto(TaskResult result);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "taskKey", ignore = true)
+    // @Mapping(target = "taskKey", ignore = true)
     @Mapping(target = "statusId", ignore = true)
     @Mapping(target = "reporterId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

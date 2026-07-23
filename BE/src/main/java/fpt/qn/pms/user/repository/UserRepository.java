@@ -1,6 +1,8 @@
 package fpt.qn.pms.user.repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,5 +27,7 @@ public interface UserRepository extends Repository<UsersRecord> {
     List<String> findUsernamesMatchingBase(String baseUsername);
 
     PaginationResult<UsersRecord> findAll(String keyword, SysRole role, UserStatus status, int page, int size);
+
+    Map<UUID, String> findFullNamesByIds(Collection<UUID> ids);
 
 }

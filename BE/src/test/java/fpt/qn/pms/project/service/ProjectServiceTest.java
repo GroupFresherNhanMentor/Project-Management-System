@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import fpt.qn.pms.BaseIntegrationTest;
@@ -32,6 +33,7 @@ import fpt.qn.pms.project.exception.InvalidInitialProjectStatusException;
 import fpt.qn.pms.project.exception.InvalidProjectDateRangeException;
 import fpt.qn.pms.project.exception.ProjectAccessDeniedException;
 import fpt.qn.pms.project.exception.ProjectCodeAlreadyExistsException;
+import fpt.qn.pms.security.UserPrincipal;
 
 class ProjectServiceTest extends BaseIntegrationTest {
 
@@ -59,7 +61,7 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void createProject_shouldNormalizeCodeAndSetAuditUser() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
 
         ProjectDto created = projectService.createProject(
                 createRequest(" web" + codeSuffix.toLowerCase() + " ", "Web Project"));
@@ -74,7 +76,7 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void createProject_shouldRejectDuplicateCodeIgnoringCase() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         String code = "WEB" + codeSuffix;
         projectService.createProject(createRequest(code, "First"));
 
@@ -84,7 +86,7 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void createProject_shouldRejectInvalidDateRange() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         CreateProjectRequest request = createRequest("DATE" + codeSuffix, "Invalid Dates");
         request.setStartDate(LocalDate.of(2026, 8, 1));
         request.setEndDate(LocalDate.of(2026, 7, 1));
@@ -95,7 +97,7 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void createProject_shouldRejectCompletedInitialStatus() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         CreateProjectRequest request = createRequest("DONE" + codeSuffix, "Completed Project");
         request.setStatus(ProjectStatus.COMPLETED);
 
@@ -106,13 +108,13 @@ class ProjectServiceTest extends BaseIntegrationTest {
 
     @Test
     void getProjects_shouldReturnOnlyActiveProjectManagerMembershipsForUser() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         ProjectDto visible = projectService.createProject(createRequest("VISIBLE" + codeSuffix, "Visible"));
         ProjectDto hidden = projectService.createProject(createRequest("HIDDEN" + codeSuffix, "Hidden"));
         insertMembership(visible.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
         insertMembership(hidden.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.INACTIVE);
 
-        authenticate(regularUser.getUsername());
+        authenticate(regularUser);
         PageResponse<ProjectDto> page = projectService.getProjects(null, null, 0, 20);
 
         assertThat(page.getItems()).extracting(ProjectDto::getId)
@@ -121,41 +123,52 @@ class ProjectServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getProjects_shouldRejectActiveDeveloper() {
-        authenticate(admin.getUsername());
+    void getProjects_shouldAllowActiveDeveloper() {
+        authenticate(admin);
         ProjectDto project = projectService.createProject(createRequest("DEV" + codeSuffix, "Developer Project"));
         insertMembership(project.getId(), regularUser.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
 
-        authenticate(regularUser.getUsername());
+        authenticate(regularUser);
+        PageResponse<ProjectDto> page = projectService.getProjects(null, null, 0, 20);
 
-        assertThatThrownBy(() -> projectService.getProjects(null, null, 0, 20))
-                .isInstanceOf(ProjectAccessDeniedException.class);
+        assertThat(page.getItems()).extracting(ProjectDto::getId).contains(project.getId());
     }
 
     @Test
     void getProjectById_shouldAllowActiveProjectManager() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         ProjectDto project = projectService.createProject(createRequest("PM" + codeSuffix, "PM Project"));
         insertMembership(project.getId(), regularUser.getId(), ProjectRole.PM, ProjectMemberStatus.ACTIVE);
 
-        authenticate(regularUser.getUsername());
+        authenticate(regularUser);
+
+        assertThat(projectService.getProjectById(project.getId()).getId()).isEqualTo(project.getId());
+    }
+
+    @Test
+    void getProjectById_shouldAllowActiveDeveloper() {
+        authenticate(admin);
+        ProjectDto project = projectService.createProject(createRequest("DEVID" + codeSuffix, "Dev Project"));
+        insertMembership(project.getId(), regularUser.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
+
+        authenticate(regularUser);
 
         assertThat(projectService.getProjectById(project.getId()).getId()).isEqualTo(project.getId());
     }
 
     @Test
     void getProjectById_shouldRejectUserWithoutActiveMembership() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         ProjectDto project = projectService.createProject(createRequest("PRIVATE" + codeSuffix, "Private"));
 
-        authenticate(regularUser.getUsername());
+        authenticate(regularUser);
         assertThatThrownBy(() -> projectService.getProjectById(project.getId()))
                 .isInstanceOf(ProjectAccessDeniedException.class);
     }
 
     @Test
     void updateProject_shouldKeepCodeImmutable() {
-        authenticate(admin.getUsername());
+        authenticate(admin);
         String projectCode = "KEEP" + codeSuffix;
         ProjectDto project = projectService.createProject(createRequest(projectCode, "Old Name"));
         UpdateProjectRequest request = UpdateProjectRequest.builder()
@@ -214,8 +227,16 @@ class ProjectServiceTest extends BaseIntegrationTest {
                 .execute();
     }
 
-    private void authenticate(String username) {
+    private void authenticate(UsersRecord user) {
+        var authorities = List.of(new SimpleGrantedAuthority(user.getRole().getLiteral()));
+        var principal = UserPrincipal.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .password(null)
+                .enabled(user.getStatus() == UserStatus.ACTIVE)
+                .authorities(authorities)
+                .build();
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(username, null, List.of()));
+                new UsernamePasswordAuthenticationToken(principal, null, authorities));
     }
 }

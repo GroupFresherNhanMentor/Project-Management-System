@@ -1,10 +1,15 @@
 <button (click)="goBack()" class="mb-5 inline-flex items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9;background:none;border:none;cursor:pointer;padding:0">‹ Back</button>
 
-@if (task(); as t) {
+@if (loading()) {
+  <p class="text-[13px]" style="color:#9AA1AC">Loading task…</p>
+} @else if (taskSvc.task(); as t) {
   <!-- Header card -->
   <div class="mb-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
     <p class="mb-1 text-[12px]" style="color:#9AA1AC">
       {{ t.taskKey }} · <span style="color:#3B4FD9;font-weight:600">{{ typeLabel(t.taskType) }}</span>
+      &nbsp;·&nbsp;
+      <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+            [style.background-color]="t.statusColor">{{ t.statusName }}</span>
     </p>
     <h2 class="text-[19px] font-extrabold leading-snug" style="color:#14161C">{{ t.summary }}</h2>
   </div>
@@ -12,136 +17,21 @@
   <!-- Tabs -->
   <div class="mb-0 flex border-b" style="border-color:#E6E8EC">
     @for (tab of tabs; track tab) {
-      <button
-        (click)="activeTab = tab"
+      <a
+        [routerLink]="tab"
+        routerLinkActive
+        #rla="routerLinkActive"
         class="px-5 py-3 text-[13px] font-semibold capitalize transition"
-        [style.color]="activeTab === tab ? '#3B4FD9' : '#6B7280'"
-        [style.border-bottom]="activeTab === tab ? '2px solid #3B4FD9' : '2px solid transparent'"
-      >{{ tab }}</button>
+        [style.color]="rla.isActive ? '#3B4FD9' : '#6B7280'"
+        [style.border-bottom]="rla.isActive ? '2px solid #3B4FD9' : '2px solid transparent'"
+      >{{ tab }}</a>
     }
   </div>
 
-  <!-- Tab content -->
+  <!-- Tab content via child routes -->
   <div class="rounded-b-[12px] border border-t-0 bg-white p-5" style="border-color:#E6E8EC">
-
-    <!-- DETAILS -->
-    @if (activeTab === 'details') {
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status</label>
-          <select [(ngModel)]="editStatus" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-            @for (s of allStatuses; track s) { <option [value]="s">{{ statusLabel(s) }}</option> }
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Priority</label>
-          <select [(ngModel)]="editPriority" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-            @for (p of allPriorities; track p) { <option [value]="p">{{ p }}</option> }
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
-          <select [(ngModel)]="editAssigneeId" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
-            <option value="">Unassigned</option>
-            @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Reporter</label>
-          <div class="w-full rounded-[8px] border px-3 py-2 text-[13px]" style="border-color:#E1E4E9;background:#FAFBFC;color:#4B5160">{{ t.reporterName }}</div>
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Story Point</label>
-          <input [(ngModel)]="editStoryPoint" type="number" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Estimate Hour</label>
-          <input [(ngModel)]="editEstimateHour" type="number" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-        </div>
-        <div>
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Due Date</label>
-          <input [(ngModel)]="editDueDate" type="date" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-        </div>
-        <div class="col-span-2">
-          <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Description</label>
-          <textarea [(ngModel)]="editDescription" rows="4" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
-        </div>
-      </div>
-      <div class="mt-4">
-        <button (click)="saveDetails()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white" style="background:#3B4FD9">Save Changes</button>
-      </div>
-    }
-
-    <!-- COMMENTS -->
-    @if (activeTab === 'comments') {
-      <div class="flex flex-col gap-4">
-        @for (c of comments(); track c.id) {
-          <div class="flex gap-3">
-            <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
-              {{ c.createdBy | initials }}
-            </div>
-            <div>
-              <p class="text-[12px]" style="color:#9AA1AC">{{ c.createdTime }}</p>
-              <p class="mt-0.5 text-[13px]" style="color:#14161C">{{ c.content }}</p>
-            </div>
-          </div>
-        }
-        @empty { <p class="text-[13px]" style="color:#9AA1AC">No comments yet.</p> }
-
-        <div class="mt-2 flex gap-2 border-t pt-4" style="border-color:#F0F1F3">
-          <textarea [(ngModel)]="newComment" rows="2" placeholder="Add a comment…" class="flex-1 rounded-[8px] border px-3 py-2 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
-          <button (click)="postComment()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white self-end" style="background:#3B4FD9">Post</button>
-        </div>
-      </div>
-    }
-
-    <!-- WORKLOG -->
-    @if (activeTab === 'worklog') {
-      <div class="flex flex-col gap-3">
-        @for (wl of worklogs(); track wl.id) {
-          <div class="flex items-center justify-between rounded-[8px] border p-3" style="border-color:#E6E8EC">
-            <div>
-              <p class="text-[13px] font-medium" style="color:#14161C">{{ wl.workDate }} · {{ wl.hour }}h</p>
-              @if (wl.description) { <p class="text-[12px]" style="color:#6B7280">{{ wl.description }}</p> }
-            </div>
-            @if (isMyWorklog(wl)) {
-              <button (click)="deleteWorklog(wl)" class="text-[12px] hover:underline" style="color:#D0342C">Delete</button>
-            }
-          </div>
-        }
-        @empty { <p class="text-[13px]" style="color:#9AA1AC">No worklogs yet.</p> }
-
-        <!-- Add worklog -->
-        <div class="mt-2 rounded-[9px] border p-4" style="border-color:#E1E4E9;background:#FAFBFC">
-          <p class="mb-3 text-[12px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Log time</p>
-          <div class="flex flex-wrap gap-2">
-            <input [(ngModel)]="newWorklogDate" type="date" class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-            <input [(ngModel)]="newWorklogHours" type="number" placeholder="Hours" min="0" max="24" class="w-24 rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-            <input [(ngModel)]="newWorklogDesc" placeholder="Description" class="flex-1 rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;min-width:160px" />
-            <button (click)="addWorklog()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">Add</button>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- ACTIVITY -->
-    @if (activeTab === 'activity') {
-      <div class="flex flex-col gap-3">
-        @for (a of activities(); track a.id) {
-          <div class="flex gap-3">
-            <div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style="background:#EAF0FE;color:#3B4FD9">
-              {{ a.userName | initials }}
-            </div>
-            <div>
-              <p class="text-[13px]" style="color:#14161C">{{ activityLabel(a) }}</p>
-              <p class="text-[11px]" style="color:#9AA1AC">{{ a.createdTime }}</p>
-            </div>
-          </div>
-        }
-        @empty { <p class="text-[13px]" style="color:#9AA1AC">No activity yet.</p> }
-      </div>
-    }
+    <router-outlet />
   </div>
 } @else {
-  <p class="text-[13px]" style="color:#9AA1AC">Loading task…</p>
+  <p class="text-[13px]" style="color:#9AA1AC">Task not found.</p>
 }

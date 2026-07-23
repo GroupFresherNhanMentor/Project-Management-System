@@ -177,7 +177,7 @@ class ActivityIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items[0].action").value("TASK_CREATED"))
-                .andExpect(jsonPath("$.data.items[0].userName").value("act_member"));
+                .andExpect(jsonPath("$.data.items[0].userName").value("Act Member"));
     }
 
     @Test
@@ -195,8 +195,8 @@ class ActivityIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items[0].action").value("STATUS_CHANGED"))
-                .andExpect(jsonPath("$.data.items[0].oldValue").value("TODO"))
-                .andExpect(jsonPath("$.data.items[0].newValue").value("IN_PROGRESS"));
+                .andExpect(jsonPath("$.data.items[0].oldValue").value("{\"name\": \"TODO\"}"))
+                .andExpect(jsonPath("$.data.items[0].newValue").value("{\"name\": \"IN_PROGRESS\"}"));
     }
 
     @Test

@@ -103,11 +103,11 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldReturn403ForActiveDeveloper() throws Exception {
+    void getMembers_shouldReturn200ForActiveDeveloper() throws Exception {
         mockMvc.perform(get("/api/projects/{projectId}/members", projectId)
                         .header("Authorization", "Bearer " + developerToken))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test
