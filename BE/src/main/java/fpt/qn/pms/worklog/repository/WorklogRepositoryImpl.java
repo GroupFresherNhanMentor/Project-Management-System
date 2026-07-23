@@ -5,6 +5,7 @@ import static fpt.qn.pms.jooq.Tables.USERS;
 import static fpt.qn.pms.jooq.Tables.WORKLOGS;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.jooq.Condition;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.repository.BaseRepository;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
+import fpt.qn.pms.worklog.dto.WorklogDto;
 import fpt.qn.pms.worklog.dto.WorklogReportFilterDto;
 import fpt.qn.pms.worklog.dto.WorklogReportItem;
 
@@ -26,18 +28,43 @@ public class WorklogRepositoryImpl extends BaseRepository<WorklogsRecord> implem
     }
 
     @Override
-    public PaginationResult<WorklogsRecord> findByTaskId(UUID taskId, int page, int size) {
+    public PaginationResult<WorklogDto> findByTaskId(UUID taskId, int page, int size) {
         Condition condition = WORKLOGS.TASK_ID.eq(taskId);
         long total = dsl.fetchCount(WORKLOGS, condition);
 
-        List<WorklogsRecord> items = dsl.selectFrom(WORKLOGS)
+        List<WorklogDto> items = dsl.select(
+                        WORKLOGS.ID.as("id"),
+                        WORKLOGS.TASK_ID.as("taskId"),
+                        WORKLOGS.WORK_DATE.as("workDate"),
+                        WORKLOGS.HOURS.as("hour"),
+                        WORKLOGS.DESCRIPTION.as("description"),
+                        USERS.FULL_NAME.as("createdBy")
+                )
+                .from(WORKLOGS)
+                .leftJoin(USERS).on(WORKLOGS.USER_ID.eq(USERS.ID))
                 .where(condition)
                 .orderBy(WORKLOGS.WORK_DATE.desc(), WORKLOGS.CREATED_AT.desc())
                 .limit(size)
                 .offset((long) page * size)
-                .fetch();
+                .fetchInto(WorklogDto.class);
 
         return new PaginationResult<>(total, items);
+    }
+
+    @Override
+    public Optional<WorklogDto> findDtoById(UUID id) {
+        return dsl.select(
+                        WORKLOGS.ID.as("id"),
+                        WORKLOGS.TASK_ID.as("taskId"),
+                        WORKLOGS.WORK_DATE.as("workDate"),
+                        WORKLOGS.HOURS.as("hour"),
+                        WORKLOGS.DESCRIPTION.as("description"),
+                        USERS.FULL_NAME.as("createdBy")
+                )
+                .from(WORKLOGS)
+                .leftJoin(USERS).on(WORKLOGS.USER_ID.eq(USERS.ID))
+                .where(WORKLOGS.ID.eq(id))
+                .fetchOptionalInto(WorklogDto.class);
     }
 
     @Override

@@ -5,6 +5,7 @@ import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,7 +40,8 @@ public class TaskController {
     TaskService taskService;
 
     @PostMapping
-    @Operation(summary = "Create a new Task", description = "Requires PM role in project. Auto-generates task key and assigns status TODO.")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#request.projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @Operation(summary = "Create a new Task", description = "Requires PM role in project. Sets status to the project's initial status.")
     public ResponseEntity<ApiResponse<TaskDto>> createTask(@Valid @RequestBody CreateTaskRequest request) {
         TaskDto created = taskService.createTask(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -47,6 +49,7 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#id) or hasAuthority('ADMIN')")
     @Operation(summary = "Get Task details by ID")
     public ResponseEntity<ApiResponse<TaskDto>> getTaskById(@PathVariable UUID id) {
         TaskDto task = taskService.getTaskById(id);
@@ -54,15 +57,17 @@ public class TaskController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#request.projectId) or hasAuthority('ADMIN')")
     @Operation(summary = "Search Tasks with pagination and multi-criteria filters")
     public ResponseEntity<ApiResponse<PageResponse<TaskDto>>> searchTasks(
-            @Valid TaskSearchRequest request) {
+            @Valid @ParameterObject TaskSearchRequest request) {
         PageResponse<TaskDto> result = taskService.searchTasks(request);
         return ResponseEntity.ok(ApiResponse.success(result, null));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update Task information", description = "PM can update all fields & bypass workflow; Devs are subject to workflow restrictions.")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#id) or hasAuthority('ADMIN')")
+    @Operation(summary = "Update Task information", description = "PM can update all fields and bypass workflow; members are subject to workflow restrictions.")
     public ResponseEntity<ApiResponse<TaskDto>> updateTask(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateTaskRequest request) {
@@ -71,6 +76,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}/assign")
+    @PreAuthorize("@projectSecurityEvaluator.isPmOfTask(#id) or hasAuthority('ADMIN')")
     @Operation(summary = "Assign Task to project member", description = "Requires PM role in project.")
     public ResponseEntity<ApiResponse<TaskDto>> assignTask(
             @PathVariable UUID id,

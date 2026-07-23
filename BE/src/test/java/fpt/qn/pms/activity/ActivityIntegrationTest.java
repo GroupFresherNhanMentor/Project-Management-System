@@ -28,7 +28,6 @@ import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
@@ -157,7 +156,6 @@ class ActivityIntegrationTest extends BaseIntegrationTest {
         taskRecord.setSummary("Activity Test Task");
         taskRecord.setTaskType(TaskType.TASK);
         taskRecord.setPriority(TaskPriority.MEDIUM);
-        taskRecord.setStatus(TaskStatus.TODO);
         taskRecord.setReporterId(adminUser.getId());
         task = taskRepository.create(taskRecord);
     }

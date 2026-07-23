@@ -8,17 +8,11 @@ import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.jooq.enums.ProjectMemberStatus;
-import fpt.qn.pms.jooq.enums.ProjectRole;
-import fpt.qn.pms.jooq.enums.TaskStatus;
-import fpt.qn.pms.jooq.tables.records.ProjectMembersRecord;
-import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
-import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.project.exception.ProjectNotFoundException;
 import fpt.qn.pms.project.repository.ProjectRepository;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.security.ProjectSecurityEvaluator;
-import fpt.qn.pms.security.annotation.RequireProjectRole;
 import fpt.qn.pms.task.dto.AssignTaskRequest;
 import fpt.qn.pms.task.dto.CreateTaskRequest;
 import fpt.qn.pms.task.dto.TaskDto;
@@ -26,11 +20,15 @@ import fpt.qn.pms.task.dto.TaskSearchRequest;
 import fpt.qn.pms.task.dto.UpdateTaskRequest;
 import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
 import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
+import fpt.qn.pms.task.exception.ReporterNotInProjectException;
 import fpt.qn.pms.task.exception.TaskNotFoundException;
+import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
 import fpt.qn.pms.task.mapper.TaskMapper;
 import fpt.qn.pms.task.repository.TaskRepository;
+import fpt.qn.pms.task.repository.TaskStatusRepository;
+import fpt.qn.pms.task.repository.TaskWorkflowRepository;
+import fpt.qn.pms.task.repository.resultModel.TaskResult;
 import fpt.qn.pms.task.service.TaskService;
-import fpt.qn.pms.user.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -45,39 +43,56 @@ import fpt.qn.pms.jooq.enums.ActivityAction;
 public class TaskServiceImpl implements TaskService {
 
     TaskRepository taskRepository;
-    UserRepository userRepository;
     ProjectRepository projectRepository;
     ProjectMemberRepository projectMemberRepository;
     ProjectSecurityEvaluator projectSecurityEvaluator;
+    TaskStatusRepository taskStatusRepository;
+    TaskWorkflowRepository taskWorkflowRepository;
     TaskMapper taskMapper;
     ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
     public TaskDto createTask(CreateTaskRequest request) {
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new UserNotFoundException());
 
-        if (request.getAssigneeId() ==null){
-            projectRepository.findById(request.getProjectId())
+        projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new ProjectNotFoundException());
-        }
-        else{
-            boolean isMember = projectMemberRepository.findByProjectIdAndUserId(request.getProjectId(), request.getAssigneeId())
-                .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
-                .orElse(false);
-            if (!isMember) {
+
+        if (request.getAssigneeId() != null) {
+            boolean isAssigneeMember = projectMemberRepository
+                    .findByProjectIdAndUserId(request.getProjectId(), request.getAssigneeId())
+                    .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
+                    .orElse(false);
+
+         
+            if (!isAssigneeMember) {
                 throw new AssigneeNotInProjectException();
             }
+
         }
- 
 
-        // 3. Save TasksRecord
+        if (request.getReporterId() != null) {
+            boolean isReporterMember = projectMemberRepository
+                    .findByProjectIdAndUserId(request.getProjectId(), request.getReporterId())
+                    .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
+                    .orElse(false);
+
+            if (!isReporterMember) {
+                throw new ReporterNotInProjectException();
+            }
+        }
+
+        UUID resolvedStatusId = taskStatusRepository.findById(request.getTaskStatusId())
+                .filter(s -> s.getProjectId().equals(request.getProjectId()))
+                .orElseThrow(() -> new TaskStatusNotFoundException(request.getTaskStatusId()))
+                .getId();
+
         TasksRecord record = taskMapper.toRecord(request);
-
         record.setReporterId(currentUserId);
-        record.setStatus(TaskStatus.TODO);
+        record.setStatusId(resolvedStatusId);
         record.setCreatedBy(currentUserId);
         record.setUpdatedBy(currentUserId);
 
@@ -92,23 +107,21 @@ public class TaskServiceImpl implements TaskService {
                 saved.getSummary()
         ));
 
-        return toDtoWithUserNames(saved);
+        return taskRepository.findDetailById(saved.getId()).map(taskMapper::toDto).orElseThrow();
     }
 
     @Override
     @Transactional(readOnly = true)
     public TaskDto getTaskById(UUID id) {
-        TasksRecord record =
-                taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
-        return toDtoWithUserNames(record);
+        return taskRepository.findDetailById(id).map(taskMapper::toDto).orElseThrow(() -> new TaskNotFoundException());
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<TaskDto> searchTasks(TaskSearchRequest request) {
-        PaginationResult<TasksRecord> result = taskRepository.findAll(request);
+        PaginationResult<TaskResult> result = taskRepository.findAll(request);
         return PageResponse.<TaskDto>builder()
-                .items(result.getItems().stream().map(this::toDtoWithUserNames).toList())
+                .items(result.getItems().stream().map(taskMapper::toDto).toList())
                 .totalElements(result.getTotal())
                 .totalPages((int) Math.ceil((double) result.getTotal() / request.getSize()))
                 .pageNumber(request.getPage()).pageSize(request.getSize()).build();
@@ -118,16 +131,14 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public TaskDto updateTask(UUID id, UpdateTaskRequest request) {
 
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new UserNotFoundException());
 
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
 
-        // 1. Check if PM
-        boolean isPm = projectSecurityEvaluator.isPm(id);
-
-        // 2. Check if Dev (Assignee or Reporter)
+        boolean isPm = projectSecurityEvaluator.isPm(task.getProjectId());
         boolean isDev = currentUserId.equals(task.getAssigneeId())
                 || currentUserId.equals(task.getReporterId());
 
@@ -136,106 +147,74 @@ public class TaskServiceImpl implements TaskService {
                     "Access denied: You are not authorized to update this task");
         }
 
-        // 3. Workflow transition check for Dev
-        if (!isPm) {
-            if (request.getStatus() != null && !request.getStatus().equals(task.getStatus())) {
-                TaskStatus oldStatus = task.getStatus();
-                TaskStatus newStatus = request.getStatus();
-                boolean validTransition = false;
+        if (request.getStatusId() != null && !request.getStatusId().equals(task.getStatusId())) {
+            UUID newStatusId = request.getStatusId();
 
+            taskStatusRepository.findById(newStatusId)
+                    .filter(s -> s.getProjectId().equals(task.getProjectId()))
+                    .orElseThrow(() -> new TaskStatusNotFoundException(newStatusId));
+
+            if (!isPm) {
+                UUID currentStatusId = task.getStatusId();
+                boolean validTransition = currentStatusId != null
+                        && taskWorkflowRepository.existsByFromStatusIdAndToStatusId(
+                                currentStatusId, newStatusId);
                 if (!validTransition) {
                     throw new InvalidTaskStatusTransitionException(
-                            "Invalid status transition for developer: " + oldStatus + " -> "
-                                    + newStatus);
+                            "Transition not allowed by project workflow");
                 }
             }
-        }
 
-        // 4. Update task fields
-        if (request.getStatus() != null && !request.getStatus().equals(task.getStatus())) {
-            TaskStatus oldStatus = task.getStatus();
-            task.setStatus(request.getStatus());
-
-            eventPublisher.publishEvent(new TaskActivityEvent(
-                    task.getId(),
-                    currentUserId,
-                    ActivityAction.STATUS_CHANGED,
-                    oldStatus != null ? oldStatus.getLiteral() : null,
-                    request.getStatus().getLiteral()
-            ));
+            task.setStatusId(newStatusId);
         }
 
         if (request.getDescription() != null) {
             task.setDescription(request.getDescription());
         }
-
         if (request.getEstimateHour() != null) {
             task.setEstimateHour(request.getEstimateHour());
         }
-
         if (request.getDueDate() != null) {
             task.setDueDate(request.getDueDate());
         }
 
         task.setUpdatedBy(currentUserId);
-        task.setUpdatedAt(java.time.OffsetDateTime.now());
 
-        TasksRecord saved = taskRepository.update(task);
-        return toDtoWithUserNames(saved);
+        taskRepository.update(task);
+        return taskRepository.findDetailById(id).map(taskMapper::toDto).orElseThrow();
     }
 
     @Override
     @Transactional
-    @RequireProjectRole(ProjectRole.PM)
     public TaskDto assignTask(UUID id, AssignTaskRequest request) {
-        UUID currentUserId = projectSecurityEvaluator.getCurrentUserId()
+        UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
+                .map(p -> p.getId())
                 .orElseThrow(() -> new UserNotFoundException());
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
 
-        // 1. Check if assignee is member of the project
-        // boolean isMember = dsl.fetchExists(PROJECT_MEMBERS, PROJECT_MEMBERS.PROJECT_ID
-        //         .eq(task.getProjectId()).and(PROJECT_MEMBERS.USER_ID.eq(request.getAssigneeId())));
-        boolean isMember = projectMemberRepository.findByProjectIdAndUserId(task.getProjectId(), request.getAssigneeId())
+        boolean isMember = projectMemberRepository
+                .findByProjectIdAndUserId(task.getProjectId(), request.getAssigneeId())
                 .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
                 .orElse(false);
         if (!isMember) {
             throw new AssigneeNotInProjectException();
         }
 
-        // 3. Assign and log activity
-        UUID oldAssignee = task.getAssigneeId();
+        UUID oldAssigneeId = task.getAssigneeId();
         task.setAssigneeId(request.getAssigneeId());
         task.setUpdatedBy(currentUserId);
-        task.setUpdatedAt(java.time.OffsetDateTime.now());
 
-        TasksRecord saved = taskRepository.update(task);
+        taskRepository.update(task);
 
         eventPublisher.publishEvent(new TaskActivityEvent(
                 task.getId(),
                 currentUserId,
                 ActivityAction.ASSIGNEE_CHANGED,
-                oldAssignee != null ? oldAssignee.toString() : "Unassigned",
+                oldAssigneeId != null ? oldAssigneeId.toString() : "Unassigned",
                 request.getAssigneeId().toString()
         ));
 
-        return toDtoWithUserNames(saved);
-    }
-
-    private TaskDto toDtoWithUserNames(TasksRecord record) {
-        TaskDto dto = taskMapper.toDto(record);
-        if (record.getAssigneeId() != null) {
-            String name = userRepository.findById(record.getAssigneeId())
-                    .map(UsersRecord::getFullName)
-                    .orElse(null);
-            dto.setAssigneeName(name);
-        }
-        if (record.getReporterId() != null) {
-            String name = userRepository.findById(record.getReporterId())
-                    .map(UsersRecord::getFullName)
-                    .orElse(null);
-            dto.setReporterName(name);
-        }
-        return dto;
+        return taskRepository.findDetailById(id).map(taskMapper::toDto).orElseThrow();
     }
 }

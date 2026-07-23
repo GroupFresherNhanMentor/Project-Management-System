@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import fpt.qn.pms.common.dto.PageRequest;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -22,8 +21,8 @@ public class TaskSearchRequest extends PageRequest {
     @Schema(description = "ID của sprint")
     UUID sprintId;
 
-    @Schema(description = "Trạng thái task (TODO, IN_PROGRESS, TESTING, DONE)")
-    TaskStatus status;
+    @Schema(description = "ID của trạng thái task (UUID từ bảng task_statuses)")
+    UUID statusId;
 
     @Schema(description = "Độ ưu tiên task (LOW, MEDIUM, HIGH, URGENT)")
     TaskPriority priority;

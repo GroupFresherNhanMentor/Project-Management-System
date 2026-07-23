@@ -22,7 +22,6 @@ import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SprintStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 
@@ -200,7 +199,6 @@ public class DataInitializer implements ApplicationRunner {
                     .set(TASKS.DESCRIPTION, "Initial setup for Jira-like Task management endpoints")
                     .set(TASKS.TASK_TYPE, TaskType.TASK)
                     .set(TASKS.PRIORITY, TaskPriority.HIGH)
-                    .set(TASKS.STATUS, TaskStatus.TODO)
                     .set(TASKS.ASSIGNEE_ID, devId)
                     .set(TASKS.REPORTER_ID, adminId)
                     .set(TASKS.CREATED_BY, adminId)

@@ -3,6 +3,7 @@ package fpt.qn.pms.dashboard.service;
 import static fpt.qn.pms.jooq.Tables.PROJECTS;
 import static fpt.qn.pms.jooq.Tables.SPRINTS;
 import static fpt.qn.pms.jooq.Tables.TASKS;
+import static fpt.qn.pms.jooq.Tables.TASK_STATUSES;
 import static fpt.qn.pms.jooq.Tables.USERS;
 import static fpt.qn.pms.jooq.Tables.WORKLOGS;
 
@@ -25,7 +26,6 @@ import fpt.qn.pms.dashboard.dto.DashboardProjectResponse;
 import fpt.qn.pms.dashboard.dto.SprintProgressDto;
 import fpt.qn.pms.jooq.enums.SprintStatus;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.tables.records.SprintsRecord;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -47,24 +47,26 @@ public class DashboardServiceImpl implements DashboardService {
                 .fetchOptional(USERS.ID)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "User not found: " + username));
 
+        // "open" = no final status assigned yet
+        var isFinalStatus = TASKS.STATUS_ID.in(
+                dsl.select(TASK_STATUSES.ID).from(TASK_STATUSES).where(TASK_STATUSES.IS_FINAL.isTrue()));
+
         Long openTasksCount = dsl.selectCount()
                 .from(TASKS)
-                .where(TASKS.ASSIGNEE_ID.eq(userId)
-                        .and(TASKS.STATUS.ne(TaskStatus.DONE)))
+                .where(TASKS.ASSIGNEE_ID.eq(userId).and(isFinalStatus.not()))
                 .fetchOne(0, Long.class);
         long openTasks = openTasksCount != null ? openTasksCount : 0L;
 
         Long completedTasksCount = dsl.selectCount()
                 .from(TASKS)
-                .where(TASKS.ASSIGNEE_ID.eq(userId)
-                        .and(TASKS.STATUS.eq(TaskStatus.DONE)))
+                .where(TASKS.ASSIGNEE_ID.eq(userId).and(isFinalStatus))
                 .fetchOne(0, Long.class);
         long completedTasks = completedTasksCount != null ? completedTasksCount : 0L;
 
         Long overdueTasksCount = dsl.selectCount()
                 .from(TASKS)
                 .where(TASKS.ASSIGNEE_ID.eq(userId)
-                        .and(TASKS.STATUS.ne(TaskStatus.DONE))
+                        .and(isFinalStatus.not())
                         .and(TASKS.DUE_DATE.lt(LocalDate.now())))
                 .fetchOne(0, Long.class);
         long overdueTasks = overdueTasksCount != null ? overdueTasksCount : 0L;
@@ -100,21 +102,19 @@ public class DashboardServiceImpl implements DashboardService {
                 .fetchOne(0, Long.class);
         long totalTasks = totalTasksCount != null ? totalTasksCount : 0L;
 
-        // Thống kê Task theo Status
+        // Group by status name via JOIN
         Map<String, Integer> taskByStatus = new HashMap<>();
-        for (TaskStatus status : TaskStatus.values()) {
-            taskByStatus.put(status.getLiteral(), 0);
-        }
-        dsl.select(TASKS.STATUS, DSL.count())
+        dsl.select(TASK_STATUSES.NAME, DSL.count())
                 .from(TASKS)
+                .leftJoin(TASK_STATUSES).on(TASKS.STATUS_ID.eq(TASK_STATUSES.ID))
                 .where(TASKS.PROJECT_ID.eq(projectId))
-                .groupBy(TASKS.STATUS)
+                .groupBy(TASK_STATUSES.NAME)
                 .fetch()
                 .forEach(r -> {
-                    TaskStatus status = r.get(TASKS.STATUS);
+                    String name = r.get(TASK_STATUSES.NAME);
                     Long countVal = r.get(1, Long.class);
-                    if (status != null && countVal != null) {
-                        taskByStatus.put(status.getLiteral(), countVal.intValue());
+                    if (name != null && countVal != null) {
+                        taskByStatus.put(name, countVal.intValue());
                     }
                 });
 
@@ -136,7 +136,6 @@ public class DashboardServiceImpl implements DashboardService {
                     }
                 });
 
-        // Tổng số giờ log của Project
         BigDecimal totalHours = dsl.select(DSL.sum(WORKLOGS.HOURS))
                 .from(WORKLOGS)
                 .join(TASKS).on(WORKLOGS.TASK_ID.eq(TASKS.ID))
@@ -147,7 +146,6 @@ public class DashboardServiceImpl implements DashboardService {
             totalHours = BigDecimal.ZERO;
         }
 
-        // Tiến độ Active Sprint
         Optional<SprintsRecord> activeSprintOpt = dsl.selectFrom(SPRINTS)
                 .where(SPRINTS.PROJECT_ID.eq(projectId)
                         .and(SPRINTS.STATUS.eq(SprintStatus.ACTIVE)))
@@ -166,8 +164,8 @@ public class DashboardServiceImpl implements DashboardService {
 
             Long sprintDoneCount = dsl.selectCount()
                     .from(TASKS)
-                    .where(TASKS.SPRINT_ID.eq(sprintId)
-                            .and(TASKS.STATUS.eq(TaskStatus.DONE)))
+                    .join(TASK_STATUSES).on(TASKS.STATUS_ID.eq(TASK_STATUSES.ID))
+                    .where(TASKS.SPRINT_ID.eq(sprintId).and(TASK_STATUSES.IS_FINAL.isTrue()))
                     .fetchOne(0, Long.class);
             long sprintDoneTasks = sprintDoneCount != null ? sprintDoneCount : 0L;
 

@@ -1,0 +1,40 @@
+<!-- Back link -->
+<a routerLink="/projects" class="mb-4 inline-flex items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9;background:none;border:none;cursor:pointer;padding:0">‹ Back to Projects</a>
+
+@if (loading()) {
+  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading project...</div>
+} @else if (errorMessage()) {
+  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">
+    {{ errorMessage() }}
+  </div>
+} @else if (project(); as p) {
+
+  <!-- Project header -->
+  <div class="mb-4 flex items-center gap-3">
+    <div>
+      <span class="rounded px-2 py-0.5 font-mono text-[11px] font-semibold" style="background:#EEF0F3;color:#5B6472">{{ p.projectCode }}</span>
+      <h2 class="mt-1 text-[18px] font-extrabold" style="color:#14161C">{{ p.projectName }}</h2>
+    </div>
+  </div>
+
+  <!-- Sub-nav tabs -->
+  <div class="mb-0 flex border-b" style="border-color:#E6E8EC">
+    @for (tab of tabs; track tab.path) {
+      <a [routerLink]="tab.path"
+         class="px-5 py-3 text-[13px] font-semibold capitalize transition"
+         style="text-decoration:none;color:#6B7280"
+         routerLinkActive
+         #rla="routerLinkActive"
+         [routerLinkActiveOptions]="{exact: true}"
+         [style.color]="rla.isActive ? '#3B4FD9' : '#6B7280'"
+         [style.border-bottom]="rla.isActive ? '2px solid #3B4FD9' : '2px solid transparent'">
+        {{ tab.label }}
+      </a>
+    }
+  </div>
+
+  <!-- Tab content area -->
+  <div class="rounded-b-[12px] border border-t-0 bg-white p-5" style="border-color:#E6E8EC">
+    <router-outlet />
+  </div>
+}

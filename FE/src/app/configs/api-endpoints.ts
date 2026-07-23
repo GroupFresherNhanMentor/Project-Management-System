@@ -22,7 +22,8 @@ export const API = {
     sprints: (projectId: string) => `/api/projects/${projectId}/sprints`,
   },
   sprints: {
-    status: (id: string) => `/api/sprints/${id}/status`,
+    byId: (projectId: string, sprintId: string) => `/api/projects/${projectId}/sprints/${sprintId}`,
+    status: (projectId: string, sprintId: string) => `/api/projects/${projectId}/sprints/${sprintId}/status`,
   },
   tasks: {
     base: '/api/tasks',
@@ -32,6 +33,9 @@ export const API = {
     comments: (taskId: string) => `/api/tasks/${taskId}/comments`,
     activities: (taskId: string) => `/api/tasks/${taskId}/activities`,
     worklogs: (taskId: string) => `/api/tasks/${taskId}/worklogs`,
+  },
+  comments: {
+    byId: (id: string) => `/api/comments/${id}`,
   },
   worklogs: {
     byId: (id: string) => `/api/worklogs/${id}`,

@@ -2,9 +2,9 @@ package fpt.qn.pms.worklog.controller;
 
 import java.util.UUID;
 
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +38,7 @@ public class WorklogController {
     WorklogService worklogService;
 
     @GetMapping("/api/tasks/{taskId}/worklogs")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasAuthority('ADMIN')")
     @Operation(summary = "Get list of worklogs for a Task")
     public ResponseEntity<ApiResponse<PageResponse<WorklogDto>>> getWorklogsByTask(
             @PathVariable UUID taskId,
@@ -48,7 +49,8 @@ public class WorklogController {
     }
 
     @PostMapping("/api/tasks/{taskId}/worklogs")
-    @Operation(summary = "Log time (Worklog) on a Task", description = "Constraints: Hour > 0 and Hour <= 24")
+    @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasAuthority('ADMIN')")
+    @Operation(summary = "Log time on a Task", description = "Hours must be > 0 and <= 24.")
     public ResponseEntity<ApiResponse<WorklogDto>> createWorklog(
             @PathVariable UUID taskId,
             @Valid @RequestBody CreateWorklogRequest request) {
@@ -58,7 +60,8 @@ public class WorklogController {
     }
 
     @PutMapping("/api/worklogs/{id}")
-    @Operation(summary = "Update Worklog", description = "Allowed only for the creator of the worklog")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Update Worklog", description = "Allowed for the worklog creator, project PM, or Admin.")
     public ResponseEntity<ApiResponse<WorklogDto>> updateWorklog(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateWorklogRequest request) {
@@ -67,7 +70,8 @@ public class WorklogController {
     }
 
     @DeleteMapping("/api/worklogs/{id}")
-    @Operation(summary = "Delete Worklog record", description = "Allowed only for the creator of the worklog")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Delete Worklog", description = "Allowed for the worklog creator, project PM, or Admin.")
     public ResponseEntity<ApiResponse<Void>> deleteWorklog(@PathVariable UUID id) {
         worklogService.deleteWorklog(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
@@ -75,7 +79,7 @@ public class WorklogController {
     }
 
     @GetMapping("/api/reports/worklog")
-    @Operation(summary = "Get Worklog Report (FR-WLOG-04)")
+    @Operation(summary = "Get Worklog Report")
     public ResponseEntity<ApiResponse<PageResponse<WorklogReportItem>>> getWorklogReport(
             @Valid WorklogReportFilterDto filter) {
         PageResponse<WorklogReportItem> result = worklogService.getWorklogReport(filter);

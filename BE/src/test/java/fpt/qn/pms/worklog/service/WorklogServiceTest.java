@@ -23,8 +23,12 @@ import org.springframework.security.access.AccessDeniedException;
 
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
+import fpt.qn.pms.common.exception.NotFoundException;
+import fpt.qn.pms.jooq.tables.records.TasksRecord;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
+import fpt.qn.pms.security.ProjectSecurityEvaluator;
+import fpt.qn.pms.security.UserPrincipal;
 import fpt.qn.pms.task.repository.TaskRepository;
 import fpt.qn.pms.user.repository.UserRepository;
 import fpt.qn.pms.worklog.dto.CreateWorklogRequest;
@@ -51,21 +55,29 @@ class WorklogServiceTest {
     @Mock
     WorklogMapper worklogMapper;
 
+    @Mock
+    ProjectSecurityEvaluator projectSecurityEvaluator;
+
     @InjectMocks
     WorklogServiceImpl worklogService;
 
     UUID worklogId;
     UUID taskId;
+    UUID projectId;
     UUID userId;
     UUID otherUserId;
     UsersRecord currentUser;
+    TasksRecord mockTaskRecord;
     WorklogsRecord mockWorklogRecord;
     WorklogDto mockWorklogDto;
+    UserPrincipal currentUserPrincipal;
+    UserPrincipal otherUserPrincipal;
 
     @BeforeEach
     void setUp() {
         worklogId = UUID.randomUUID();
         taskId = UUID.randomUUID();
+        projectId = UUID.randomUUID();
         userId = UUID.randomUUID();
         otherUserId = UUID.randomUUID();
 
@@ -73,6 +85,20 @@ class WorklogServiceTest {
         currentUser.setId(userId);
         currentUser.setUsername("dev1");
         currentUser.setFullName("Developer One");
+
+        currentUserPrincipal = UserPrincipal.builder()
+                .id(userId)
+                .username("dev1")
+                .build();
+
+        otherUserPrincipal = UserPrincipal.builder()
+                .id(otherUserId)
+                .username("dev2")
+                .build();
+
+        mockTaskRecord = new TasksRecord();
+        mockTaskRecord.setId(taskId);
+        mockTaskRecord.setProjectId(projectId);
 
         mockWorklogRecord = new WorklogsRecord();
         mockWorklogRecord.setId(worklogId);
@@ -92,8 +118,8 @@ class WorklogServiceTest {
                 .build();
     }
 
-    private void mockCurrentUser(UsersRecord user) {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+    private void mockCurrentUser(UserPrincipal principal) {
+        when(projectSecurityEvaluator.getCurrentPrincipal()).thenReturn(Optional.of(principal));
     }
 
     // ── 1. Create Worklog ──────────────────────────────────────────────────────
@@ -106,12 +132,12 @@ class WorklogServiceTest {
         request.setHour(BigDecimal.valueOf(4.5));
         request.setDescription("Implemented core logic");
 
-        when(taskRepository.existsById(taskId)).thenReturn(true);
-        mockCurrentUser(currentUser);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(mockTaskRecord));
+        when(projectSecurityEvaluator.isMember(projectId)).thenReturn(true);
+        mockCurrentUser(currentUserPrincipal);
         when(worklogMapper.toRecord(request)).thenReturn(new WorklogsRecord());
         when(worklogRepository.create(any(WorklogsRecord.class))).thenReturn(mockWorklogRecord);
-        when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
+        when(worklogRepository.findDtoById(worklogId)).thenReturn(Optional.of(mockWorklogDto));
 
         WorklogDto result = worklogService.createWorklog(taskId, request);
 
@@ -121,17 +147,16 @@ class WorklogServiceTest {
     }
 
     @Test
-    @DisplayName("createWorklog - Should throw IllegalArgumentException when Task not found")
+    @DisplayName("createWorklog - Should throw NotFoundException when Task not found")
     void createWorklog_taskNotFound_shouldThrowException() {
         CreateWorklogRequest request = new CreateWorklogRequest();
         request.setWorkDate(LocalDate.now());
         request.setHour(BigDecimal.valueOf(4.5));
 
-        when(taskRepository.existsById(taskId)).thenReturn(false);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> worklogService.createWorklog(taskId, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Task not found");
+                .isInstanceOf(NotFoundException.class);
     }
 
     // ── 2. Update Worklog ──────────────────────────────────────────────────────
@@ -144,11 +169,11 @@ class WorklogServiceTest {
         request.setHour(BigDecimal.valueOf(6.0));
         request.setDescription("Updated description");
 
+        mockCurrentUser(currentUserPrincipal);
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        mockCurrentUser(currentUser);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(mockTaskRecord));
         when(worklogRepository.update(mockWorklogRecord)).thenReturn(mockWorklogRecord);
-        when(worklogMapper.toDto(mockWorklogRecord)).thenReturn(mockWorklogDto);
+        when(worklogRepository.findDtoById(worklogId)).thenReturn(Optional.of(mockWorklogDto));
 
         WorklogDto result = worklogService.updateWorklog(worklogId, request);
 
@@ -161,15 +186,13 @@ class WorklogServiceTest {
     void updateWorklog_notCreator_shouldThrowException() {
         UpdateWorklogRequest request = new UpdateWorklogRequest();
 
-        UsersRecord notCreator = new UsersRecord();
-        notCreator.setId(otherUserId);
-
+        mockCurrentUser(otherUserPrincipal);
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        mockCurrentUser(notCreator);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(mockTaskRecord));
 
         assertThatThrownBy(() -> worklogService.updateWorklog(worklogId, request))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Only the creator of the worklog can edit it");
+                .hasMessage("Only the worklog creator, project PM, or an Admin can edit this worklog");
     }
 
     // ── 3. Delete Worklog ──────────────────────────────────────────────────────
@@ -177,8 +200,9 @@ class WorklogServiceTest {
     @Test
     @DisplayName("deleteWorklog - Should delete worklog when user is creator")
     void deleteWorklog_success() {
+        mockCurrentUser(currentUserPrincipal);
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        mockCurrentUser(currentUser);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(mockTaskRecord));
 
         worklogService.deleteWorklog(worklogId);
 
@@ -188,15 +212,13 @@ class WorklogServiceTest {
     @Test
     @DisplayName("deleteWorklog - Should throw AccessDeniedException when user is not creator")
     void deleteWorklog_notCreator_shouldThrowException() {
-        UsersRecord notCreator = new UsersRecord();
-        notCreator.setId(otherUserId);
-
+        mockCurrentUser(otherUserPrincipal);
         when(worklogRepository.findById(worklogId)).thenReturn(Optional.of(mockWorklogRecord));
-        mockCurrentUser(notCreator);
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(mockTaskRecord));
 
         assertThatThrownBy(() -> worklogService.deleteWorklog(worklogId))
                 .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Only the creator of the worklog can delete it");
+                .hasMessage("Only the worklog creator, project PM, or an Admin can delete this worklog");
     }
 
     // ── 4. Worklog Report ──────────────────────────────────────────────────────

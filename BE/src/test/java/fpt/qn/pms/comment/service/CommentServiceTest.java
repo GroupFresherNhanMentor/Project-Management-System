@@ -29,7 +29,6 @@ import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.ProjectsRecord;
@@ -76,7 +75,6 @@ class CommentServiceTest extends BaseIntegrationTest {
         task.setSummary("Comment Test Task");
         task.setTaskType(TaskType.TASK);
         task.setPriority(TaskPriority.MEDIUM);
-        task.setStatus(TaskStatus.TODO);
         task.setReporterId(savedUser.getId());
         task.setCreatedBy(savedUser.getId());
         TasksRecord savedTask = dsl.insertInto(TASKS).set(task).returning().fetchOne();
@@ -320,7 +318,6 @@ class CommentServiceTest extends BaseIntegrationTest {
         task.setSummary("Second Comment Test Task");
         task.setTaskType(TaskType.TASK);
         task.setPriority(TaskPriority.LOW);
-        task.setStatus(TaskStatus.TODO);
         task.setReporterId(userId);
         task.setCreatedBy(userId);
         return dsl.insertInto(TASKS).set(task).returning().fetchOne().getId();

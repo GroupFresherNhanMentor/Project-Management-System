@@ -1,120 +1,130 @@
-import { Component, inject, signal, computed } from '@angular/core'; // Thêm computed từ @angular/core
-import { AuthService } from '../../../../core/services/auth';
-import { DashboardPersonalResponse, DashboardProjectResponse } from '../../../../core/models/dashboard.model';
-import { TaskDto } from '../../../../core/models/task.model';
-
-export interface SystemActivityDto {
-  id: string;
-  taskKey: string;
-  user: string;
-  action: 'TASK_CREATED' | 'STATUS_CHANGED' | 'PRIORITY_CHANGED' | 'ASSIGNEE_CHANGED' | 'COMMENT_ADDED';
-  oldValue: string | null;
-  newValue: string | null;
-  createdTime: string;
-}
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { DashboardService } from '../../../../core/services/dashboard';
+import {
+  PersonalDashboardData,
+  ProjectDashboardData,
+  DevTaskItem,
+  AdminDashboardData,
+  SystemActivity,
+  TaskSearchRequest,
+  ApiResponse,
+  TaskSearchResponse
+} from '../../../../core/models/dashboard.model';
 
 @Component({
   selector: 'app-dashboard-home',
-  templateUrl: './dashboard-home.html',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './dashboard-home.html'
 })
-export class DashboardHome {
-  readonly currentUser = inject(AuthService).getCurrentUser();
-  readonly role        = this.currentUser?.role ?? 'USER';
+export class DashboardHome implements OnInit {
+  private dashboardService = inject(DashboardService);
 
-  // Quản lý trạng thái Tab được chọn (mặc định ban đầu là 'OPEN')
-  activeTab = 'OPEN';
+  role = 'DEVELOPER';
+  currentDashboardType: 'PERSONAL' | 'PROJECT' = 'PERSONAL';
+  activeTab: 'OPEN' | 'COMPLETED' | 'OVERDUE' = 'OPEN';
 
-  readonly adminStats = signal({
-    totalUsers: 6,
-    lockedUsers: 1,
-    totalProjects: 2,
-    activeProjects: 1,
-    roleBreakdown: { PM: 2, DEV: 3, TESTER: 1 },
-    taskDistribution: { STORY: 15, TASK: 22, BUG: 7 },
-    priorityDistribution: { LOW: 10, MEDIUM: 18, HIGH: 12, CRITICAL: 4 }
+  currentProjectId: string | undefined = undefined;
+  currentUserId: string | undefined = undefined;
+
+  devData = signal<PersonalDashboardData | null>(null);
+  pmData = signal<ProjectDashboardData | null>(null);
+  allTasks = signal<DevTaskItem[]>([]);
+
+  adminStats = signal<AdminDashboardData>({
+    totalUsers: 0, lockedUsers: 0, totalProjects: 0, activeProjects: 0,
+    taskDistribution: { STORY: 0, TASK: 0, BUG: 0 },
+    roleBreakdown: { PM: 0, DEV: 0, TESTER: 0 }
   });
+  adminActivities = signal<SystemActivity[]>([]);
 
-  readonly adminActivities = signal<SystemActivityDto[]>([
-    { id: 'a1', taskKey: 'WEB-101', user: 'Nguyễn Đình Quân', action: 'STATUS_CHANGED', oldValue: 'IN_PROGRESS', newValue: 'TESTING', createdTime: '10 phút trước' },
-    { id: 'a2', taskKey: 'WEB-102', user: 'Phạm Thái Sơn', action: 'COMMENT_ADDED', oldValue: null, newValue: 'Đã hoàn thành phần webhook', createdTime: '25 phút trước' },
-    { id: 'a3', taskKey: 'WEB-105', user: 'Nguyễn Thị B', action: 'TASK_CREATED', oldValue: null, newValue: 'Guest checkout flow', createdTime: '1 giờ trước' },
-    { id: 'a4', taskKey: 'WEB-103', user: 'Phạm Đăng Quang', action: 'ASSIGNEE_CHANGED', oldValue: 'Chưa giao', newValue: 'Nguyễn Văn A', createdTime: '2 giờ trước' }
-  ]);
+  statusOrder = [
+    { key: 'TODO', label: 'To Do', css: 'bg-slate-400' },
+    { key: 'IN_PROGRESS', label: 'In Progress', css: 'bg-blue-500' },
+    { key: 'TESTING', label: 'Testing', css: 'bg-amber-500' },
+    { key: 'DONE', label: 'Done', css: 'bg-emerald-500' }
+  ];
 
-  getActionLabel(action: string): string {
-    const map: Record<string, string> = {
-      TASK_CREATED: 'đã tạo task',
-      STATUS_CHANGED: 'đã chuyển trạng thái',
-      PRIORITY_CHANGED: 'đã đổi mức độ ưu tiên',
-      ASSIGNEE_CHANGED: 'đã thay đổi người xử lý',
-      COMMENT_ADDED: 'đã thêm bình luận vào'
-    };
-    return map[action] || action;
+  priorityOrder = [
+    { key: 'CRITICAL', label: 'Critical', css: 'text-red-600 bg-red-600' },
+    { key: 'HIGH', label: 'High', css: 'text-orange-500 bg-orange-500' },
+    { key: 'MEDIUM', label: 'Medium', css: 'text-blue-500 bg-blue-500' },
+    { key: 'LOW', label: 'Low', css: 'text-slate-400 bg-slate-400' }
+  ];
+
+  devTasks = computed(() => this.allTasks().filter(t => t.status === 'TODO' || t.status === 'IN_PROGRESS' || t.status === 'TESTING'));
+  devCompletedTasks = computed(() => this.allTasks().filter(t => t.status === 'DONE'));
+  devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status !== 'DONE'));
+
+  ngOnInit(): void {
+    this.extractLocalStorageData();
+    this.loadDashboardData();
+    this.fetchTasksFromApi();
   }
 
-  readonly pmData = signal<DashboardProjectResponse>({
-    totalTasks: 12,
-    taskByStatus:   { TODO: 5, IN_PROGRESS: 2, TESTING: 1, DONE: 4 },
-    taskByPriority: { LOW: 3, MEDIUM: 3, HIGH: 4, CRITICAL: 2 },
-    totalLoggedHours: 17,
-    sprintProgress: { sprintId: 's1', sprintName: 'Sprint 12', totalTasks: 6, doneTasks: 1, percentComplete: 17 },
-  });
+  private extractLocalStorageData(): void {
+    const savedProject = localStorage.getItem('pms_selected_project');
+    if (savedProject) {
+      this.currentProjectId = savedProject.replace(/"/g, '');
+    }
 
-  readonly pmMembers = signal(4);
+    const savedUserJson = localStorage.getItem('pms_user');
+    if (savedUserJson) {
+      try {
+        const userObj = JSON.parse(savedUserJson);
+        this.currentUserId = userObj.id;
+        if (userObj.role) this.role = userObj.role;
+      } catch (e) {
+        console.error('Lỗi phân tích cú pháp JSON từ localStorage pms_user:', e);
+      }
+    }
+  }
 
-  readonly devData = signal<DashboardPersonalResponse>({
-    myOpenTasks: 3, myCompletedTasks: 2, myOverdueTasks: 1, totalLoggedHours: 11,
-  });
+  loadDashboardData(): void {
+    this.dashboardService.getPersonalStats().subscribe({
+      next: (res: ApiResponse<PersonalDashboardData>) => {
+        if (res && (res.isSuccess || res.success)) this.devData.set(res.data);
+      }
+    });
 
-  readonly allMyTasks = signal<TaskDto[]>([
-    { id: 't1', taskKey: 'WEB-101', projectId: 'p1', sprintId: 's1', summary: 'Redesign checkout flow',           description: null, taskType: 'STORY', priority: 'HIGH',     status: 'IN_PROGRESS', assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 8,    estimateHour: 40,   dueDate: '2026-07-18', createdAt: '2026-07-01' },
-    { id: 't2', taskKey: 'WEB-102', projectId: 'p1', sprintId: 's1', summary: 'Integrate payment gateway webhook', description: null, taskType: 'TASK',  priority: 'CRITICAL', status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 5,    estimateHour: null, dueDate: '2026-07-23', createdAt: '2026-07-01' },
-    { id: 't3', taskKey: 'WEB-103', projectId: 'p1', sprintId: 's1', summary: 'Fix memory leaks in dashboard',     description: null, taskType: 'BUG',   priority: 'HIGH',     status: 'DONE',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-10', createdAt: '2026-07-01' },
-    { id: 't4', taskKey: 'WEB-104', projectId: 'p1', sprintId: 's1', summary: 'Write unit tests for Auth module',  description: null, taskType: 'TASK',  priority: 'LOW',      status: 'DONE',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-15', createdAt: '2026-07-01' },
-    { id: 't5', taskKey: 'WEB-105', projectId: 'p1', sprintId: 's1', summary: 'Guest checkout',                   description: null, taskType: 'STORY', priority: 'MEDIUM',   status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-21', createdAt: '2026-07-02' },
-  ]);
+    if (this.currentProjectId) {
+      this.dashboardService.getProjectStats(this.currentProjectId).subscribe({
+        next: (res: ApiResponse<ProjectDashboardData>) => {
+          if (res && (res.isSuccess || res.success)) this.pmData.set(res.data);
+        }
+      });
+    }
+  }
 
-  // 1. Lọc công việc đang mở (Status KHÁC 'DONE')
-  readonly devTasks = computed(() => {
-    return this.allMyTasks().filter(t => t.status !== 'DONE');
-  });
+  fetchTasksFromApi(): void {
+      const searchPayload: TaskSearchRequest = {
+        page: 0,
+        size: 10,
+        projectId: this.currentProjectId,
+        assigneeId: this.currentUserId
+      };
 
-  // 2. Lọc công việc đã hoàn thành (Status LÀ 'DONE')[cite: 2, 4]
-  readonly devCompletedTasks = computed(() => {
-    return this.allMyTasks().filter(t => t.status === 'DONE');
-  });
-
-  // 3. Lọc công việc trễ hạn (Status KHÁC 'DONE' và quá ngày due_date)
-  readonly devOverdueTasks = computed(() => {
-    return this.devTasks().filter(t => this.isOverdue(t.dueDate));
-  });
-
-  readonly statusOrder = [
-    { key: 'TODO',        label: 'To Do',      css: 'dot-todo' },
-    { key: 'IN_PROGRESS', label: 'In Progress', css: 'dot-inprogress' },
-    { key: 'TESTING',     label: 'Testing',     css: 'dot-testing' },
-    { key: 'DONE',        label: 'Done',        css: 'dot-done' },
-  ];
-
-  readonly priorityOrder = [
-    { key: 'LOW',      label: 'Low',      css: 'priority-low' },
-    { key: 'MEDIUM',   label: 'Medium',   css: 'priority-medium' },
-    { key: 'HIGH',     label: 'High',     css: 'priority-high' },
-    { key: 'CRITICAL', label: 'Critical', css: 'priority-critical' },
-  ];
+      this.dashboardService.searchTasks(searchPayload).subscribe({
+        next: (res: ApiResponse<TaskSearchResponse>) => {
+          if (res && (res.isSuccess || res.success) && res.data?.items) {
+            this.allTasks.set(res.data.items);
+          }
+        },
+        error: (err: unknown) => {
+          console.error('Lỗi khi gọi API tìm kiếm Task:', err);
+        }
+      });
+    }
 
   isOverdue(dueDate: string | null): boolean {
-  if (!dueDate) return false;
+    if (!dueDate) return false;
+    return new Date(dueDate).getTime() < new Date().getTime();
+  }
 
-  // Đưa ngày đến hạn về mốc bắt đầu ngày (00:00:00)
-  const taskDate = new Date(dueDate);
-  taskDate.setHours(0, 0, 0, 0);
-
-  // Đưa ngày hiện tại về mốc bắt đầu ngày (00:00:00)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Chỉ tính là overdue nếu ngày đến hạn nhỏ hơn hẳn ngày hôm nay
-  return taskDate < today;
-}
+  getStatusLabel(statusKey: string): string {
+    const status = this.statusOrder.find(s => s.key === statusKey);
+    return status ? status.label : statusKey;
+  }
 }

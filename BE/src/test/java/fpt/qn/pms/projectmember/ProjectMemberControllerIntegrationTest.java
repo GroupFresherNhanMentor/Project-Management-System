@@ -29,7 +29,6 @@ import fpt.qn.pms.jooq.enums.ProjectRole;
 import fpt.qn.pms.jooq.enums.ProjectStatus;
 import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.enums.TaskPriority;
-import fpt.qn.pms.jooq.enums.TaskStatus;
 import fpt.qn.pms.jooq.enums.TaskType;
 import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
@@ -237,7 +236,7 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void removeMember_shouldReturn409WhenMemberHasAssignedTasks() throws Exception {
-        insertTask(developer.getId(), TaskStatus.IN_PROGRESS);
+        insertTask(developer.getId());
 
         mockMvc.perform(delete("/api/projects/{projectId}/members/{memberId}",
                         projectId, developerMemberId)
@@ -313,7 +312,7 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
                 .fetchOne(PROJECT_MEMBERS.ID);
     }
 
-    private void insertTask(UUID assigneeId, TaskStatus taskStatus) {
+    private void insertTask(UUID assigneeId) {
         String suffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         dsl.insertInto(TASKS)
                 .set(TASKS.TASK_KEY, "MEMAPI-" + suffix)
@@ -321,7 +320,6 @@ class ProjectMemberControllerIntegrationTest extends BaseIntegrationTest {
                 .set(TASKS.SUMMARY, "Member assignment API test task")
                 .set(TASKS.TASK_TYPE, TaskType.TASK)
                 .set(TASKS.PRIORITY, TaskPriority.MEDIUM)
-                .set(TASKS.STATUS, taskStatus)
                 .set(TASKS.ASSIGNEE_ID, assigneeId)
                 .set(TASKS.REPORTER_ID, projectManager.getId())
                 .set(TASKS.CREATED_BY, projectManager.getId())

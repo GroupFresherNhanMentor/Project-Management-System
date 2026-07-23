@@ -16,7 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import fpt.qn.pms.security.UserPrincipal;
 
 import fpt.qn.pms.BaseIntegrationTest;
 import fpt.qn.pms.common.dto.PageResponse;
@@ -58,9 +60,15 @@ class SprintServiceTest extends BaseIntegrationTest {
                 .returning()
                 .fetchOne();
 
-        // Set authentication so projectSecurityEvaluator can resolve current user
+        UserPrincipal principal = UserPrincipal.builder()
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .password(null)
+                .enabled(true)
+                .authorities(List.of(new SimpleGrantedAuthority(SysRole.ADMIN.getLiteral())))
+                .build();
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(savedUser.getUsername(), null, List.of()));
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
 
         ProjectsRecord project = new ProjectsRecord();
         project.setProjectCode("SPRINT-TEST");

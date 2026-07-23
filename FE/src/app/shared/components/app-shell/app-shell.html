@@ -9,31 +9,10 @@
       <span class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">Waypoint</span>
     </div>
 
-    <!-- Project switcher (non-admin) -->
-    @if (!isAdmin) {
-      <div class="px-4 pb-3">
-        <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Project</p>
-        <select
-          (change)="onProjectChange($event)"
-          class="w-full rounded-[7px] border px-2.5 py-1.5 text-[13px] font-medium outline-none focus:ring-2 focus:ring-primary/30"
-          style="border-color:#E1E4E9;color:#14161C;background:#fff"
-        >
-          @for (p of projectContext.projects(); track p.id) {
-            <option [value]="p.id" [selected]="p.id === projectContext.selectedProjectId()">
-              {{ p.projectCode }} — {{ p.projectName }}
-            </option>
-          }
-          @empty {
-            <option value="" disabled selected>No projects</option>
-          }
-        </select>
-      </div>
-    }
-
     <!-- Nav -->
     <nav class="flex-1 space-y-0.5 px-3 py-1">
       @if (isAdmin) {
-        <a routerLink="/dashboard" routerLinkActive="active-nav" [routerLinkActiveOptions]="{exact:true}"
+        <a routerLink="/dashboard" routerLinkActive="active-nav"
            class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
            [style.background]="(pageTitle() === 'Dashboard') ? '#EAF0FE' : ''"
            [style.color]="(pageTitle() === 'Dashboard') ? '#3B4FD9' : ''">
@@ -52,22 +31,18 @@
           Users
         </a>
       } @else {
-        @for (item of [
-          {path:'/dashboard', label:'Dashboard', title:'Dashboard'},
-          {path:'/board',     label:'Board',     title:'Board'},
-          {path:'/backlog',   label:'Backlog',   title:'Backlog'},
-          {path:'/sprints',   label:'Sprints',   title:'Sprints'},
-          {path:'/members',   label:'Members',   title:'Members'},
-          {path:'/worklog',   label:'Worklog Report', title:'Worklog Report'},
-          {path:'/projects',  label:'Projects',  title:'Projects'}
-        ]; track item.path) {
-          <a [routerLink]="item.path"
-             style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-             [style.background]="(pageTitle() === item.title) ? '#EAF0FE' : ''"
-             [style.color]="(pageTitle() === item.title) ? '#3B4FD9' : '#4B5160'">
-            {{ item.label }}
-          </a>
-        }
+        <a routerLink="/dashboard" class="nav-link"
+           style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+           [style.background]="(pageTitle() === 'Dashboard') ? '#EAF0FE' : ''"
+           [style.color]="(pageTitle() === 'Dashboard') ? '#3B4FD9' : '#4B5160'">
+          Dashboard
+        </a>
+        <a routerLink="/projects" class="nav-link"
+           style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
+           [style.background]="(pageTitle() === 'Projects') ? '#EAF0FE' : ''"
+           [style.color]="(pageTitle() === 'Projects') ? '#3B4FD9' : '#4B5160'">
+          Projects
+        </a>
       }
     </nav>
 
@@ -78,7 +53,7 @@
       </a>
       <a routerLink="/profile" class="min-w-0 flex-1" style="text-decoration:none">
         <p class="truncate text-[13px] font-semibold" style="color:#14161C">{{ currentUser?.fullName }}</p>
-        <p class="text-[11px]" style="color:#9AA1AC">{{ roleLabel() }}</p>
+        <p class="text-[11px]" style="color:#9AA1AC">{{ roleLabel }}</p>
       </a>
       <button (click)="logout()" class="flex-shrink-0 text-[12px] hover:underline" style="color:#6B7280">Exit</button>
     </div>

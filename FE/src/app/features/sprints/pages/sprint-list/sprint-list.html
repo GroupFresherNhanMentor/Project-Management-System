@@ -1,46 +1,118 @@
-<div class="mb-4">
-  <button (click)="newSprint()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ New Sprint</button>
-</div>
+@if (loading()) {
+  <div class="py-16 text-center text-[13px]" style="color:#9AA1AC">Loading sprints...</div>
+} @else if (errorMessage()) {
+  <div class="rounded-[10px] border p-5 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">{{ errorMessage() }}</div>
+} @else {
+  <div class="mb-4 flex items-center gap-3">
+    <div class="text-[18px] font-extrabold" style="color:#14161C">Sprints</div>
+    @if (canManage()) {
+      <button (click)="openNewSprintModal()" class="rounded-[8px] px-4 py-2 text-[13px] font-semibold text-white" style="background:#3B4FD9">+ New Sprint</button>
+    }
+  </div>
 
-<div class="flex flex-col gap-3">
-  @for (sprint of sprints(); track sprint.id) {
-    <div
-      (click)="viewSprint(sprint)"
-      class="cursor-pointer rounded-[12px] border bg-white p-5 transition hover:border-primary"
-      style="border-color:#E6E8EC"
-    >
-      <div class="flex items-start justify-between">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-[16px] font-extrabold" style="color:#14161C">{{ sprint.sprintName }}</span>
-            <span [class]="statusBadge(sprint.status)">{{ sprint.status }}</span>
+  <div class="flex flex-col gap-3">
+    @for (sprint of sprints(); track sprint.id) {
+      <div
+        (click)="openEditSprintModal(sprint, $event)"
+        class="cursor-pointer rounded-[12px] border bg-white p-5 transition hover:border-primary"
+        style="border-color:#E6E8EC"
+      >
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[16px] font-extrabold" style="color:#14161C">{{ sprint.sprintName }}</span>
+              <span [class]="statusBadge(sprint.status)">{{ sprint.status }}</span>
+            </div>
+            @if (sprint.goal) {
+              <p class="mt-1 text-[13px]" style="color:#4B5160">{{ sprint.goal }}</p>
+            }
+            <p class="mt-2 text-[12px]" style="color:#9AA1AC">
+              {{ sprint.startDate }} → {{ sprint.endDate }}
+            </p>
           </div>
-          @if (sprint.goal) {
-            <p class="mt-1 text-[13px]" style="color:#4B5160">{{ sprint.goal }}</p>
-          }
-          <p class="mt-2 text-[12px]" style="color:#9AA1AC">
-            {{ sprint.startDate }} → {{ sprint.endDate }}
-          </p>
-        </div>
 
-        <div class="flex gap-2" (click)="$event.stopPropagation()">
-          @if (sprint.status === 'PLANNED') {
-            <button (click)="startSprint(sprint, $event)"
-              class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#3B4FD9">
-              Start Sprint
-            </button>
-          }
-          @if (sprint.status === 'ACTIVE') {
-            <button (click)="closeSprint(sprint, $event)"
-              class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold" style="border-color:#E1E4E9;color:#4B5160">
-              Close Sprint
-            </button>
-          }
+          <div class="flex gap-2" (click)="$event.stopPropagation()">
+            @if (sprint.status === 'PLANNED' && canManage()) {
+              <button (click)="startSprint(sprint, $event)" [disabled]="statusLoading() === sprint.id"
+                class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#3B4FD9">
+                {{ statusLoading() === sprint.id ? 'Starting…' : 'Start Sprint' }}
+              </button>
+            }
+            @if (sprint.status === 'ACTIVE' && canManage()) {
+              <button (click)="closeSprint(sprint, $event)" [disabled]="statusLoading() === sprint.id"
+                class="rounded-[8px] border px-3 py-1.5 text-[12px] font-semibold disabled:opacity-50" style="border-color:#E1E4E9;color:#4B5160">
+                {{ statusLoading() === sprint.id ? 'Closing…' : 'Close Sprint' }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    @empty {
+      <p class="py-8 text-center text-[13px]" style="color:#9AA1AC">No sprints yet.</p>
+    }
+  </div>
+}
+
+<!-- Sprint Create / Edit Modal -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40" (click)="cancelModal()">
+    <div class="w-full max-w-lg rounded-[12px] bg-white p-6 shadow-xl" (click)="$event.stopPropagation()">
+      <h3 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">
+        {{ modalMode() === 'create' ? 'New Sprint' : 'Edit Sprint' }}
+      </h3>
+
+      <div class="flex flex-col gap-3">
+        @if (modalMode() === 'edit') {
+          <!-- Edit form -->
+          <input [(ngModel)]="editForm.sprintName" placeholder="Sprint Name *"
+            class="rounded-[8px] border px-3 py-2.5 text-[13px] outline-none focus:border-primary" style="border-color:#E1E4E9" />
+          <textarea [(ngModel)]="editForm.goal" placeholder="Goal" rows="3"
+            class="rounded-[8px] border px-3 py-2.5 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Start Date *</label>
+              <input [(ngModel)]="editForm.startDate" type="date"
+                class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+            </div>
+            <div>
+              <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">End Date *</label>
+              <input [(ngModel)]="editForm.endDate" type="date"
+                class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+            </div>
+          </div>
+        } @else {
+          <!-- Create form -->
+          <input [(ngModel)]="createForm.sprintName" placeholder="Sprint Name *"
+            class="rounded-[8px] border px-3 py-2.5 text-[13px] outline-none focus:border-primary" style="border-color:#E1E4E9" />
+          <textarea [(ngModel)]="createForm.goal" placeholder="Goal" rows="3"
+            class="rounded-[8px] border px-3 py-2.5 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Start Date *</label>
+              <input [(ngModel)]="createForm.startDate" type="date"
+                class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+            </div>
+            <div>
+              <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">End Date *</label>
+              <input [(ngModel)]="createForm.endDate" type="date"
+                class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
+            </div>
+          </div>
+        }
+
+        <div class="flex gap-2 pt-1">
+          <button (click)="modalMode() === 'create' ? submitCreate() : submitEdit()"
+            [disabled]="modalLoading()"
+            class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">
+            {{ modalLoading() ? 'Saving…' : (modalMode() === 'create' ? 'Create' : 'Save') }}
+          </button>
+          <button (click)="cancelModal()"
+            class="rounded-[8px] border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160">
+            Cancel
+          </button>
         </div>
       </div>
     </div>
-  }
-  @empty {
-    <p class="py-8 text-center text-[13px]" style="color:#9AA1AC">No sprints yet.</p>
-  }
-</div>
+  </div>
+}
