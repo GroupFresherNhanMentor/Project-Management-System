@@ -69,7 +69,7 @@ public class SprintController {
     }
 
     @PostMapping
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Create sprint", description = "PM only.")
     public ResponseEntity<ApiResponse<SprintDto>> createSprint(
             @Parameter(description = "Project ID") @PathVariable UUID projectId,
@@ -81,7 +81,7 @@ public class SprintController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Update sprint", description = "Partial update — null fields are ignored. PM only.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprint(
             @Parameter(description = "Project ID") @PathVariable UUID projectId,
@@ -91,7 +91,7 @@ public class SprintController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Update sprint status", description = "PLANNED → ACTIVE → CLOSED. Only one ACTIVE sprint per project. PM only.")
     public ResponseEntity<ApiResponse<SprintDto>> updateSprintStatus(
             @Parameter(description = "Project ID") @PathVariable UUID projectId,

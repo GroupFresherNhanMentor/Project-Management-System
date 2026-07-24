@@ -97,11 +97,12 @@ class ProjectMemberServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getMembers_shouldRejectActiveDeveloper() {
+    void getMembers_shouldAllowActiveDeveloper() {
         authenticate(developer.getUsername());
 
-        assertThatThrownBy(() -> projectMemberService.getMembers(projectId, null, 0, 20))
-                .isInstanceOf(ProjectMemberAccessDeniedException.class);
+        PageResponse<ProjectMemberDto> result = projectMemberService.getMembers(projectId, null, 0, 20);
+
+        assertThat(result.getTotalElements()).isGreaterThanOrEqualTo(1);
     }
 
     @Test

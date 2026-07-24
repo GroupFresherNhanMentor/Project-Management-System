@@ -14,6 +14,8 @@ public interface TaskRepository extends Repository<TasksRecord> {
 
     boolean existsAssignedTaskByProjectIdAndAssigneeId(UUID projectId, UUID assigneeId);
 
+    boolean existsByTaskKey(String taskKey);
+
     Optional<TaskResult> findDetailById(UUID id);
 
     PaginationResult<TaskResult> findAll(TaskSearchRequest request);

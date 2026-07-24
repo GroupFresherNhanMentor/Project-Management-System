@@ -13,6 +13,7 @@ import fpt.qn.pms.jooq.enums.UserStatus;
 import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAccessDeniedException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberRemovalForbiddenException;
+import fpt.qn.pms.projectmember.exception.ProjectMemberRoleChangeForbiddenException;
 import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.repository.UserRepository;
@@ -32,8 +33,8 @@ public class ProjectMemberAuthorizationService {
     public UsersRecord assertCanViewMembers(UUID projectId) {
         UsersRecord currentUser = requireActiveCurrentUser();
         if (currentUser.getRole() == SysRole.ADMIN
-                || projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
-                        projectId, currentUser.getId(), ProjectRole.PM)) {
+                || projectMemberRepository.existsActiveByProjectIdAndUserId(
+                        projectId, currentUser.getId())) {
             return currentUser;
         }
         throw new ProjectMemberAccessDeniedException();
@@ -64,6 +65,20 @@ public class ProjectMemberAuthorizationService {
         }
 
         return currentUser;
+    }
+
+    public void assertCanChangeRole(UsersRecord currentUser, ProjectRole currentTargetRole, ProjectRole newRole) {
+        if (currentUser.getRole() == SysRole.ADMIN) {
+            return;
+        }
+        if (currentTargetRole == ProjectRole.PM) {
+            throw new ProjectMemberRoleChangeForbiddenException(
+                    "A project manager cannot change the role of another project manager");
+        }
+        if (newRole == ProjectRole.PM) {
+            throw new ProjectMemberRoleChangeForbiddenException(
+                    "A project manager cannot promote a member to project manager");
+        }
     }
 
     public void assertCanRemoveMember(

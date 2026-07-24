@@ -8,5 +8,6 @@ export interface TaskActivityDto {
   action: ActivityAction;
   oldValue: string | null;
   newValue: string | null;
+  message: string | null;
   createdTime: string;
 }

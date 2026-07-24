@@ -1,0 +1,46 @@
+@if (taskSvc.task(); as t) {
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status</label>
+      <select [(ngModel)]="editStatusId" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        @for (s of availableStatuses(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Priority</label>
+      <div class="w-full rounded-[8px] border px-3 py-2 text-[13px] font-semibold" style="border-color:#E1E4E9;background:#FAFBFC;color:#4B5160">{{ t.priority }}</div>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Assignee</label>
+      <select [(ngModel)]="editAssigneeId" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9">
+        <option value="">Unassigned</option>
+        @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
+      </select>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Reporter</label>
+      <div class="w-full rounded-[8px] border px-3 py-2 text-[13px]" style="border-color:#E1E4E9;background:#FAFBFC;color:#4B5160">{{ t.reporterName }}</div>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Story Point</label>
+      <div class="w-full rounded-[8px] border px-3 py-2 text-[13px]" style="border-color:#E1E4E9;background:#FAFBFC;color:#4B5160">{{ t.storyPoint ?? '—' }}</div>
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Estimate Hour</label>
+      <input [(ngModel)]="editEstimateHour" type="number" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+    </div>
+    <div>
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Due Date</label>
+      <input [(ngModel)]="editDueDate" type="date" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
+    </div>
+    <div class="col-span-2">
+      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Description</label>
+      <textarea [(ngModel)]="editDescription" rows="4" class="w-full rounded-[8px] border px-3 py-2 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
+    </div>
+  </div>
+  <div class="mt-4">
+    <button (click)="saveDetails()" [disabled]="saving()" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">
+      {{ saving() ? 'Saving…' : 'Save Changes' }}
+    </button>
+  </div>
+}

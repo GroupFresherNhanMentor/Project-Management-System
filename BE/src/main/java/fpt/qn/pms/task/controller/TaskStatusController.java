@@ -48,7 +48,7 @@ public class TaskStatusController {
     }
 
     @PostMapping
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Create a new task status", description = "Adds a custom status to the project's workflow. PM only.")
     public ResponseEntity<ApiResponse<TaskStatusDto>> create(
             @PathVariable UUID projectId,
@@ -68,7 +68,7 @@ public class TaskStatusController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Delete a task status. PM only.")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID projectId,

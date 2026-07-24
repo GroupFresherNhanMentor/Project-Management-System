@@ -106,21 +106,31 @@ class ProjectMemberAuthorizationServiceTest {
         UsersRecord member = user("pm", SysRole.USER, UserStatus.ACTIVE);
         authenticate("pm");
         when(userRepository.findByUsername("pm")).thenReturn(Optional.of(member));
-        when(projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
-                projectId, member.getId(), ProjectRole.PM))
+        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, member.getId()))
                 .thenReturn(true);
 
         assertThat(authorizationService.assertCanViewMembers(projectId)).isSameAs(member);
     }
 
     @Test
-    void assertCanViewMembers_shouldRejectDeveloper() {
+    void assertCanViewMembers_shouldAllowActiveDeveloper() {
         UUID projectId = UUID.randomUUID();
-        UsersRecord user = user("user", SysRole.USER, UserStatus.ACTIVE);
-        authenticate("user");
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
-        when(projectMemberRepository.existsActiveByProjectIdAndUserIdAndRole(
-                projectId, user.getId(), ProjectRole.PM))
+        UsersRecord developer = user("dev", SysRole.USER, UserStatus.ACTIVE);
+        authenticate("dev");
+        when(userRepository.findByUsername("dev")).thenReturn(Optional.of(developer));
+        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, developer.getId()))
+                .thenReturn(true);
+
+        assertThat(authorizationService.assertCanViewMembers(projectId)).isSameAs(developer);
+    }
+
+    @Test
+    void assertCanViewMembers_shouldRejectNonMember() {
+        UUID projectId = UUID.randomUUID();
+        UsersRecord outsider = user("outsider", SysRole.USER, UserStatus.ACTIVE);
+        authenticate("outsider");
+        when(userRepository.findByUsername("outsider")).thenReturn(Optional.of(outsider));
+        when(projectMemberRepository.existsActiveByProjectIdAndUserId(projectId, outsider.getId()))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> authorizationService.assertCanViewMembers(projectId))

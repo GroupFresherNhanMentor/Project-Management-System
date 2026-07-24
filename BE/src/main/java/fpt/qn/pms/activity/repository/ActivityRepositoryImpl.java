@@ -34,10 +34,11 @@ public class ActivityRepositoryImpl extends BaseRepository<TaskActivitiesRecord>
                     TASK_ACTIVITIES.ID,
                     TASK_ACTIVITIES.TASK_ID,
                     TASK_ACTIVITIES.USER_ID,
-                    USERS.USERNAME,
+                    USERS.FULL_NAME,
                     TASK_ACTIVITIES.ACTION,
                     TASK_ACTIVITIES.OLD_VALUE,
                     TASK_ACTIVITIES.NEW_VALUE,
+                    TASK_ACTIVITIES.MESSAGE,
                     TASK_ACTIVITIES.CREATED_AT
                 )
                 .from(TASK_ACTIVITIES)
@@ -47,18 +48,19 @@ public class ActivityRepositoryImpl extends BaseRepository<TaskActivitiesRecord>
                 .limit(size)
                 .offset((long) page * size)
                 .fetch(r -> {
-                    var oldJson = r.get(TASK_ACTIVITIES.OLD_VALUE);
-                    var newJson = r.get(TASK_ACTIVITIES.NEW_VALUE);
+                    var oldVal = r.get(TASK_ACTIVITIES.OLD_VALUE);
+                    var newVal = r.get(TASK_ACTIVITIES.NEW_VALUE);
                     return TaskActivityDto.builder()
-                        .id(r.get(TASK_ACTIVITIES.ID))
-                        .taskId(r.get(TASK_ACTIVITIES.TASK_ID))
-                        .userId(r.get(TASK_ACTIVITIES.USER_ID))
-                        .userName(r.get(USERS.USERNAME))
-                        .action(r.get(TASK_ACTIVITIES.ACTION))
-                        .oldValue(oldJson != null ? oldJson.data() : null)
-                        .newValue(newJson != null ? newJson.data() : null)
-                        .createdTime(r.get(TASK_ACTIVITIES.CREATED_AT))
-                        .build();
+                            .id(r.get(TASK_ACTIVITIES.ID))
+                            .taskId(r.get(TASK_ACTIVITIES.TASK_ID))
+                            .userId(r.get(TASK_ACTIVITIES.USER_ID))
+                            .userName(r.get(USERS.FULL_NAME))
+                            .action(r.get(TASK_ACTIVITIES.ACTION))
+                            .oldValue(oldVal != null ? oldVal.data() : null)
+                            .newValue(newVal != null ? newVal.data() : null)
+                            .message(r.get(TASK_ACTIVITIES.MESSAGE))
+                            .createdTime(r.get(TASK_ACTIVITIES.CREATED_AT))
+                            .build();
                 });
 
         return new PaginationResult<>(total, items);

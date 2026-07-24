@@ -15,18 +15,15 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WorklogReportFilterDto extends PageRequest {
 
-    @Schema(description = "ID của dự án")
-    UUID projectId;
+    @Schema(description = "Project ID")
+    UUID project;
 
-    @Schema(description = "ID của người dùng")
-    UUID userId;
+    @Schema(description = "User ID")
+    UUID user;
 
-    @Schema(description = "Tên đăng nhập (username) của người dùng")
-    String username;
-
-    @Schema(description = "Ngày bắt đầu lọc worklog (YYYY-MM-DD)")
+    @Schema(description = "Filter from date (YYYY-MM-DD)")
     LocalDate fromDate;
 
-    @Schema(description = "Ngày kết thúc lọc worklog (YYYY-MM-DD)")
+    @Schema(description = "Filter to date (YYYY-MM-DD)")
     LocalDate toDate;
 }

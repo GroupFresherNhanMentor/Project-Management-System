@@ -35,7 +35,16 @@ export class DashboardService {
 
   // Tìm kiếm Task phân trang từ database /api/tasks/search
   searchTasks(request: TaskSearchRequest): Observable<ApiResponse<TaskSearchResponse>> {
-    return this.http.post<ApiResponse<TaskSearchResponse>>('/api/tasks/search', request);
+    let params = new HttpParams()
+      .set('page', request.page)
+      .set('size', request.size);
+    if (request.projectId)  params = params.set('projectId',  request.projectId);
+    if (request.sprintId)   params = params.set('sprintId',   request.sprintId);
+    if (request.status)     params = params.set('statusId',   request.status);
+    if (request.priority)   params = params.set('priority',   request.priority);
+    if (request.assigneeId) params = params.set('assigneeId', request.assigneeId);
+    if (request.keyword)    params = params.set('keyword',    request.keyword);
+    return this.http.get<ApiResponse<TaskSearchResponse>>('/api/tasks/search', { params });
   }
 
   getRecentActivities(projectId?: string, limit: number = 10): Observable<ApiResponse<DashboardActivityItem[]>> {

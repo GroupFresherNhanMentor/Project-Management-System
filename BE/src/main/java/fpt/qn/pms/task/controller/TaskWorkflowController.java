@@ -42,7 +42,7 @@ public class TaskWorkflowController {
     }
 
     @PostMapping
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Create workflow transitions", description = "Defines allowed status transitions within a project in a single batch. PM only.")
     public ResponseEntity<ApiResponse<List<TaskWorkflowDto>>> create(
             @PathVariable UUID projectId,
@@ -52,7 +52,7 @@ public class TaskWorkflowController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM}) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.requireRole(#projectId, {T(fpt.qn.pms.jooq.enums.ProjectRole).PM})")
     @Operation(summary = "Delete a workflow transition. PM only.")
     public ResponseEntity<ApiResponse<Void>> delete(
             @PathVariable UUID projectId,

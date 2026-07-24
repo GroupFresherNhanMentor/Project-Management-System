@@ -41,7 +41,7 @@ export class SprintList {
   // For status change
   readonly statusLoading = signal<string | null>(null);
 
-  readonly canManage = signal(this.authService.getCurrentUser()?.role === 'ADMIN');
+  readonly canManage = signal(false);
   readonly isAdmin = this.authService.getCurrentUser()?.role === 'ADMIN';
 
   constructor() {
@@ -51,7 +51,6 @@ export class SprintList {
       if (id) {
         this.projectId.set(id);
         if (!this.isAdmin) {
-          // Check if user is PM
           this.projectService.getCurrentMember(id).subscribe({
             next: membership => this.canManage.set(membership.status === 'ACTIVE' && membership.projectRole === 'PM'),
             error: () => this.canManage.set(false),
@@ -115,6 +114,7 @@ export class SprintList {
   // ── Edit Sprint ──
   openEditSprintModal(sprint: SprintDto, event: Event): void {
     event.stopPropagation();
+    if (!this.canManage()) return;
     this.modalMode.set('edit');
     this.editingSprint.set(sprint);
     this.editForm = {

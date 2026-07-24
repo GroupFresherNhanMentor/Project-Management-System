@@ -3,6 +3,7 @@ export interface TaskCommentDto {
   taskId: string;
   content: string;
   createdBy: string;
+  createdByName: string;
   createdTime: string;
 }
 

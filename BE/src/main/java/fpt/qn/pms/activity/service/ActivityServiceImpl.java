@@ -40,7 +40,7 @@ public class ActivityServiceImpl implements ActivityService {
     ActivityRepository activityRepository;
     TaskRepository taskRepository;
     UserRepository userRepository;
-    ObjectMapper objectMapper = new ObjectMapper();
+    ObjectMapper objectMapper;
     DSLContext dsl;
 
     @Override

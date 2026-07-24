@@ -2,7 +2,9 @@ package fpt.qn.pms.user.repository.impl;
 
 import static fpt.qn.pms.jooq.Tables.USERS;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,6 +76,15 @@ public class UserRepositoryImpl extends BaseRepository<UsersRecord> implements U
                 .fetch();
 
         return new PaginationResult<>(total, items);
+    }
+
+    @Override
+    public Map<UUID, String> findFullNamesByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) return Map.of();
+        return dsl.select(USERS.ID, USERS.FULL_NAME)
+                .from(USERS)
+                .where(USERS.ID.in(ids))
+                .fetchMap(USERS.ID, USERS.FULL_NAME);
     }
 
     private Condition buildCondition(String keyword, SysRole role, UserStatus status) {
