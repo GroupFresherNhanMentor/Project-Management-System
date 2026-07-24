@@ -18,6 +18,11 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+import fpt.qn.pms.activity.dto.DashboardActivityDto;
+
+import io.swagger.v3.oas.annotations.Operation;
+
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class ActivityController {
     ActivityService activityService;
 
     @GetMapping("/{taskId}/activities")
+    @Operation(summary = "Get task activities", description = "Retrieve paginated activity logs for a specific task")
     @PreAuthorize("@projectSecurityEvaluator.hasAccessToTask(#taskId) or hasAuthority('ADMIN')")
     public ApiResponse<PageResponse<TaskActivityDto>> getActivitiesByTaskId(
             @PathVariable UUID taskId,
@@ -35,5 +41,14 @@ public class ActivityController {
             @RequestParam(defaultValue = "10") int size) {
         PageResponse<TaskActivityDto> response = activityService.getActivitiesByTaskId(taskId, page, size);
         return ApiResponse.success(response, "Retrieve task activity history successfully");
+    }
+
+    @GetMapping("/activities/recent")
+    @Operation(summary = "Get recent activities for dashboard", description = "Retrieve latest activity logs system-wide (for ADMIN) or for a specific project")
+    public ApiResponse<List<DashboardActivityDto>> getRecentActivities(
+            @RequestParam(required = false) UUID projectId,
+            @RequestParam(defaultValue = "10") int limit) {
+        List<DashboardActivityDto> response = activityService.getRecentActivities(projectId, limit);
+        return ApiResponse.success(response, "Retrieve recent activity history successfully");
     }
 }

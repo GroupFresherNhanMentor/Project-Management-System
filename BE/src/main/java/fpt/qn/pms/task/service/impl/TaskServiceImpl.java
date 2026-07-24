@@ -21,6 +21,7 @@ import fpt.qn.pms.task.dto.UpdateTaskRequest;
 import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
 import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
 import fpt.qn.pms.task.exception.ReporterNotInProjectException;
+import fpt.qn.pms.task.exception.TaskKeyAlreadyExistsException;
 import fpt.qn.pms.task.exception.TaskNotFoundException;
 import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
 import fpt.qn.pms.task.mapper.TaskMapper;
@@ -54,6 +55,10 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskDto createTask(CreateTaskRequest request) {
+        if (request.getTaskKey() != null && taskRepository.existsByTaskKey(request.getTaskKey().trim())) {
+            throw new TaskKeyAlreadyExistsException(request.getTaskKey().trim());
+        }
+
         UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
                 .map(p -> p.getId())
                 .orElseThrow(() -> new UserNotFoundException());
@@ -147,10 +152,13 @@ public class TaskServiceImpl implements TaskService {
                     "Access denied: You are not authorized to update this task");
         }
 
+        String oldStatusName = null;
+        String newStatusName = null;
+
         if (request.getStatusId() != null && !request.getStatusId().equals(task.getStatusId())) {
             UUID newStatusId = request.getStatusId();
 
-            taskStatusRepository.findById(newStatusId)
+            var newStatus = taskStatusRepository.findById(newStatusId)
                     .filter(s -> s.getProjectId().equals(task.getProjectId()))
                     .orElseThrow(() -> new TaskStatusNotFoundException(newStatusId));
 
@@ -165,7 +173,23 @@ public class TaskServiceImpl implements TaskService {
                 }
             }
 
+            oldStatusName = task.getStatusId() != null
+                    ? taskStatusRepository.findById(task.getStatusId())
+                            .map(s -> s.getName())
+                            .orElse(task.getStatusId().toString())
+                    : null;
+            newStatusName = newStatus.getName();
+
             task.setStatusId(newStatusId);
+        }
+
+        String oldPriority = null;
+        String newPriority = null;
+
+        if (request.getPriority() != null && !request.getPriority().equals(task.getPriority())) {
+            oldPriority = task.getPriority() != null ? task.getPriority().getLiteral() : null;
+            newPriority = request.getPriority().getLiteral();
+            task.setPriority(request.getPriority());
         }
 
         if (request.getDescription() != null) {
@@ -181,6 +205,27 @@ public class TaskServiceImpl implements TaskService {
         task.setUpdatedBy(currentUserId);
 
         taskRepository.update(task);
+
+        if (newStatusName != null) {
+            eventPublisher.publishEvent(new TaskActivityEvent(
+                    id,
+                    currentUserId,
+                    ActivityAction.STATUS_CHANGED,
+                    oldStatusName,
+                    newStatusName
+            ));
+        }
+
+        if (newPriority != null) {
+            eventPublisher.publishEvent(new TaskActivityEvent(
+                    id,
+                    currentUserId,
+                    ActivityAction.PRIORITY_CHANGED,
+                    oldPriority,
+                    newPriority
+            ));
+        }
+
         return taskRepository.findDetailById(id).map(taskMapper::toDto).orElseThrow();
     }
 
@@ -193,12 +238,14 @@ public class TaskServiceImpl implements TaskService {
         TasksRecord task =
                 taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException());
 
-        boolean isMember = projectMemberRepository
-                .findByProjectIdAndUserId(task.getProjectId(), request.getAssigneeId())
-                .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
-                .orElse(false);
-        if (!isMember) {
-            throw new AssigneeNotInProjectException();
+        if (request.getAssigneeId() != null) {
+            boolean isMember = projectMemberRepository
+                    .findByProjectIdAndUserId(task.getProjectId(), request.getAssigneeId())
+                    .map(member -> member.getStatus() == ProjectMemberStatus.ACTIVE)
+                    .orElse(false);
+            if (!isMember) {
+                throw new AssigneeNotInProjectException();
+            }
         }
 
         UUID oldAssigneeId = task.getAssigneeId();
@@ -211,8 +258,8 @@ public class TaskServiceImpl implements TaskService {
                 task.getId(),
                 currentUserId,
                 ActivityAction.ASSIGNEE_CHANGED,
-                oldAssigneeId != null ? oldAssigneeId.toString() : "Unassigned",
-                request.getAssigneeId().toString()
+                oldAssigneeId != null ? oldAssigneeId.toString() : null,
+                request.getAssigneeId() != null ? request.getAssigneeId().toString() : null
         ));
 
         return taskRepository.findDetailById(id).map(taskMapper::toDto).orElseThrow();

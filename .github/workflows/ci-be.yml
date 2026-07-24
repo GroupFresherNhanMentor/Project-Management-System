@@ -42,9 +42,12 @@ jobs:
           cache: maven
 
       - name: Apply database migrations for jOOQ codegen
-        run: mvn -B flyway:migrate -Ddb.url=jdbc:postgresql://localhost:5432/mini-project-management-system
+        run: mvn flyway:migrate -Ddb.url=jdbc:postgresql://localhost:5432/mini-project-management-system
+
+      - name: generate jOOQ classes
+        run: mvn generate-sources -Ddb.url=jdbc:postgresql://localhost:5432/mini-project-management-system
 
       - name: Build and test
-        run: mvn -B test
+        run: mvn test
         env:
           MAVEN_OPTS: -Xmx1g

@@ -20,6 +20,8 @@ public interface TaskStatusMapper {
     @Mapping(target = "projectId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "isInitial", expression = "java(request.getIsInitial() != null ? request.getIsInitial() : Boolean.FALSE)")
+    @Mapping(target = "isFinal",   expression = "java(request.getIsFinal()   != null ? request.getIsFinal()   : Boolean.FALSE)")
     TaskStatusesRecord toRecord(CreateTaskStatusRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

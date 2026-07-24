@@ -16,10 +16,10 @@ import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.project.exception.ProjectNotFoundException;
 import fpt.qn.pms.project.repository.ProjectRepository;
 import fpt.qn.pms.projectmember.dto.request.AddProjectMemberRequest;
+import fpt.qn.pms.projectmember.dto.request.UpdateProjectMemberRoleRequest;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberCandidateDto;
 import fpt.qn.pms.projectmember.dto.response.ProjectMemberDto;
 import fpt.qn.pms.projectmember.exception.ProjectMemberAlreadyActiveException;
-import fpt.qn.pms.projectmember.exception.LastProjectManagerRemovalForbiddenException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberHasAssignedTasksException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberNotFoundException;
 import fpt.qn.pms.projectmember.exception.ProjectMemberUserInactiveException;
@@ -112,6 +112,27 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     @Override
     @Transactional
+    public ProjectMemberDto updateMemberRole(UUID projectId, UUID memberId, UpdateProjectMemberRoleRequest request) {
+        requireProject(projectId);
+        UsersRecord currentUser = authorizationService.assertCanManageMembers(projectId);
+
+        ProjectMembersRecord record = projectMemberRepository.findByIdAndProjectId(memberId, projectId)
+                .orElseThrow(() -> new ProjectMemberNotFoundException());
+
+        if (record.getStatus() == ProjectMemberStatus.INACTIVE) {
+            throw new ProjectMemberNotFoundException();
+        }
+
+        authorizationService.assertCanChangeRole(currentUser, record.getProjectRole(), request.getProjectRole());
+
+        record.setProjectRole(request.getProjectRole());
+        projectMemberRepository.update(record);
+
+        return getDetails(projectId, record.getId());
+    }
+
+    @Override
+    @Transactional
     public void removeMember(UUID projectId, UUID memberId) {
         lockProject(projectId);
         UsersRecord currentUser = authorizationService.assertCanManageMembers(projectId);
@@ -124,11 +145,6 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
         if (record.getStatus() == ProjectMemberStatus.INACTIVE) {
             return;
-        }
-        if (record.getProjectRole() == fpt.qn.pms.jooq.enums.ProjectRole.PM
-                && projectMemberRepository.countActiveByProjectIdAndRole(
-                        projectId, fpt.qn.pms.jooq.enums.ProjectRole.PM) <= 1) {
-            throw new LastProjectManagerRemovalForbiddenException();
         }
         if (taskRepository.existsAssignedTaskByProjectIdAndAssigneeId(projectId, record.getUserId())) {
             throw new ProjectMemberHasAssignedTasksException();

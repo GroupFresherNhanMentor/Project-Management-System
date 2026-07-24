@@ -143,14 +143,6 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
                         .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE)));
     }
 
-    @Override
-    public long countActiveByProjectIdAndRole(UUID projectId, ProjectRole role) {
-        return dsl.fetchCount(PROJECT_MEMBERS,
-                PROJECT_MEMBERS.PROJECT_ID.eq(projectId)
-                        .and(PROJECT_MEMBERS.PROJECT_ROLE.eq(role))
-                        .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE)));
-    }
-
     private org.jooq.SelectConditionStep<? extends org.jooq.Record> detailsQuery(UUID projectId) {
         return dsl.select(
                         PROJECT_MEMBERS.ID,

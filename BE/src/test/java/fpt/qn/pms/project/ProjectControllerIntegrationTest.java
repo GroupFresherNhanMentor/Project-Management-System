@@ -100,6 +100,20 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void createProject_shouldReturn400ForCompletedInitialStatus() throws Exception {
+        CreateProjectRequest request = createRequest("COMPLETED", "Completed Project");
+        request.setStatus(ProjectStatus.COMPLETED);
+
+        mockMvc.perform(post("/api/projects")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("A new project cannot have COMPLETED status"));
+    }
+
+    @Test
     void getProjects_shouldReturnOnlyActivePmMembershipsForRegularUser() throws Exception {
         UUID visibleProjectId = insertProject("VISIBLE", "Visible Project");
         UUID hiddenProjectId = insertProject("HIDDEN", "Hidden Project");
@@ -114,14 +128,14 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getProjects_shouldReturn403ForActiveDeveloper() throws Exception {
+    void getProjects_shouldReturn200ForActiveDeveloper() throws Exception {
         UUID projectId = insertProject("DEVONLY", "Developer Project");
         insertMembership(projectId, user.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
 
         mockMvc.perform(get("/api/projects")
                         .header("Authorization", "Bearer " + userToken))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].id").value(projectId.toString()));
     }
 
     @Test
@@ -136,13 +150,14 @@ class ProjectControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getProjectById_shouldReturn403ForActiveDeveloper() throws Exception {
+    void getProjectById_shouldReturn200ForActiveDeveloper() throws Exception {
         UUID projectId = insertProject("DEVDETAIL", "Developer Detail Project");
         insertMembership(projectId, user.getId(), ProjectRole.DEV, ProjectMemberStatus.ACTIVE);
 
         mockMvc.perform(get("/api/projects/" + projectId)
                         .header("Authorization", "Bearer " + userToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(projectId.toString()));
     }
 
     @Test
