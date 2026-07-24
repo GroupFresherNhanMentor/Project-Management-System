@@ -21,6 +21,7 @@ import fpt.qn.pms.task.dto.UpdateTaskRequest;
 import fpt.qn.pms.task.exception.AssigneeNotInProjectException;
 import fpt.qn.pms.task.exception.InvalidTaskStatusTransitionException;
 import fpt.qn.pms.task.exception.ReporterNotInProjectException;
+import fpt.qn.pms.task.exception.TaskKeyAlreadyExistsException;
 import fpt.qn.pms.task.exception.TaskNotFoundException;
 import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
 import fpt.qn.pms.task.mapper.TaskMapper;
@@ -54,6 +55,10 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public TaskDto createTask(CreateTaskRequest request) {
+        if (request.getTaskKey() != null && taskRepository.existsByTaskKey(request.getTaskKey().trim())) {
+            throw new TaskKeyAlreadyExistsException(request.getTaskKey().trim());
+        }
+
         UUID currentUserId = projectSecurityEvaluator.getCurrentPrincipal()
                 .map(p -> p.getId())
                 .orElseThrow(() -> new UserNotFoundException());

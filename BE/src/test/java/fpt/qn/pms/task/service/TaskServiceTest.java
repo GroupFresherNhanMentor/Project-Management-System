@@ -127,6 +127,20 @@ class TaskServiceTest {
         assertThat(result.getSummary()).isEqualTo("Setup Task Test");
     }
 
+    @Test
+    @DisplayName("createTask - Should throw TaskKeyAlreadyExistsException when taskKey already exists")
+    void createTask_duplicateTaskKey_shouldThrowException() {
+        CreateTaskRequest request = new CreateTaskRequest();
+        request.setTaskKey("WEB-1");
+        request.setProjectId(projectId);
+
+        when(taskRepository.existsByTaskKey("WEB-1")).thenReturn(true);
+
+        assertThatThrownBy(() -> taskService.createTask(request))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Task key already exists: WEB-1");
+    }
+
     // ── 2. Get Task By Id ──────────────────────────────────────────────────────
 
     @Test

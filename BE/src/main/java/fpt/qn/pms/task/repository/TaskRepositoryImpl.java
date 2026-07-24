@@ -38,6 +38,11 @@ public class TaskRepositoryImpl extends BaseRepository<TasksRecord> implements T
     }
 
     @Override
+    public boolean existsByTaskKey(String taskKey) {
+        return dsl.fetchExists(TASKS, TASKS.TASK_KEY.equalIgnoreCase(taskKey));
+    }
+
+    @Override
     public Optional<TaskResult> findDetailById(UUID id) {
         return dsl.select(TASKS.fields())
                 .select(ASSIGNEE.FULL_NAME, REPORTER.FULL_NAME, TASK_STATUSES.NAME, TASK_STATUSES.COLOR)
