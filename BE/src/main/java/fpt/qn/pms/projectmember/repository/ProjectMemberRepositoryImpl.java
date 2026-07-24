@@ -143,6 +143,15 @@ public class ProjectMemberRepositoryImpl extends BaseRepository<ProjectMembersRe
                         .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE)));
     }
 
+    @Override
+    public void deactivateAllByUserId(UUID userId) {
+        dsl.update(PROJECT_MEMBERS)
+                .set(PROJECT_MEMBERS.STATUS, ProjectMemberStatus.INACTIVE)
+                .where(PROJECT_MEMBERS.USER_ID.eq(userId))
+                .and(PROJECT_MEMBERS.STATUS.eq(ProjectMemberStatus.ACTIVE))
+                .execute();
+    }
+
     private org.jooq.SelectConditionStep<? extends org.jooq.Record> detailsQuery(UUID projectId) {
         return dsl.select(
                         PROJECT_MEMBERS.ID,

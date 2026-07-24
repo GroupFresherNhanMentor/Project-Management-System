@@ -1,5 +1,5 @@
 <!-- Create Status Form -->
-@if (!isAdmin) {
+@if (isPm()) {
 <div class="mb-5 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
   <h3 class="mb-4 text-[14px] font-bold" style="color:#14161C">New Status</h3>
   <div class="flex flex-wrap items-end gap-3">
@@ -64,7 +64,7 @@
           <th class="px-5 py-3 text-left text-[12px] font-semibold" style="color:#6B7280;width:36%">Current Status</th>
           <th class="px-5 py-3 text-left text-[12px] font-semibold" style="color:#6B7280">Next Available Statuses</th>
           <th class="px-5 py-3 text-center text-[12px] font-semibold" style="color:#6B7280;width:80px">Active</th>
-          @if (!isAdmin) {
+          @if (isPm()) {
             <th class="px-5 py-3 text-right text-[12px] font-semibold" style="color:#6B7280;width:180px">Actions</th>
           }
         </tr>
@@ -87,14 +87,20 @@
             </td>
             <td class="px-5 py-3.5" style="color:#4B5160">{{ nextStatusNames(s.id) }}</td>
             <td class="px-5 py-3.5 text-center">
-              <button
-                (click)="toggleActive(s)"
-                class="text-[12px] font-medium underline underline-offset-2 transition-opacity hover:opacity-70"
-                [style.color]="s.isActive ? '#D0342C' : '#3B4FD9'"
-              >{{ s.isActive ? 'Disable' : 'Enable' }}</button>
+              @if (isPm()) {
+                <button
+                  (click)="toggleActive(s)"
+                  class="text-[12px] font-medium underline underline-offset-2 transition-opacity hover:opacity-70"
+                  [style.color]="s.isActive ? '#D0342C' : '#3B4FD9'"
+                >{{ s.isActive ? 'Disable' : 'Enable' }}</button>
+              } @else {
+                <span class="text-[12px] font-medium" [style.color]="s.isActive ? '#16A34A' : '#9AA1AC'">
+                  {{ s.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              }
             </td>
-            @if (!isAdmin) {
-              <td class="px-5 py-3.5 text-right">
+            @if (isPm()) {
+              <td class="px-5 py-3.5 text-right flex">
                 <button
                   (click)="startEditTransitions(s.id)"
                   class="mr-2 rounded-lg border px-3 py-1.5 text-[12px] font-medium transition"

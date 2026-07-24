@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import fpt.qn.pms.jooq.tables.records.TaskWorkflowRecord;
 import fpt.qn.pms.task.dto.CreateTaskWorkflowRequest;
 import fpt.qn.pms.task.dto.TaskWorkflowDto;
+import fpt.qn.pms.task.exception.FinalStatusCannotHaveOutgoingTransitionException;
 import fpt.qn.pms.task.exception.TaskStatusNotFoundException;
 import fpt.qn.pms.task.exception.TaskWorkflowAlreadyExistsException;
 import fpt.qn.pms.task.exception.TaskWorkflowNotFoundException;
@@ -60,6 +61,12 @@ public class TaskWorkflowServiceImpl implements TaskWorkflowService {
             }
             if (!projectStatusIds.contains(req.getToStatusId())) {
                 throw new TaskStatusNotFoundException(req.getToStatusId());
+            }
+            boolean fromStatusIsFinal = taskStatusRepository.findById(req.getFromStatusId())
+                    .map(s -> Boolean.TRUE.equals(s.getIsFinal()))
+                    .orElse(false);
+            if (fromStatusIsFinal) {
+                throw new FinalStatusCannotHaveOutgoingTransitionException();
             }
             String key = req.getFromStatusId() + "->" + req.getToStatusId();
             if (!seen.add(key)) {

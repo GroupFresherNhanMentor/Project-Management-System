@@ -28,6 +28,7 @@ import fpt.qn.pms.user.exception.InvalidOldPasswordException;
 import fpt.qn.pms.user.exception.SelfLockoutException;
 import fpt.qn.pms.user.exception.UserNotFoundException;
 import fpt.qn.pms.user.exception.UsernameAlreadyExistsException;
+import fpt.qn.pms.projectmember.repository.ProjectMemberRepository;
 import fpt.qn.pms.user.helper.UserCreationTransactionHelper;
 import fpt.qn.pms.user.mapper.UserMapper;
 import fpt.qn.pms.user.repository.UserRepository;
@@ -42,6 +43,7 @@ import lombok.experimental.FieldDefaults;
 public class UserServiceImpl implements UserService {
 
     UserRepository userRepository;
+    ProjectMemberRepository projectMemberRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     UserCreationTransactionHelper userCreationTransactionHelper;
@@ -150,6 +152,11 @@ public class UserServiceImpl implements UserService {
 
         record.setStatus(request.getStatus());
         userRepository.update(record);
+
+        if (request.getStatus() == UserStatus.LOCKED) {
+            projectMemberRepository.deactivateAllByUserId(id);
+        }
+
         return userMapper.toDto(record);
     }
 

@@ -1,5 +1,6 @@
 import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TaskType, TaskPriority } from '../../../../core/models/api.model';
@@ -117,8 +118,8 @@ export class TaskNew implements OnInit {
         this.toast.success('Task created.');
         void this.router.navigate(['/tasks', task.id]);
       },
-      error: () => {
-        this.toast.error('Failed to create task.');
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to create task.');
         this.submitting = false;
       },
     });

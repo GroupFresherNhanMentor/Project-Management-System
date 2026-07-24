@@ -1,20 +1,18 @@
 package fpt.qn.pms.worklog.service.impl;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException.NotFound;
+import fpt.qn.pms.activity.event.TaskActivityEvent;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
-import fpt.qn.pms.common.exception.AppException;
 import fpt.qn.pms.common.exception.NotFoundException;
+import fpt.qn.pms.jooq.enums.ActivityAction;
 import fpt.qn.pms.jooq.tables.records.TasksRecord;
-import fpt.qn.pms.jooq.tables.records.UsersRecord;
 import fpt.qn.pms.jooq.tables.records.WorklogsRecord;
 import fpt.qn.pms.security.ProjectSecurityEvaluator;
 import fpt.qn.pms.security.UserPrincipal;
@@ -42,6 +40,7 @@ public class WorklogServiceImpl implements WorklogService {
     UserRepository userRepository;
     WorklogMapper worklogMapper;
     ProjectSecurityEvaluator projectSecurityEvaluator;
+    ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,8 +78,18 @@ public class WorklogServiceImpl implements WorklogService {
         record.setCreatedAt(OffsetDateTime.now());
 
         WorklogsRecord saved = worklogRepository.create(record);
-        return worklogRepository.findDtoById(saved.getId())
+        WorklogDto dto = worklogRepository.findDtoById(saved.getId())
                 .orElseThrow(() -> new NotFoundException("Worklog not found after creation"));
+
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                taskId,
+                userPrincipal.getId(),
+                ActivityAction.WORKLOG_ADDED,
+                null,
+                String.valueOf(request.getHour())
+        ));
+
+        return dto;
     }
 
     @Override
@@ -103,13 +112,25 @@ public class WorklogServiceImpl implements WorklogService {
             throw new AccessDeniedException("Only the worklog creator, project PM, or an Admin can edit this worklog");
         }
 
+        String oldHour = String.valueOf(worklog.getHours());
+
         worklog.setWorkDate(request.getWorkDate());
         worklog.setHours(request.getHour());
         worklog.setDescription(request.getDescription());
 
         WorklogsRecord saved = worklogRepository.update(worklog);
-        return worklogRepository.findDtoById(saved.getId())
+        WorklogDto dto = worklogRepository.findDtoById(saved.getId())
                 .orElseThrow(() -> new NotFoundException("Worklog not found after update"));
+
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                task.getId(),
+                userPrincipal.getId(),
+                ActivityAction.WORKLOG_UPDATED,
+                oldHour,
+                String.valueOf(request.getHour())
+        ));
+
+        return dto;
     }
 
     @Override
@@ -132,7 +153,18 @@ public class WorklogServiceImpl implements WorklogService {
             throw new AccessDeniedException("Only the worklog creator, project PM, or an Admin can delete this worklog");
         }
 
+        String hours = String.valueOf(worklog.getHours());
+        UUID taskId = worklog.getTaskId();
+
         worklogRepository.hardDeleteById(id);
+
+        eventPublisher.publishEvent(new TaskActivityEvent(
+                taskId,
+                userPrincipal.getId(),
+                ActivityAction.WORKLOG_DELETED,
+                hours,
+                null
+        ));
     }
 
     @Override

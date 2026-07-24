@@ -1,12 +1,12 @@
 package fpt.qn.pms.user.exception;
 
-public class InvalidOldPasswordException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+import fpt.qn.pms.common.exception.AppException;
+
+public class InvalidOldPasswordException extends AppException {
 
     public InvalidOldPasswordException() {
-        super("Current password is incorrect");
-    }
-
-    public InvalidOldPasswordException(String message) {
-        super(message);
+        super(HttpStatus.BAD_REQUEST, "Current password is incorrect");
     }
 }

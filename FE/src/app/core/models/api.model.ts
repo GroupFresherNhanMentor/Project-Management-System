@@ -12,13 +12,6 @@ export interface PageResponse<T> {
   pageSize: number;
 }
 
-export interface ErrorResponse {
-  success: false;
-  errorCode: string;
-  message: string;
-  details: string[] | null;
-}
-
 export interface PageParams {
   page?: number;
   size?: number;

@@ -40,6 +40,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 
+import fpt.qn.pms.common.exception.CustomAuthenticationEntryPoint;
 import fpt.qn.pms.security.JwtBlacklistFilter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 
@@ -53,7 +54,7 @@ public class SecurityConfig {
     String jwtSecret;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtBlacklistFilter jwtBlacklistFilter, UserDetailsService userDetailsService) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtBlacklistFilter jwtBlacklistFilter, UserDetailsService userDetailsService, CustomAuthenticationEntryPoint authEntryPoint) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -72,6 +73,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(authEntryPoint)
                         .jwt(jwt -> jwt
                                 .decoder(jwtDecoder())
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter(userDetailsService))
