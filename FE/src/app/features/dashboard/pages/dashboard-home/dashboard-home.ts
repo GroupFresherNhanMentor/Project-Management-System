@@ -1,13 +1,16 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { DashboardService } from '../../../../core/services/dashboard';
+import { ProjectService } from '../../../../core/services/project';
+import { ProjectDto } from '../../../../core/models/project.model';
 import {
   PersonalDashboardData,
   ProjectDashboardData,
   DevTaskItem,
   AdminDashboardData,
-  SystemActivity,
+  DashboardActivityItem,
   TaskSearchRequest,
   ApiResponse,
   TaskSearchResponse
@@ -16,12 +19,14 @@ import {
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './dashboard-home.html'
 })
 export class DashboardHome implements OnInit {
   private dashboardService = inject(DashboardService);
+  private projectService = inject(ProjectService);
 
+  Math = Math;
   role = 'DEVELOPER';
   currentDashboardType: 'PERSONAL' | 'PROJECT' = 'PERSONAL';
   activeTab: 'OPEN' | 'COMPLETED' | 'OVERDUE' = 'OPEN';
@@ -32,8 +37,9 @@ export class DashboardHome implements OnInit {
   devData = signal<PersonalDashboardData | null>(null);
   pmData = signal<ProjectDashboardData | null>(null);
   allTasks = signal<DevTaskItem[]>([]);
-
   adminStats = signal<AdminDashboardData | null>(null);
+  recentActivities = signal<DashboardActivityItem[]>([]);
+  projectList = signal<ProjectDto[]>([]);
 
   statusOrder = [
     { key: 'TODO', label: 'To Do', css: 'bg-slate-400 text-slate-400' },
@@ -49,18 +55,9 @@ export class DashboardHome implements OnInit {
     { key: 'LOW', label: 'Low', css: 'text-slate-400 bg-slate-400' }
   ];
 
-  // Logic lọc không phân biệt hoa thường (Case-insensitive)
-  devTasks = computed(() =>
-    this.allTasks().filter(t => t.status.toLowerCase() !== 'completed')
-  );
-
-  devCompletedTasks = computed(() =>
-    this.allTasks().filter(t => t.status.toLowerCase() === 'completed')
-  );
-
-  devOverdueTasks = computed(() =>
-    this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status.toLowerCase() !== 'completed')
-  );
+  devTasks = computed(() => this.allTasks().filter(t => t.status.toLowerCase() !== 'done' && t.status.toLowerCase() !== 'completed'));
+  devCompletedTasks = computed(() => this.allTasks().filter(t => t.status.toLowerCase() === 'done' || t.status.toLowerCase() === 'completed'));
+  devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status.toLowerCase() !== 'done' && t.status.toLowerCase() !== 'completed'));
 
   ngOnInit(): void {
     if (typeof window === 'undefined') {
@@ -88,7 +85,7 @@ export class DashboardHome implements OnInit {
         this.currentUserId = userObj.id;
         if (userObj.role) this.role = userObj.role;
       } catch (e) {
-        console.error('Error parsing user storage:', e);
+        console.error('Lỗi phân tích cú pháp JSON từ localStorage pms_user:', e);
       }
     }
   }
@@ -108,13 +105,50 @@ export class DashboardHome implements OnInit {
       }
     });
 
-    if (this.currentProjectId) {
-      this.dashboardService.getProjectStats(this.currentProjectId).subscribe({
-        next: (res: ApiResponse<ProjectDashboardData>) => {
-          if (res && (res.isSuccess || res.success)) this.pmData.set(res.data);
+    // Tải danh sách dự án khả dụng cho Dropdown Select
+    this.projectService.getProjects({ page: 0, size: 100 }).subscribe({
+      next: (page) => {
+        if (page && page.items) {
+          this.projectList.set(page.items);
+          if (!this.currentProjectId && page.items.length > 0) {
+            this.currentProjectId = page.items[0].id;
+          }
+          if (this.currentProjectId) {
+            this.fetchProjectStats(this.currentProjectId);
+          }
         }
-      });
+      }
+    });
+
+    this.fetchRecentActivities();
+  }
+
+  onProjectChange(newProjectId: string): void {
+    this.currentProjectId = newProjectId;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('pms_selected_project', newProjectId);
     }
+    this.fetchProjectStats(newProjectId);
+    this.fetchRecentActivities();
+  }
+
+  fetchProjectStats(projectId: string): void {
+    this.dashboardService.getProjectStats(projectId).subscribe({
+      next: (res: ApiResponse<ProjectDashboardData>) => {
+        if (res && (res.isSuccess || res.success)) this.pmData.set(res.data);
+      }
+    });
+  }
+
+  fetchRecentActivities(): void {
+    const projectId = this.role === 'ADMIN' ? undefined : this.currentProjectId;
+    this.dashboardService.getRecentActivities(projectId, 10).subscribe({
+      next: (res: ApiResponse<DashboardActivityItem[]>) => {
+        if (res && (res.isSuccess || res.success) && res.data) {
+          this.recentActivities.set(res.data);
+        }
+      }
+    });
   }
 
   fetchTasksFromApi(): void {
@@ -136,11 +170,14 @@ export class DashboardHome implements OnInit {
               dueDate: t.dueDate,
               priority: t.priority || 'MEDIUM',
               status: t.statusName || t.status || 'To Do',
-              statusColor: t.statusColor || '#9AA1AC' // Giá trị fallback mặc định nếu null
+              statusColor: t.statusColor || '#9AA1AC'
             };
           });
           this.allTasks.set(mappedItems);
         }
+      },
+      error: (err: unknown) => {
+        console.error('Lỗi khi gọi API tìm kiếm Task:', err);
       }
     });
   }

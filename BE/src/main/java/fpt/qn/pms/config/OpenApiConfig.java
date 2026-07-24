@@ -49,7 +49,7 @@ public class OpenApiConfig {
     public GroupedOpenApi activityApiGroup() {
         return GroupedOpenApi.builder()
                 .group("activities")
-                .pathsToMatch("/api/tasks/{taskId}/activities/**", "/api/tasks/{taskId}/activities")
+                .pathsToMatch("/api/tasks/{taskId}/activities/**", "/api/tasks/{taskId}/activities", "/api/tasks/activities/recent")
                 .packagesToScan("fpt.qn.pms.activity")
                 .build();
     }

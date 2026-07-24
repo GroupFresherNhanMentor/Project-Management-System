@@ -53,20 +53,23 @@ export interface AdminDashboardData {
   userByRole: Record<string, number>;
 }
 
-export interface SystemActivity {
+export interface DashboardActivityItem {
   id: string;
-  userField: string;
-  action: string;
-  target: string;
-  timestamp: string;
+  taskId: string;
+  taskKey: string;
+  userId: string;
+  userName: string;
+  action: 'TASK_CREATED' | 'STATUS_CHANGED' | 'PRIORITY_CHANGED' | 'ASSIGNEE_CHANGED' | 'COMMENT_ADDED' | 'COMMENT_DELETED';
+  message: string;
+  createdTime: string;
 }
 
 export interface DevTaskItem {
   id: string;
   taskKey: string;
   summary: string;
-  status: string;       // Nhận tên trạng thái động (statusName)
-  statusColor: string;  // Bắt buộc phải có để render giao diện
+  status: string;
+  statusColor?: string;
   statusId?: string | null;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   dueDate: string | null;

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fpt.qn.pms.activity.dto.DashboardActivityDto;
 import fpt.qn.pms.activity.dto.TaskActivityDto;
 import fpt.qn.pms.activity.event.TaskActivityEvent;
 import fpt.qn.pms.activity.repository.ActivityRepository;
@@ -28,6 +29,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import static fpt.qn.pms.jooq.Tables.USERS;
+import org.jooq.DSLContext;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -37,6 +41,7 @@ public class ActivityServiceImpl implements ActivityService {
     TaskRepository taskRepository;
     UserRepository userRepository;
     ObjectMapper objectMapper;
+    DSLContext dsl;
 
     @Override
     @Transactional
@@ -68,7 +73,10 @@ public class ActivityServiceImpl implements ActivityService {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
 
-                Map<UUID, String> nameMap = userRepository.findFullNamesByIds(uuids);
+                Map<UUID, String> nameMap = dsl.select(USERS.ID, USERS.FULL_NAME)
+                        .from(USERS)
+                        .where(USERS.ID.in(uuids))
+                        .fetchMap(USERS.ID, USERS.FULL_NAME);
 
                 String oldName = oldUserId != null
                         ? nameMap.getOrDefault(oldUserId, "Unknown") : "Unassigned";
@@ -128,6 +136,13 @@ public class ActivityServiceImpl implements ActivityService {
                 .pageSize(size)
                 .items(result.getItems())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DashboardActivityDto> getRecentActivities(UUID projectId, int limit) {
+        int targetLimit = (limit <= 0 || limit > 50) ? 10 : limit;
+        return activityRepository.findRecentActivities(projectId, targetLimit);
     }
 
     private JSONB toJsonb(Map<String, Object> map) {
