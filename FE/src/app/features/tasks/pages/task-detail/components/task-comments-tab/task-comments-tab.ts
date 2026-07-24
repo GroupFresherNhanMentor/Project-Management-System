@@ -1,5 +1,6 @@
 import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TaskService } from '../../../../../../core/services/task';
@@ -39,7 +40,7 @@ export class TaskCommentsTab implements OnInit {
         this.comments.update(list => [...list, c]);
         this.newComment = '';
       },
-      error: () => this.toast.error('Failed to post comment.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to post comment.'),
     });
   }
 }

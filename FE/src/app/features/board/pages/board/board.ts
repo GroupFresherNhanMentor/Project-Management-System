@@ -4,6 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TaskDto, TaskStatusDto } from '../../../../core/models/task.model';
 import { TaskService } from '../../../../core/services/task';
 import { ProjectService } from '../../../../core/services/project';
+import { ToastService } from '../../../../core/services/toast';
 import { InitialsPipe } from '../../../../shared/pipes/initials.pipe';
 
 @Component({
@@ -16,6 +17,7 @@ export class Board implements OnInit {
   private readonly route          = inject(ActivatedRoute);
   private readonly taskService    = inject(TaskService);
   private readonly projectService = inject(ProjectService);
+  private readonly toast          = inject(ToastService);
   private readonly platformId     = inject(PLATFORM_ID);
 
   private readonly projectId      = this.resolveProjectId();
@@ -55,7 +57,7 @@ export class Board implements OnInit {
     const sprintId = this.activeOnly() && this.activeSprintId() ? this.activeSprintId()! : undefined;
     this.taskService.searchTasks({ projectId: this.projectId, sprintId, size: 100 }).subscribe({
       next: res => { this.tasks.set(res.items); this.loading.set(false); },
-      error: () => this.loading.set(false),
+      error: () => { this.loading.set(false); this.toast.error('Failed to load tasks.'); },
     });
   }
 

@@ -1,5 +1,6 @@
 import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TaskService } from '../../../../../../core/services/task';
@@ -57,7 +58,7 @@ export class TaskWorklogTab implements OnInit {
         this.newWorklogDesc  = '';
         this.toast.success('Worklog added.');
       },
-      error: () => this.toast.error('Failed to add worklog.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to add worklog.'),
     });
   }
 
@@ -67,7 +68,7 @@ export class TaskWorklogTab implements OnInit {
         this.worklogs.update(list => list.filter(w => w.id !== wl.id));
         this.toast.success('Deleted.');
       },
-      error: () => this.toast.error('Failed to delete worklog.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to delete worklog.'),
     });
   }
 }

@@ -1,5 +1,6 @@
 import { Component, signal, computed, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -114,13 +115,13 @@ export class TaskDetailsTab implements OnInit {
             assigneeId: this.editAssigneeId || null,
           }).subscribe({
             next: t => this.taskSvc.task.set(t),
-            error: () => this.toast.error('Failed to update assignee.'),
+            error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to update assignee.'),
           });
         }
         this.saving.set(false);
       },
-      error: () => {
-        this.toast.error('Failed to update task.');
+      error: (err: HttpErrorResponse) => {
+        this.toast.error(err.error?.message ?? 'Failed to update task.');
         this.saving.set(false);
       },
     });

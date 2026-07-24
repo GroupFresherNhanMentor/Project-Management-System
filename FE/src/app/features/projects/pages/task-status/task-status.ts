@@ -1,5 +1,6 @@
 import { Component, signal, computed, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -7,6 +8,7 @@ import { TaskStatusDto, TaskWorkflowDto, CreateTaskWorkflowRequest } from '../..
 import { TaskService } from '../../../../core/services/task';
 import { ToastService } from '../../../../core/services/toast';
 import { AuthService } from '../../../../core/services/auth';
+import { ProjectContextService } from '../../../../core/services/project-context';
 
 @Component({
   selector: 'app-task-status',
@@ -14,13 +16,14 @@ import { AuthService } from '../../../../core/services/auth';
   templateUrl: './task-status.html',
 })
 export class TaskStatusManagement implements OnInit {
-  private readonly route       = inject(ActivatedRoute);
-  private readonly taskService = inject(TaskService);
-  private readonly toast       = inject(ToastService);
-  private readonly authService = inject(AuthService);
-  private readonly platformId  = inject(PLATFORM_ID);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly taskService    = inject(TaskService);
+  private readonly toast          = inject(ToastService);
+  private readonly authService    = inject(AuthService);
+  private readonly projectContext = inject(ProjectContextService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
-  readonly isAdmin = this.authService.getCurrentUser()?.role === 'ADMIN';
+  readonly isPm = computed(() => this.projectContext.currentUserProjectRole() === 'PM');
 
   private readonly projectId = this.route.parent?.snapshot.paramMap.get('id') ?? '';
 
@@ -101,7 +104,7 @@ export class TaskStatusManagement implements OnInit {
         this.submitting = false;
         this.toast.success('Status created.');
       },
-      error: () => { this.submitting = false; this.toast.error('Failed to create status.'); },
+      error: (err: HttpErrorResponse) => { this.submitting = false; this.toast.error(err.error?.message ?? 'Failed to create status.'); },
     });
   }
 
@@ -113,7 +116,7 @@ export class TaskStatusManagement implements OnInit {
         if (this.editingId() === id) this.editingId.set(null);
         this.toast.success('Status deleted.');
       },
-      error: () => this.toast.error('Failed to delete status.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to delete status.'),
     });
   }
 
@@ -165,9 +168,9 @@ export class TaskStatusManagement implements OnInit {
         this.savingTransitions.set(false);
         this.toast.success('Transitions saved.');
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.savingTransitions.set(false);
-        this.toast.error('Failed to save transitions.');
+        this.toast.error(err.error?.message ?? 'Failed to save transitions.');
       },
     });
   }
@@ -183,7 +186,7 @@ export class TaskStatusManagement implements OnInit {
         this.statuses.update(list => list.map(s => s.id === updated.id ? updated : s));
         this.toast.success(next ? 'Status enabled.' : 'Status disabled.');
       },
-      error: () => this.toast.error('Failed to update status.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.message ?? 'Failed to update status.'),
     });
   }
 }

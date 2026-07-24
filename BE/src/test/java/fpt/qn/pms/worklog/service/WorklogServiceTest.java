@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
 import fpt.qn.pms.common.dto.PageResponse;
@@ -57,6 +58,9 @@ class WorklogServiceTest {
 
     @Mock
     ProjectSecurityEvaluator projectSecurityEvaluator;
+
+    @Mock
+    ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     WorklogServiceImpl worklogService;

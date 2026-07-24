@@ -106,6 +106,19 @@ public class ActivityServiceImpl implements ActivityService {
                 oldJson = event.oldValue() != null ? toJsonb(Map.of("content", event.oldValue())) : null;
                 message = "deleted a comment";
             }
+            case WORKLOG_ADDED -> {
+                newJson = event.newValue() != null ? toJsonb(Map.of("hours", event.newValue())) : null;
+                message = String.format("logged %s hour(s)", event.newValue());
+            }
+            case WORKLOG_UPDATED -> {
+                oldJson = event.oldValue() != null ? toJsonb(Map.of("hours", event.oldValue())) : null;
+                newJson = event.newValue() != null ? toJsonb(Map.of("hours", event.newValue())) : null;
+                message = String.format("updated worklog from %s to %s hour(s)", event.oldValue(), event.newValue());
+            }
+            case WORKLOG_DELETED -> {
+                oldJson = event.oldValue() != null ? toJsonb(Map.of("hours", event.oldValue())) : null;
+                message = String.format("deleted worklog of %s hour(s)", event.oldValue());
+            }
             default -> message = "performed an action";
         }
 

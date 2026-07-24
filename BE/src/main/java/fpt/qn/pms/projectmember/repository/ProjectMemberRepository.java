@@ -30,4 +30,6 @@ public interface ProjectMemberRepository extends Repository<ProjectMembersRecord
     boolean existsActiveByProjectIdAndUserIdAndRole(UUID projectId, UUID userId, ProjectRole role);
 
     boolean existsActiveByUserIdAndRole(UUID userId, ProjectRole role);
+
+    void deactivateAllByUserId(UUID userId);
 }
