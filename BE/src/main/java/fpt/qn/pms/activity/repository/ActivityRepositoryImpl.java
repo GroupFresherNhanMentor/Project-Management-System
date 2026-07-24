@@ -46,17 +46,20 @@ public class ActivityRepositoryImpl extends BaseRepository<TaskActivitiesRecord>
                 .orderBy(TASK_ACTIVITIES.CREATED_AT.desc())
                 .limit(size)
                 .offset((long) page * size)
-                .fetch(r -> TaskActivityDto.builder()
+                .fetch(r -> {
+                    var oldJson = r.get(TASK_ACTIVITIES.OLD_VALUE);
+                    var newJson = r.get(TASK_ACTIVITIES.NEW_VALUE);
+                    return TaskActivityDto.builder()
                         .id(r.get(TASK_ACTIVITIES.ID))
                         .taskId(r.get(TASK_ACTIVITIES.TASK_ID))
                         .userId(r.get(TASK_ACTIVITIES.USER_ID))
                         .userName(r.get(USERS.USERNAME))
                         .action(r.get(TASK_ACTIVITIES.ACTION))
-                        .oldValue(r.get(TASK_ACTIVITIES.OLD_VALUE))
-                        .newValue(r.get(TASK_ACTIVITIES.NEW_VALUE))
+                        .oldValue(oldJson != null ? oldJson.data() : null)
+                        .newValue(newJson != null ? newJson.data() : null)
                         .createdTime(r.get(TASK_ACTIVITIES.CREATED_AT))
-                        .build()
-                );
+                        .build();
+                });
 
         return new PaginationResult<>(total, items);
     }

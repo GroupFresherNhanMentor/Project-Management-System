@@ -55,9 +55,9 @@ export class DashboardHome implements OnInit {
     { key: 'LOW', label: 'Low', css: 'text-slate-400 bg-slate-400' }
   ];
 
-  devTasks = computed(() => this.allTasks().filter(t => t.status === 'TODO' || t.status === 'IN_PROGRESS' || t.status === 'TESTING'));
-  devCompletedTasks = computed(() => this.allTasks().filter(t => t.status === 'DONE'));
-  devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status !== 'DONE'));
+  devTasks = computed(() => this.allTasks().filter(t => t.status.toLowerCase() !== 'done' && t.status.toLowerCase() !== 'completed'));
+  devCompletedTasks = computed(() => this.allTasks().filter(t => t.status.toLowerCase() === 'done' || t.status.toLowerCase() === 'completed'));
+  devOverdueTasks = computed(() => this.allTasks().filter(t => this.isOverdue(t.dueDate) && t.status.toLowerCase() !== 'done' && t.status.toLowerCase() !== 'completed'));
 
   ngOnInit(): void {
     if (typeof window === 'undefined') {
@@ -162,7 +162,18 @@ export class DashboardHome implements OnInit {
       this.dashboardService.searchTasks(searchPayload).subscribe({
         next: (res: ApiResponse<TaskSearchResponse>) => {
           if (res && (res.isSuccess || res.success) && res.data?.items) {
-            this.allTasks.set(res.data.items);
+            const mappedItems: DevTaskItem[] = res.data.items.map((t: any) => {
+              return {
+                id: t.id,
+                taskKey: t.taskKey || 'TASK',
+                summary: t.summary || 'No Summary',
+                dueDate: t.dueDate,
+                priority: t.priority || 'MEDIUM',
+                status: t.statusName || t.status || 'To Do',
+                statusColor: t.statusColor || '#9AA1AC'
+              };
+            });
+            this.allTasks.set(mappedItems);
           }
         },
         error: (err: unknown) => {

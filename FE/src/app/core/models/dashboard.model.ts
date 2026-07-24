@@ -68,7 +68,8 @@ export interface DevTaskItem {
   id: string;
   taskKey: string;
   summary: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'TESTING' | 'DONE';
+  status: string;
+  statusColor?: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   dueDate: string | null;
 }
