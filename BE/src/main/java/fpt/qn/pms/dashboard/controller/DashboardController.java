@@ -35,7 +35,7 @@ public class DashboardController {
     }
 
     @GetMapping("/project/{projectId}")
-    @PreAuthorize("@projectSecurityEvaluator.isPm(#projectId) or hasAuthority('ADMIN')")
+    @PreAuthorize("@projectSecurityEvaluator.isMember(#projectId) or hasAuthority('ADMIN')")
     public ApiResponse<DashboardProjectResponse> getProjectDashboard(@PathVariable UUID projectId) {
         DashboardProjectResponse response = dashboardService.getProjectDashboard(projectId);
         return ApiResponse.success(response, "Retrieve project dashboard successfully");

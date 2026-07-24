@@ -470,6 +470,11 @@
             <a [routerLink]="['/tasks', act.taskId]" class="font-mono text-xs font-semibold text-blue-600 hover:underline">
               [{{ act.taskKey }}]
             </a>
+            @if (act.projectName || act.projectCode) {
+            <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-600 border border-slate-200">
+              {{ act.projectName ? act.projectName + ' (' + act.projectCode + ')' : act.projectCode }}
+            </span>
+            }
           </div>
           <p class="mt-0.5 text-[11px] text-slate-400">{{ act.createdTime | date:'short' }}</p>
         </div>

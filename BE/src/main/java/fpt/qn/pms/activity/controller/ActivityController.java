@@ -44,11 +44,13 @@ public class ActivityController {
     }
 
     @GetMapping("/activities/recent")
-    @Operation(summary = "Get recent activities for dashboard", description = "Retrieve latest activity logs system-wide (for ADMIN) or for a specific project")
+    @Operation(summary = "Get recent activities for dashboard", description = "Retrieve latest activity logs system-wide (for ADMIN) or for a specific project/user")
     public ApiResponse<List<DashboardActivityDto>> getRecentActivities(
             @RequestParam(required = false) UUID projectId,
-            @RequestParam(defaultValue = "10") int limit) {
-        List<DashboardActivityDto> response = activityService.getRecentActivities(projectId, limit);
+            @RequestParam(defaultValue = "10") int limit,
+            java.security.Principal principal) {
+        String username = principal != null ? principal.getName() : null;
+        List<DashboardActivityDto> response = activityService.getRecentActivities(projectId, username, limit);
         return ApiResponse.success(response, "Retrieve recent activity history successfully");
     }
 }

@@ -1,5 +1,7 @@
 package fpt.qn.pms.activity.service;
 
+import static fpt.qn.pms.jooq.Tables.USERS;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -7,6 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,15 +25,13 @@ import fpt.qn.pms.activity.repository.ActivityRepository;
 import fpt.qn.pms.common.dto.PageResponse;
 import fpt.qn.pms.common.dto.PaginationResult;
 import fpt.qn.pms.common.exception.AppException;
+import fpt.qn.pms.jooq.enums.SysRole;
 import fpt.qn.pms.jooq.tables.records.TaskActivitiesRecord;
 import fpt.qn.pms.task.repository.TaskRepository;
 import fpt.qn.pms.user.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
-import static fpt.qn.pms.jooq.Tables.USERS;
-import org.jooq.DSLContext;
 
 @Service
 @RequiredArgsConstructor
@@ -106,19 +107,6 @@ public class ActivityServiceImpl implements ActivityService {
                 oldJson = event.oldValue() != null ? toJsonb(Map.of("content", event.oldValue())) : null;
                 message = "deleted a comment";
             }
-            case WORKLOG_ADDED -> {
-                newJson = event.newValue() != null ? toJsonb(Map.of("hours", event.newValue())) : null;
-                message = String.format("logged %s hour(s)", event.newValue());
-            }
-            case WORKLOG_UPDATED -> {
-                oldJson = event.oldValue() != null ? toJsonb(Map.of("hours", event.oldValue())) : null;
-                newJson = event.newValue() != null ? toJsonb(Map.of("hours", event.newValue())) : null;
-                message = String.format("updated worklog from %s to %s hour(s)", event.oldValue(), event.newValue());
-            }
-            case WORKLOG_DELETED -> {
-                oldJson = event.oldValue() != null ? toJsonb(Map.of("hours", event.oldValue())) : null;
-                message = String.format("deleted worklog of %s hour(s)", event.oldValue());
-            }
             default -> message = "performed an action";
         }
 
@@ -153,9 +141,23 @@ public class ActivityServiceImpl implements ActivityService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<DashboardActivityDto> getRecentActivities(UUID projectId, int limit) {
+    public List<DashboardActivityDto> getRecentActivities(UUID projectId, String username, int limit) {
         int targetLimit = (limit <= 0 || limit > 50) ? 10 : limit;
-        return activityRepository.findRecentActivities(projectId, targetLimit);
+        UUID userId = null;
+        boolean isAdmin = false;
+
+        if (username != null && !username.isBlank()) {
+            var userOpt = dsl.select(USERS.ID, USERS.ROLE)
+                    .from(USERS)
+                    .where(USERS.USERNAME.eq(username))
+                    .fetchOptional();
+            if (userOpt.isPresent()) {
+                userId = userOpt.get().get(USERS.ID);
+                isAdmin = userOpt.get().get(USERS.ROLE) == SysRole.ADMIN;
+            }
+        }
+
+        return activityRepository.findRecentActivities(projectId, userId, isAdmin, targetLimit);
     }
 
     private JSONB toJsonb(Map<String, Object> map) {

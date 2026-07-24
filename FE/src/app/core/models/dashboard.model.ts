@@ -57,6 +57,9 @@ export interface DashboardActivityItem {
   id: string;
   taskId: string;
   taskKey: string;
+  projectId?: string;
+  projectCode?: string;
+  projectName?: string;
   userId: string;
   userName: string;
   action: 'TASK_CREATED' | 'STATUS_CHANGED' | 'PRIORITY_CHANGED' | 'ASSIGNEE_CHANGED' | 'COMMENT_ADDED' | 'COMMENT_DELETED';

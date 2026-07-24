@@ -12,5 +12,5 @@ import fpt.qn.pms.activity.dto.DashboardActivityDto;
 
 public interface ActivityRepository extends Repository<TaskActivitiesRecord> {
     PaginationResult<TaskActivityDto> findByTaskId(UUID taskId, int page, int size);
-    List<DashboardActivityDto> findRecentActivities(UUID projectId, int limit);
+    List<DashboardActivityDto> findRecentActivities(UUID projectId, UUID userId, boolean isAdmin, int limit);
 }

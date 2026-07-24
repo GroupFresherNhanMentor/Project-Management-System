@@ -20,6 +20,9 @@ public class DashboardActivityDto {
     UUID id;
     UUID taskId;
     String taskKey;
+    UUID projectId;
+    String projectCode;
+    String projectName;
     UUID userId;
     String userName;
     ActivityAction action;

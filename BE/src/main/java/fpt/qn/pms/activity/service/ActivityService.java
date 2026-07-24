@@ -12,5 +12,5 @@ import fpt.qn.pms.activity.dto.DashboardActivityDto;
 public interface ActivityService {
     void logActivity(TaskActivityEvent event);
     PageResponse<TaskActivityDto> getActivitiesByTaskId(UUID taskId, int page, int size);
-    List<DashboardActivityDto> getRecentActivities(UUID projectId, int limit);
+    List<DashboardActivityDto> getRecentActivities(UUID projectId, String username, int limit);
 }
