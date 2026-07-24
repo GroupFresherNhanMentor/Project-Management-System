@@ -1,7 +1,8 @@
 <!-- ========================================== -->
-<!-- CASE 1: ADMIN DASHBOARD (Chỉ hiển thị phần chung & Chỉ dẫn) -->
+<!-- CASE 1: ADMIN DASHBOARD (Hiển thị Chỉ số Hệ thống & Điều hướng) -->
 <!-- ========================================== -->
 @if (role === 'ADMIN') {
+<<<<<<< Updated upstream
 <!-- ADMIN DASHBOARD KPI STAT CARDS -->
 <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
   <!-- Card 1: Users -->
@@ -169,6 +170,159 @@
 </div>
 
 <!-- WAYPOINTS QUICK ACTIONS -->
+=======
+<div class="mb-6">
+  <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">System Executive Overview</h3>
+
+  @if (adminStats(); as admin) {
+  <!-- 4 THẺ CHỈ SỐ THỐNG KÊ TỔNG QUAN -->
+  <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Users</p>
+      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ admin.totalUsers }}</p>
+      <p class="mt-1 text-[12px]" style="color:#4B5160">
+        <span class="font-semibold text-emerald-600">{{ admin.activeUsers }} Active</span> ·
+        <span class="text-red-500">{{ admin.lockedUsers }} Locked</span>
+      </p>
+    </div>
+
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Projects</p>
+      <p class="mt-2 text-[26px] font-extrabold" style="color:#3B4FD9">{{ admin.totalProjects }}</p>
+      <p class="mt-1 text-[12px] font-semibold text-blue-600">{{ admin.activeProjects }} Active Projects</p>
+    </div>
+
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total System Tasks</p>
+      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ admin.totalTasks }}</p>
+      <p class="mt-1 text-[12px]" style="color:#9AA1AC">Across all projects</p>
+    </div>
+
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total System Logged Hours</p>
+      <p class="mt-2 text-[26px] font-extrabold text-emerald-600">{{ admin.totalLoggedHours }}h</p>
+      <p class="mt-1 text-[12px]" style="color:#9AA1AC">Recorded worklogs</p>
+    </div>
+  </div>
+
+  <!-- 3 THANH PHÂN BỔ TỶ LỆ HỆ THỐNG -->
+  <div class="mt-4 grid gap-4 sm:grid-cols-3">
+    <!-- Project Status Distribution -->
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="mb-3 text-[14px] font-bold" style="color:#14161C">Project Status Breakdown</p>
+      @let projActive = admin.projectByStatus['ACTIVE'] || 0;
+      @let projPlanning = admin.projectByStatus['PLANNING'] || 0;
+      @let projCompleted = admin.projectByStatus['COMPLETED'] || 0;
+      
+      <div class="space-y-2.5">
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Active ({{ projActive }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalProjects ? Math.round(projActive / admin.totalProjects * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-blue-600" [style.width.%]="admin.totalProjects ? (projActive / admin.totalProjects * 100) : 0"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Planning ({{ projPlanning }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalProjects ? Math.round(projPlanning / admin.totalProjects * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-amber-500" [style.width.%]="admin.totalProjects ? (projPlanning / admin.totalProjects * 100) : 0"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Completed ({{ projCompleted }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalProjects ? Math.round(projCompleted / admin.totalProjects * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-emerald-600" [style.width.%]="admin.totalProjects ? (projCompleted / admin.totalProjects * 100) : 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Type Distribution -->
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="mb-3 text-[14px] font-bold" style="color:#14161C">Task Type Distribution</p>
+      @let typeStory = admin.taskByType['STORY'] || 0;
+      @let typeTask = admin.taskByType['TASK'] || 0;
+      @let typeBug = admin.taskByType['BUG'] || 0;
+
+      <div class="space-y-2.5">
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Story ({{ typeStory }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalTasks ? Math.round(typeStory / admin.totalTasks * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-indigo-600" [style.width.%]="admin.totalTasks ? (typeStory / admin.totalTasks * 100) : 0"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Task ({{ typeTask }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalTasks ? Math.round(typeTask / admin.totalTasks * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-sky-500" [style.width.%]="admin.totalTasks ? (typeTask / admin.totalTasks * 100) : 0"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Bug ({{ typeBug }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalTasks ? Math.round(typeBug / admin.totalTasks * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-rose-500" [style.width.%]="admin.totalTasks ? (typeBug / admin.totalTasks * 100) : 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User System Role Distribution -->
+    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+      <p class="mb-3 text-[14px] font-bold" style="color:#14161C">User Role Distribution</p>
+      @let roleAdmin = admin.userByRole['ADMIN'] || 0;
+      @let roleUser = admin.userByRole['USER'] || 0;
+
+      <div class="space-y-2.5">
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Administrators ({{ roleAdmin }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalUsers ? Math.round(roleAdmin / admin.totalUsers * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-purple-600" [style.width.%]="admin.totalUsers ? (roleAdmin / admin.totalUsers * 100) : 0"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[12px] mb-1">
+            <span style="color:#4B5160">Standard Users ({{ roleUser }})</span>
+            <span class="font-semibold" style="color:#14161C">{{ admin.totalUsers ? Math.round(roleUser / admin.totalUsers * 100) : 0 }}%</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100">
+            <div class="h-full rounded-full bg-emerald-500" [style.width.%]="admin.totalUsers ? (roleUser / admin.totalUsers * 100) : 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  } @else {
+  <div class="text-[13px] p-5 text-center text-slate-400">Loading system metrics…</div>
+  }
+</div>
+
+<!-- THẺ ĐIỀU HƯỚNG QUẢN TRỊ -->
+>>>>>>> Stashed changes
 <div class="mt-6 grid gap-4 sm:grid-cols-2">
   <!-- Waypoint: Projects Management -->
   <div routerLink="/projects" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm cursor-pointer" style="border-color:#E6E8EC">
@@ -263,6 +417,7 @@
       <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/50 transition-colors">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</span>
+<<<<<<< Updated upstream
         <span class="text-[11px] px-2 py-0.5 rounded font-semibold"
               [class]="task.priority === 'CRITICAL' ? 'bg-red-100 text-red-700' : task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'">
           {{ task.priority || 'MEDIUM' }}
@@ -270,6 +425,24 @@
         <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
           {{ getStatusLabel(task.status) }}
         </span>
+=======
+
+        <!-- Status Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
+        <!-- Priority Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider"
+              [class]="task.priority === 'CRITICAL' ? 'bg-red-100 text-red-700 border border-red-200' :
+                       task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                       task.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                       'bg-slate-100 text-slate-600 border border-slate-200'">
+          {{ task.priority }}
+        </span>
+
+>>>>>>> Stashed changes
         <span class="text-[12px] flex-shrink-0" [style.color]="isOverdue(task.dueDate) ? '#D0342C' : '#9AA1AC'">
           {{ task.dueDate ?? '—' }}
         </span>
@@ -285,7 +458,26 @@
       <div class="flex items-center gap-4 px-5 py-3 bg-slate-50/20 opacity-80">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono line-through" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium line-through text-slate-500">{{ task.summary }}</span>
+<<<<<<< Updated upstream
         <span class="badge badge-done">Done</span>
+=======
+
+        <!-- Status Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
+        <!-- Priority Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider"
+              [class]="task.priority === 'CRITICAL' ? 'bg-red-100 text-red-700 border border-red-200' :
+                       task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                       task.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                       'bg-slate-100 text-slate-600 border border-slate-200'">
+          {{ task.priority }}
+        </span>
+
+>>>>>>> Stashed changes
         <span class="text-[12px] flex-shrink-0 text-slate-400">
                   {{ task.dueDate ?? '—' }}
                 </span>
@@ -301,9 +493,28 @@
       <div class="flex items-center gap-4 px-5 py-3 hover:bg-red-50/10 transition-colors">
         <span class="w-20 flex-shrink-0 text-[12px] font-mono text-red-500" style="color:#9AA1AC">{{ task.taskKey }}</span>
         <span class="flex-1 text-[13px] font-medium font-semibold" style="color:#D0342C">{{ task.summary }}</span>
+<<<<<<< Updated upstream
         <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
                   {{ getStatusLabel(task.status) }}
                 </span>
+=======
+
+        <!-- Status Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold text-white tracking-wide"
+              [style.backgroundColor]="task.statusColor">
+          {{ task.status }}
+        </span>
+
+        <!-- Priority Badge -->
+        <span class="px-2.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider"
+              [class]="task.priority === 'CRITICAL' ? 'bg-red-100 text-red-700 border border-red-200' :
+                       task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700 border border-orange-200' :
+                       task.priority === 'MEDIUM' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                       'bg-slate-100 text-slate-600 border border-slate-200'">
+          {{ task.priority }}
+        </span>
+
+>>>>>>> Stashed changes
         <span class="text-[12px] flex-shrink-0 font-bold" style="color:#D0342C">
                   Overdue: {{ task.dueDate ?? '—' }}
                 </span>
@@ -318,13 +529,34 @@
 } @else {
 <div class="text-[13px] p-5 text-center text-slate-400">Loading personal intelligence…</div>
 }
+}
 
 <hr class="my-6 border-dashed" style="border-color: #E6E8EC" />
 
+<<<<<<< Updated upstream
 <!-- [PHẦN DỰ ÁN ĐANG CHỌN] Thống kê trạng thái chi tiết của Dự án -->
+=======
+<!-- [PHẦN DỰ ÁN ĐANG CHỌN - TẤT CẢ VAI TRÒ ĐỀU XEM ĐƯỢC] -->
+>>>>>>> Stashed changes
 @if (pmData(); as pm) {
 <div class="mt-4">
-  <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">Selected Project Analytics</h3>
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+    <h3 class="text-[15px] font-bold" style="color:#14161C">Selected Project Analytics</h3>
+
+    @if (projectList().length > 0) {
+    <div class="flex items-center gap-2">
+      <label class="text-[12px] font-medium" style="color:#9AA1AC">Project:</label>
+      <select [ngModel]="currentProjectId"
+              (ngModelChange)="onProjectChange($event)"
+              class="rounded-lg border bg-white px-3 py-1.5 text-[13px] font-semibold transition-all focus:border-blue-500 focus:outline-none shadow-sm cursor-pointer"
+              style="border-color:#E6E8EC; color:#14161C">
+        @for (p of projectList(); track p.id) {
+        <option [value]="p.id">{{ p.projectName }} ({{ p.projectCode }})</option>
+        }
+      </select>
+    </div>
+    }
+  </div>
 
   <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
     <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
@@ -400,4 +632,52 @@
 } @else {
 <div class="text-[13px] p-5 text-center text-slate-400">Loading project metrics…</div>
 }
-}
+
+<hr class="my-6 border-dashed" style="border-color: #E6E8EC" />
+
+<!-- [PHẦN NHẬT KÝ HOẠT ĐỘNG GẦN ĐÂY - RECENT ACTIVITY FEED] -->
+<div class="mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-[15px] font-bold" style="color:#14161C">Recent Activity Feed</h3>
+    <span class="text-[12px] text-slate-400">Latest system & task updates</span>
+  </div>
+
+  <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
+    @if (recentActivities().length > 0) {
+    <div class="space-y-4">
+      @for (act of recentActivities(); track act.id) {
+      <div class="flex items-start gap-3 text-[13px]">
+        <!-- Action Icon -->
+        <div class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold"
+             [class]="act.action === 'TASK_CREATED' ? 'bg-emerald-100 text-emerald-700' :
+                      act.action === 'STATUS_CHANGED' ? 'bg-blue-100 text-blue-700' :
+                      act.action === 'PRIORITY_CHANGED' ? 'bg-amber-100 text-amber-700' :
+                      act.action === 'ASSIGNEE_CHANGED' ? 'bg-purple-100 text-purple-700' :
+                      'bg-slate-100 text-slate-700'">
+          @switch (act.action) {
+            @case ('TASK_CREATED') { <span>+</span> }
+            @case ('STATUS_CHANGED') { <span>&rarr;</span> }
+            @case ('PRIORITY_CHANGED') { <span>&uarr;</span> }
+            @case ('ASSIGNEE_CHANGED') { <span>&commat;</span> }
+            @default { <span>&bull;</span> }
+          }
+        </div>
+
+        <div class="flex-1">
+          <div class="flex flex-wrap items-center gap-1.5" style="color:#14161C">
+            <span class="font-bold">{{ act.userName || 'User' }}</span>
+            <span class="text-slate-500">{{ act.message }}</span>
+            <a [routerLink]="['/tasks', act.taskId]" class="font-mono text-xs font-semibold text-blue-600 hover:underline">
+              [{{ act.taskKey }}]
+            </a>
+          </div>
+          <p class="mt-0.5 text-[11px] text-slate-400">{{ act.createdTime | date:'short' }}</p>
+        </div>
+      </div>
+      }
+    </div>
+    } @else {
+    <div class="py-6 text-center text-[13px]" style="color:#9AA1AC">No recent activities recorded.</div>
+    }
+  </div>
+</div>

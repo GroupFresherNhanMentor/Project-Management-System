@@ -53,12 +53,15 @@ export interface AdminDashboardData {
   userByRole: Record<string, number>;
 }
 
-export interface SystemActivity {
+export interface DashboardActivityItem {
   id: string;
-  userField: string;
-  action: string;
-  target: string;
-  timestamp: string;
+  taskId: string;
+  taskKey: string;
+  userId: string;
+  userName: string;
+  action: 'TASK_CREATED' | 'STATUS_CHANGED' | 'PRIORITY_CHANGED' | 'ASSIGNEE_CHANGED' | 'COMMENT_ADDED' | 'COMMENT_DELETED';
+  message: string;
+  createdTime: string;
 }
 
 export interface DevTaskItem {

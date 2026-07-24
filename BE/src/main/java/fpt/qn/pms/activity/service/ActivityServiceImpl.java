@@ -5,6 +5,13 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+<<<<<<< Updated upstream
+=======
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import fpt.qn.pms.activity.dto.DashboardActivityDto;
+>>>>>>> Stashed changes
 import fpt.qn.pms.activity.dto.TaskActivityDto;
 import fpt.qn.pms.activity.event.TaskActivityEvent;
 import fpt.qn.pms.activity.repository.ActivityRepository;
@@ -56,4 +63,31 @@ public class ActivityServiceImpl implements ActivityService {
                 .items(result.getItems())
                 .build();
     }
+<<<<<<< Updated upstream
+=======
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DashboardActivityDto> getRecentActivities(UUID projectId, int limit) {
+        int targetLimit = (limit <= 0 || limit > 50) ? 10 : limit;
+        return activityRepository.findRecentActivities(projectId, targetLimit);
+    }
+
+    private JSONB toJsonb(Map<String, Object> map) {
+        try {
+            return JSONB.valueOf(objectMapper.writeValueAsString(map));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize activity value to JSON", e);
+        }
+    }
+
+    private UUID tryParseUuid(String value) {
+        if (value == null) return null;
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+>>>>>>> Stashed changes
 }

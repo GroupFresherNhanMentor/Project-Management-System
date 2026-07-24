@@ -6,6 +6,7 @@ import {
   PersonalDashboardData,
   ProjectDashboardData,
   AdminDashboardData,
+  DashboardActivityItem,
   TaskSearchRequest,
   TaskSearchResponse
 } from '../models/dashboard.model';
@@ -35,5 +36,11 @@ export class DashboardService {
   // Tìm kiếm Task phân trang từ database /api/tasks/search
   searchTasks(request: TaskSearchRequest): Observable<ApiResponse<TaskSearchResponse>> {
     return this.http.post<ApiResponse<TaskSearchResponse>>('/api/tasks/search', request);
+  }
+
+  getRecentActivities(projectId?: string, limit: number = 10): Observable<ApiResponse<DashboardActivityItem[]>> {
+    let params = new HttpParams().set('limit', limit);
+    if (projectId) params = params.set('projectId', projectId);
+    return this.http.get<ApiResponse<DashboardActivityItem[]>>('/api/tasks/activities/recent', { params });
   }
 }
