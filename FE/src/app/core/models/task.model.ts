@@ -1,4 +1,16 @@
-import { TaskType, TaskPriority, TaskStatus, PageParams } from './api.model';
+import { TaskType, TaskPriority, PageParams } from './api.model';
+
+export interface TaskStatusDto {
+  id: string;
+  projectId: string;
+  name: string;
+  color: string;
+  isInitial: boolean;
+  isFinal: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface TaskDto {
   id: string;
@@ -9,7 +21,9 @@ export interface TaskDto {
   description: string | null;
   taskType: TaskType;
   priority: TaskPriority;
-  status: TaskStatus;
+  statusId: string;
+  statusName: string;
+  statusColor: string;
   assigneeId: string | null;
   assigneeName: string | null;
   reporterId: string;
@@ -20,13 +34,34 @@ export interface TaskDto {
   createdAt: string;
 }
 
+export interface TaskWorkflowDto {
+  id: string;
+  fromStatusId: string;
+  toStatusId: string;
+  createdAt: string;
+}
+
+export interface CreateTaskStatusRequest {
+  name: string;
+  color?: string;
+  isInitial?: boolean;
+  isFinal?: boolean;
+}
+
+export interface CreateTaskWorkflowRequest {
+  fromStatusId: string;
+  toStatusId: string;
+}
+
 export interface CreateTaskRequest {
+  taskKey: string;
   projectId: string;
   sprintId?: string;
   summary: string;
   description?: string;
   taskType: TaskType;
   priority: TaskPriority;
+  taskStatusId: string;
   assigneeId?: string;
   reporterId: string;
   storyPoint?: number;
@@ -34,22 +69,30 @@ export interface CreateTaskRequest {
   dueDate?: string;
 }
 
+export interface UpdateTaskStatusRequest {
+  name?: string;
+  color?: string;
+  isInitial?: boolean;
+  isFinal?: boolean;
+  isActive?: boolean;
+}
+
 export interface UpdateTaskRequest {
-  status?: TaskStatus;
+  statusId?: string;
   description?: string;
   estimateHour?: number;
   dueDate?: string;
 }
 
 export interface AssignTaskRequest {
-  assigneeId: string;
+  assigneeId: string | null; // null = unassign
 }
 
 export interface TaskSearchParams extends PageParams {
-  project?: string;
-  sprint?: string;
-  status?: TaskStatus;
+  projectId?: string;
+  sprintId?: string;
+  statusId?: string;
   priority?: TaskPriority;
-  assignee?: string;
+  assigneeId?: string;
   keyword?: string;
 }

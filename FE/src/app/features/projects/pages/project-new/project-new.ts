@@ -9,6 +9,7 @@ import { ProjectStatus } from '../../../../core/models/api.model';
 
 @Component({
   selector: 'app-project-new',
+  standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './project-new.html',
 })

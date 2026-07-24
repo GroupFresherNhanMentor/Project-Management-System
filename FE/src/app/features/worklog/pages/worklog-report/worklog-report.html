@@ -1,15 +1,21 @@
 <!-- Filters -->
 <div class="mb-4 flex flex-wrap gap-2">
-  <select [(ngModel)]="userId" (ngModelChange)="load()"
+  <select [(ngModel)]="userId" (ngModelChange)="page=0;load()"
     class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
     <option value="">All Members</option>
     @for (m of members(); track m.id) { <option [value]="m.userId">{{ m.userFullName }}</option> }
   </select>
-  <input [(ngModel)]="fromDate" (ngModelChange)="load()" type="date"
+  <input [(ngModel)]="fromDate" (ngModelChange)="page=0;load()" type="date"
     class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
-  <input [(ngModel)]="toDate" (ngModelChange)="load()" type="date"
+  <input [(ngModel)]="toDate" (ngModelChange)="page=0;load()" type="date"
     class="rounded-[8px] border px-3 py-2 text-[13px] outline-none" style="border-color:#E1E4E9" />
 </div>
+
+@if (error()) {
+  <div class="mb-4 rounded-[8px] border px-4 py-3 text-[13px]" style="border-color:#F3C7C4;color:#D0342C">
+    {{ error() }} <button (click)="load()" class="ml-2 font-semibold underline">Retry</button>
+  </div>
+}
 
 <div class="overflow-hidden rounded-[12px] border bg-white" style="border-color:#E6E8EC">
   <table class="w-full">
@@ -21,16 +27,27 @@
       </tr>
     </thead>
     <tbody>
-      @for (item of items(); track item.userId) {
-        <tr class="cursor-pointer border-b hover:bg-[#FAFBFC]" style="border-color:#F0F1F3" (click)="openDetail(item)">
-          <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C">{{ item.userName }}</td>
-          <td class="px-4 py-3 text-[13px] font-bold" style="color:#14161C">{{ item.totalHours }}h</td>
-          <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ item.numberOfTasks }}</td>
-        </tr>
-      }
-      @empty {
-        <tr><td colspan="3" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No worklog data.</td></tr>
+      @if (loading()) {
+        <tr><td colspan="3" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">Loading…</td></tr>
+      } @else {
+        @for (item of items(); track item.userId) {
+          <tr class="cursor-pointer border-b hover:bg-[#FAFBFC]" style="border-color:#F0F1F3" (click)="openDetail(item)">
+            <td class="px-4 py-3 text-[13px] font-medium" style="color:#14161C">{{ item.userName }}</td>
+            <td class="px-4 py-3 text-[13px] font-bold" style="color:#14161C">{{ item.totalHours }}h</td>
+            <td class="px-4 py-3 text-[13px]" style="color:#4B5160">{{ item.numberOfTasks }}</td>
+          </tr>
+        }
+        @empty {
+          <tr><td colspan="3" class="px-4 py-10 text-center text-[13px]" style="color:#9AA1AC">No worklog data.</td></tr>
+        }
       }
     </tbody>
   </table>
+</div>
+
+<!-- Pagination -->
+<div class="mt-3 flex items-center justify-center gap-4 text-[13px]" style="color:#4B5160">
+  <button (click)="prevPage()" [disabled]="page === 0" class="rounded-[7px] border px-3 py-1.5 disabled:opacity-40" style="border-color:#E1E4E9">‹ Prev</button>
+  <span>Page {{ page + 1 }} of {{ totalPagesDisplay }}</span>
+  <button (click)="nextPage()" [disabled]="page >= totalPagesDisplay - 1" class="rounded-[7px] border px-3 py-1.5 disabled:opacity-40" style="border-color:#E1E4E9">Next ›</button>
 </div>

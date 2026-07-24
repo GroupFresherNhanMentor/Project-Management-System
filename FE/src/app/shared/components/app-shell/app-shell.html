@@ -1,76 +1,64 @@
-<div class="flex h-screen font-sans" style="background:#F5F6F8">
+<div class="min-h-screen bg-[#f7f8fc] font-sans text-[#17203a]">
+  <div class="flex min-h-screen">
+    <aside class="relative hidden w-[276px] shrink-0 flex-col overflow-hidden bg-[#111b43] px-4 py-5 text-indigo-100 lg:flex">
+      <div class="pointer-events-none absolute -right-20 -top-12 h-56 w-56 rounded-full bg-indigo-500/30 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-24 -left-24 h-60 w-60 rounded-full bg-cyan-400/15 blur-3xl"></div>
 
-  <!-- Sidebar -->
-  <aside class="flex flex-shrink-0 flex-col bg-white border-r" style="width:236px;border-color:#E6E8EC">
-
-    <!-- Logo -->
-    <div class="flex items-center gap-2.5 px-5 py-4">
-      <div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[6px] text-[11px] font-extrabold text-white" style="background:#3B4FD9">W</div>
-      <span class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">Waypoint</span>
-    </div>
-
-    <!-- Nav -->
-    <nav class="flex-1 space-y-0.5 px-3 py-1">
-      @if (isAdmin) {
-        <a routerLink="/dashboard" routerLinkActive="active-nav"
-           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-           [style.background]="(pageTitle() === 'Dashboard') ? '#EAF0FE' : ''"
-           [style.color]="(pageTitle() === 'Dashboard') ? '#3B4FD9' : ''">
-          Dashboard
-        </a>
-        <a routerLink="/projects" routerLinkActive="active-nav"
-           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-           [style.background]="(pageTitle() === 'Projects') ? '#EAF0FE' : ''"
-           [style.color]="(pageTitle() === 'Projects') ? '#3B4FD9' : ''">
-          Projects
-        </a>
-        <a routerLink="/users" routerLinkActive="active-nav"
-           class="nav-link" style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-           [style.background]="(pageTitle() === 'Users') ? '#EAF0FE' : ''"
-           [style.color]="(pageTitle() === 'Users') ? '#3B4FD9' : ''">
-          Users
-        </a>
-      } @else {
-        <a routerLink="/dashboard" class="nav-link"
-           style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-           [style.background]="(pageTitle() === 'Dashboard') ? '#EAF0FE' : ''"
-           [style.color]="(pageTitle() === 'Dashboard') ? '#3B4FD9' : '#4B5160'">
-          Dashboard
-        </a>
-        <a routerLink="/projects" class="nav-link"
-           style="display:flex;align-items:center;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:500;text-decoration:none;color:#4B5160;transition:background .15s,color .15s"
-           [style.background]="(pageTitle() === 'Projects') ? '#EAF0FE' : ''"
-           [style.color]="(pageTitle() === 'Projects') ? '#3B4FD9' : '#4B5160'">
-          Projects
-        </a>
-      }
-    </nav>
-
-    <!-- User card -->
-    <div class="flex items-center gap-2.5 border-t px-4 py-3" style="border-color:#E6E8EC">
-      <a routerLink="/profile" class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style="background:#EAF0FE;color:#3B4FD9;text-decoration:none">
-        {{ currentUser?.fullName | initials }}
+      <a routerLink="/dashboard" class="relative mb-10 flex items-center gap-3 px-2 no-underline">
+        <span class="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-[#8494ff] to-[#5a66dc] text-base font-black text-white shadow-[0_10px_25px_rgba(95,109,234,.45)]">W</span>
+        <span>
+          <strong class="block text-[18px] tracking-[-.04em] text-white">Waypoint</strong>
+          <small class="text-[10px] font-bold uppercase tracking-[.19em] text-indigo-300">Project space</small>
+        </span>
       </a>
-      <a routerLink="/profile" class="min-w-0 flex-1" style="text-decoration:none">
-        <p class="truncate text-[13px] font-semibold" style="color:#14161C">{{ currentUser?.fullName }}</p>
-        <p class="text-[11px]" style="color:#9AA1AC">{{ roleLabel }}</p>
-      </a>
-      <button (click)="logout()" class="flex-shrink-0 text-[12px] hover:underline" style="color:#6B7280">Exit</button>
+
+      <div class="relative">
+        <p class="mb-3 px-3 text-[10px] font-bold uppercase tracking-[.18em] text-indigo-300/80">Workspace</p>
+        <nav class="space-y-1.5">
+          <a routerLink="/dashboard" routerLinkActive="!bg-white !text-[#26356f] !shadow-[0_8px_20px_rgba(8,14,48,.18)]" class="group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-bold text-indigo-200 no-underline transition hover:bg-white/10 hover:text-white">
+            <span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10 text-[13px] transition group-hover:bg-white/15">&#9670;</span> Overview
+          </a>
+          <a routerLink="/projects" routerLinkActive="!bg-white !text-[#26356f] !shadow-[0_8px_20px_rgba(8,14,48,.18)]" class="group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-bold text-indigo-200 no-underline transition hover:bg-white/10 hover:text-white">
+            <span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10 text-[13px] transition group-hover:bg-white/15">&#9635;</span> Projects
+          </a>
+          @if (isAdmin) {
+            <a routerLink="/users" routerLinkActive="!bg-white !text-[#26356f] !shadow-[0_8px_20px_rgba(8,14,48,.18)]" class="group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-bold text-indigo-200 no-underline transition hover:bg-white/10 hover:text-white">
+              <span class="grid h-7 w-7 place-items-center rounded-lg bg-white/10 text-[13px] transition group-hover:bg-white/15">&#9678;</span> Team directory
+            </a>
+          }
+        </nav>
+      </div>
+
+      <div class="relative mt-auto rounded-2xl border border-white/10 bg-white/[.07] p-3 backdrop-blur">
+        <div class="flex items-center gap-3">
+          <a routerLink="/profile" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-100 to-[#bdc8ff] text-xs font-extrabold text-[#3f4cb9] no-underline">{{ currentUser?.fullName | initials }}</a>
+          <a routerLink="/profile" class="min-w-0 flex-1 no-underline">
+            <p class="truncate text-[12px] font-bold text-white">{{ currentUser?.fullName }}</p>
+            <p class="mt-0.5 text-[10px] font-medium text-indigo-300">{{ roleLabel }}</p>
+          </a>
+          <button (click)="logout()" aria-label="Sign out" class="grid h-8 w-8 place-items-center rounded-lg text-indigo-200 transition hover:bg-white/10 hover:text-white">&#8599;</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="sticky top-0 z-10 flex min-h-[78px] items-center justify-between border-b border-[#e8ebf3] bg-[#f7f8fc]/85 px-5 backdrop-blur-xl md:px-8 lg:px-10">
+        <div class="flex items-center gap-3">
+          <a routerLink="/dashboard" class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-[#7888ff] to-[#5865d8] text-sm font-black text-white shadow-[0_8px_18px_rgba(88,101,216,.27)] lg:hidden">W</a>
+          <div>
+            <p class="hidden text-[10px] font-bold uppercase tracking-[.16em] text-[#8b94a8] sm:block">Waypoint workspace</p>
+            <h1 class="mt-0.5 text-[22px] font-extrabold tracking-[-.05em] text-[#17203a]">{{ pageTitle() }}</h1>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="hidden rounded-full border border-[#e1e6f0] bg-white px-3.5 py-2 text-[11px] font-semibold text-[#6f7990] shadow-sm md:block">{{ todayDate }}</span>
+          <a routerLink="/profile" class="grid h-10 w-10 place-items-center rounded-xl bg-[#e8ebff] text-xs font-extrabold text-[#5363d6] transition hover:-translate-y-0.5 hover:shadow-md">{{ currentUser?.fullName | initials }}</a>
+        </div>
+      </header>
+
+      <main class="flex-1 px-5 py-7 md:px-8 md:py-9 lg:px-10">
+        <router-outlet />
+      </main>
     </div>
-  </aside>
-
-  <!-- Main column -->
-  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
-
-    <!-- Top bar -->
-    <header class="flex h-[58px] flex-shrink-0 items-center justify-between border-b bg-white px-8" style="border-color:#E6E8EC">
-      <h1 class="text-[15px] font-extrabold tracking-tight" style="color:#14161C">{{ pageTitle() }}</h1>
-      <span class="text-[13px]" style="color:#9AA1AC">{{ todayDate }}</span>
-    </header>
-
-    <!-- Content -->
-    <main class="flex-1 overflow-auto" style="padding:28px 32px">
-      <router-outlet />
-    </main>
   </div>
 </div>

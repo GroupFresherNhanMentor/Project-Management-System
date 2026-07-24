@@ -11,6 +11,7 @@ import type { CreateUserResponse } from '../../../../core/models/user.model';
 
 @Component({
   selector: 'app-user-new',
+  standalone: true,
   imports: [FormsModule, RouterLink],
   templateUrl: './user-new.html',
 })

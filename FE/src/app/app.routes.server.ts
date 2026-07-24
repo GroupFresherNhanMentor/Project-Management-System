@@ -14,6 +14,12 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'projects/:id/members/new',  renderMode: RenderMode.Server },
   { path: 'projects/:id/worklog',      renderMode: RenderMode.Server },
   { path: 'projects/:id/worklog/:userId', renderMode: RenderMode.Server },
+  { path: 'projects/:id/tasks/new',       renderMode: RenderMode.Server },
+  { path: 'projects/:id/task-statuses',  renderMode: RenderMode.Server },
   { path: 'tasks/:id',                 renderMode: RenderMode.Server },
+  { path: 'tasks/:id/details',         renderMode: RenderMode.Server },
+  { path: 'tasks/:id/comments',        renderMode: RenderMode.Server },
+  { path: 'tasks/:id/worklog',         renderMode: RenderMode.Server },
+  { path: 'tasks/:id/activity',        renderMode: RenderMode.Server },
   { path: '**',                        renderMode: RenderMode.Prerender },
 ];

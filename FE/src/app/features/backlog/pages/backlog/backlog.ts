@@ -1,73 +1,128 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { TaskDto } from '../../../../core/models/task.model';
+import { Router, ActivatedRoute } from '@angular/router';
+import { TaskDto, TaskStatusDto, TaskSearchParams } from '../../../../core/models/task.model';
 import { SprintDto } from '../../../../core/models/sprint.model';
 import { ProjectMemberDto } from '../../../../core/models/project-member.model';
-
-const MOCK_TASKS: TaskDto[] = [
-  { id: 't1', taskKey: 'WEB-101', projectId: 'p1', sprintId: 's1', summary: 'Redesign checkout flow',               description: null, taskType: 'STORY', priority: 'HIGH',     status: 'IN_PROGRESS', assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 8,    estimateHour: 40,   dueDate: '2026-07-18', createdAt: '2026-07-01' },
-  { id: 't2', taskKey: 'WEB-102', projectId: 'p1', sprintId: 's1', summary: 'Integrate payment gateway webhook',    description: null, taskType: 'TASK',  priority: 'CRITICAL', status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 5,    estimateHour: null, dueDate: '2026-07-20', createdAt: '2026-07-01' },
-  { id: 't3', taskKey: 'WEB-103', projectId: 'p1', sprintId: 's1', summary: 'Cart total miscalculates with coupon', description: null, taskType: 'BUG',   priority: 'HIGH',     status: 'TESTING',     assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 3,    estimateHour: null, dueDate: '2026-07-19', createdAt: '2026-07-01' },
-  { id: 't4', taskKey: 'WEB-104', projectId: 'p1', sprintId: 's1', summary: 'Add empty-state illustration to cart', description: null, taskType: 'TASK',  priority: 'LOW',      status: 'DONE',        assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: 2,    estimateHour: null, dueDate: '2026-07-15', createdAt: '2026-07-01' },
-  { id: 't5', taskKey: 'WEB-105', projectId: 'p1', sprintId: 's1', summary: 'Guest checkout',                       description: null, taskType: 'STORY', priority: 'MEDIUM',   status: 'TODO',        assigneeId: 'u3', assigneeName: 'Huy Tran', reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-21', createdAt: '2026-07-02' },
-  { id: 't6', taskKey: 'WEB-106', projectId: 'p1', sprintId: 's1', summary: 'Session expires mid-checkout',         description: null, taskType: 'BUG',   priority: 'CRITICAL', status: 'IN_PROGRESS', assigneeId: 'u4', assigneeName: 'Mai Le',   reporterId: 'u2', reporterName: 'Lena Pham', storyPoint: null, estimateHour: null, dueDate: '2026-07-22', createdAt: '2026-07-03' },
-];
-
-const MOCK_SPRINTS: SprintDto[] = [
-  { id: 's1', projectId: 'p1', sprintName: 'Sprint 12', goal: 'Ship checkout redesign', startDate: '2026-07-07', endDate: '2026-07-21', status: 'ACTIVE' },
-  { id: 's2', projectId: 'p1', sprintName: 'Sprint 11', goal: 'Complete auth revamp',   startDate: '2026-06-23', endDate: '2026-07-06', status: 'CLOSED' },
-  { id: 's3', projectId: 'p1', sprintName: 'Sprint 13', goal: 'TBD',                    startDate: '2026-07-22', endDate: '2026-08-04', status: 'PLANNED' },
-];
-
-const MOCK_MEMBERS: ProjectMemberDto[] = [
-  { id: 'm1', projectId: 'p1', userId: 'u2', userFullName: 'Lena Pham',   projectRole: 'PM',     status: 'ACTIVE' },
-  { id: 'm2', projectId: 'p1', userId: 'u3', userFullName: 'Huy Tran',    projectRole: 'DEV',    status: 'ACTIVE' },
-  { id: 'm3', projectId: 'p1', userId: 'u4', userFullName: 'Mai Le',      projectRole: 'DEV',    status: 'ACTIVE' },
-  { id: 'm4', projectId: 'p1', userId: 'u5', userFullName: 'Khoa Nguyen', projectRole: 'TESTER', status: 'ACTIVE' },
-];
+import { TaskPriority } from '../../../../core/models/api.model';
+import { TaskService } from '../../../../core/services/task';
+import { ProjectService } from '../../../../core/services/project';
+import { AuthService } from '../../../../core/services/auth';
 
 @Component({
   selector: 'app-backlog',
   imports: [FormsModule],
   templateUrl: './backlog.html',
 })
-export class Backlog {
-  private readonly router = inject(Router);
+export class Backlog implements OnInit {
+  private readonly router         = inject(Router);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly taskService    = inject(TaskService);
+  private readonly projectService = inject(ProjectService);
+  private readonly authService    = inject(AuthService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
-  readonly sprints = signal(MOCK_SPRINTS);
-  readonly members = signal(MOCK_MEMBERS);
+  private readonly isAdmin = this.authService.getCurrentUser()?.role === 'ADMIN';
 
-  keyword = ''; sprint = ''; status = ''; priority = ''; assignee = '';
+  private readonly projectId = this.resolveProjectId();
+
+  readonly tasks          = signal<TaskDto[]>([]);
+  readonly statuses       = signal<TaskStatusDto[]>([]);
+  readonly sprints        = signal<SprintDto[]>([]);
+  readonly members        = signal<ProjectMemberDto[]>([]);
+  readonly loading        = signal(false);
+  readonly error          = signal<string | null>(null);
+  readonly canCreateTask  = signal(false);
+
+  keyword = ''; statusId = ''; sprintId = ''; priority = ''; assigneeId = '';
   page = 0; size = 20;
-  get totalPages() { return Math.ceil(this.tasks().length / this.size) || 1; }
+  totalPages = 0;
+  totalElements = 0;
 
-  tasks(): TaskDto[] {
-    return MOCK_TASKS.filter(t =>
-      (!this.keyword  || t.summary.toLowerCase().includes(this.keyword.toLowerCase())) &&
-      (!this.sprint   || t.sprintId === this.sprint) &&
-      (!this.status   || t.status   === this.status) &&
-      (!this.priority || t.priority === this.priority) &&
-      (!this.assignee || t.assigneeId === this.assignee),
-    );
+  get totalPagesDisplay(): number { return this.totalPages || 1; }
+
+  readonly priorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isAdmin) {
+      this.projectService.getCurrentMember(this.projectId).subscribe({
+        next: m => this.canCreateTask.set(m.status === 'ACTIVE' && m.projectRole === 'PM'),
+        error: () => this.canCreateTask.set(false),
+      });
+    }
+    this.loadStatuses();
+    this.loadSprints();
+    this.loadMembers();
+    this.load();
   }
 
-  load(): void { /* filtering is reactive via tasks() */ }
+  load(): void {
+    if (!this.projectId) return;
 
-  prevPage(): void { if (this.page > 0) this.page--; }
-  nextPage(): void { if (this.page < this.totalPages - 1) this.page++; }
+    const params: TaskSearchParams = {
+      projectId: this.projectId,
+      page: this.page,
+      size: this.size,
+      ...(this.keyword    && { keyword:    this.keyword }),
+      ...(this.sprintId   && { sprintId:   this.sprintId }),
+      ...(this.statusId   && { statusId:   this.statusId }),
+      ...(this.priority   && { priority:   this.priority as TaskPriority }),
+      ...(this.assigneeId && { assigneeId: this.assigneeId }),
+    };
+
+    this.loading.set(true);
+    this.error.set(null);
+    this.taskService.searchTasks(params).subscribe({
+      next: res => {
+        this.tasks.set(res.items);
+        this.totalPages    = res.totalPages;
+        this.totalElements = res.totalElements;
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load tasks. Please try again.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private loadStatuses(): void {
+    this.taskService.getTaskStatuses(this.projectId, { isActive: true }).subscribe({
+      next: list => this.statuses.set(list.filter(s => s.isActive)),
+    });
+  }
+
+  private loadSprints(): void {
+    this.projectService.getSprints(this.projectId, 0, 100).subscribe({
+      next: res => this.sprints.set(res.items),
+    });
+  }
+
+  private loadMembers(): void {
+    this.projectService.getMembers(this.projectId, 0, 100).subscribe({
+      next: res => this.members.set(res.items),
+    });
+  }
+
+  private resolveProjectId(): string {
+    let r: ActivatedRoute | null = this.route;
+    while (r) {
+      const id = r.snapshot.paramMap.get('id');
+      if (id) return id;
+      r = r.parent;
+    }
+    return '';
+  }
+
+  prevPage(): void { if (this.page > 0)                   { this.page--; this.load(); } }
+  nextPage(): void { if (this.page < this.totalPages - 1) { this.page++; this.load(); } }
 
   openTask(id: string): void { void this.router.navigate(['/tasks', id]); }
-  newTask(): void          { void this.router.navigate(['/tasks/new']); }
+  newTask():            void { void this.router.navigate(['/projects', this.projectId, 'tasks', 'new']); }
 
-  statusLabel(s: string): string {
-    return ({ TODO: 'To Do', IN_PROGRESS: 'In Progress', TESTING: 'Testing', DONE: 'Done' })[s] ?? s;
-  }
-  statusBadge(s: string): string {
-    const m: Record<string, string> = { TODO: 'badge-todo', IN_PROGRESS: 'badge-inprogress', TESTING: 'badge-testing', DONE: 'badge-done' };
-    return 'badge ' + (m[s] ?? '');
-  }
   priorityColor(p: string): string {
-    return ({ LOW: '#5B6472', MEDIUM: '#2A5CD9', HIGH: '#C4720A', CRITICAL: '#D0342C' })[p] ?? '#9AA1AC';
+    return ({ LOW: '#5B6472', MEDIUM: '#2A5CD9', HIGH: '#C4720A', CRITICAL: '#D0342C' } as Record<string, string>)[p] ?? '#9AA1AC';
   }
 }

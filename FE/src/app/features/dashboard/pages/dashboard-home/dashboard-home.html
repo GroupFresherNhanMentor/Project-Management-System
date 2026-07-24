@@ -1,235 +1,86 @@
-<!-- ========================================== -->
-<!-- CASE 1: ADMIN DASHBOARD (Chỉ hiển thị phần chung & Chỉ dẫn) -->
-<!-- ========================================== -->
-@if (role === 'ADMIN') {
-<!-- Phần chỉ dẫn (Waypoints) thay thế cho biểu đồ cũ -->
-<div class="mt-6 grid gap-4 sm:grid-cols-2">
-  <!-- Waypoint: Projects Management -->
-  <div routerLink="/projects" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm" style="border-color:#E6E8EC">
-    <div class="flex items-center gap-3 mb-2">
-      <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-        </svg>
-      </div>
-      <h4 class="text-[15px] font-bold" style="color:#14161C">Waypoint Projects</h4>
-    </div>
-    <p class="text-[13px] mb-4" style="color:#4B5160">Quản lý danh sách toàn bộ dự án trong hệ thống, cấu hình thành viên, phân bổ tài nguyên và theo dõi tiến độ tổng quát.</p>
-
-    <!-- THÊM routerLink Ở ĐÂY -->
-    <button class="text-[13px] font-semibold flex items-center gap-1 transition-colors hover:text-blue-700" style="color:#3B4FD9">
-      Go to Projects Management &rarr;
-    </button>
-  </div>
-
-  <!-- Waypoint: Users Management -->
-  <div routerLink="/users" class="rounded-xl border bg-white p-6 transition-all hover:shadow-sm" style="border-color:#E6E8EC">
-    <div class="flex items-center gap-3 mb-2">
-      <div class="p-2 rounded-lg bg-emerald-50 text-emerald-600">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-        </svg>
-      </div>
-      <h4 class="text-[15px] font-bold" style="color:#14161C">Waypoint Users</h4>
-    </div>
-    <p class="text-[13px] mb-4" style="color:#4B5160">Quản trị danh sách người dùng, cấp quyền hệ thống (ADMIN, PM, DEV), kích hoạt hoặc khóa tài khoản thành viên.</p>
-
-    <!-- THÊM routerLink Ở ĐÂY -->
-    <button class="text-[13px] font-semibold flex items-center gap-1 transition-colors hover:text-emerald-700" style="color:#1C8A4B">
-      Go to Users Management &rarr;
-    </button>
-  </div>
-</div>
-}
-
-<!-- ========================================== -->
-<!-- CASE 2: PM & DEV DASHBOARD (Hiển thị cả cá nhân & dự án đang chọn) -->
-<!-- ========================================== -->
-@if (role !== 'ADMIN') {
-
-<!-- [PHẦN CÁ NHÂN] Thống kê số liệu & Danh sách Task được phân công -->
-@if (devData(); as dev) {
-<div class="mb-6">
-  <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">My Personal Workspace</h3>
-
-  <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">My Open Tasks</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ dev.myOpenTasks }}</p>
-    </div>
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Completed Tasks</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#1C8A4B">{{ dev.myCompletedTasks }}</p>
-    </div>
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Overdue Tasks</p>
-      <p class="mt-2 text-[26px] font-extrabold" [style.color]="dev.myOverdueTasks > 0 ? '#D0342C' : '#14161C'">{{ dev.myOverdueTasks }}</p>
-    </div>
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Logged Hours</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ dev.totalLoggedHours }}h</p>
-    </div>
-  </div>
-
-  <div class="mt-4 rounded-[12px] border bg-white" style="border-color:#E6E8EC">
-    <div class="flex items-center justify-between border-b px-5 py-3" style="border-color:#E6E8EC">
-      <div class="flex gap-2 text-[13px] font-medium">
-        <button class="rounded-lg px-3 py-1.5 transition-colors"
-                [class]="(activeTab === 'OPEN' || !activeTab) ? 'bg-slate-100 font-bold' : 'text-slate-500 hover:bg-slate-50'"
-                (click)="activeTab = 'OPEN'">
-          Open Tasks ({{ devTasks().length }})
-        </button>
-        <button class="rounded-lg px-3 py-1.5 transition-colors"
-                [class]="activeTab === 'COMPLETED' ? 'bg-emerald-50 font-bold text-emerald-700' : 'text-slate-500 hover:bg-slate-50'"
-                (click)="activeTab = 'COMPLETED'">
-          Completed ({{ devCompletedTasks().length }})
-        </button>
-        <button class="rounded-lg px-3 py-1.5 transition-colors"
-                [class]="activeTab === 'OVERDUE' ? 'bg-red-50 font-bold text-red-700' : 'text-slate-500 hover:bg-slate-50'"
-                (click)="activeTab = 'OVERDUE'">
-          Overdue ({{ devOverdueTasks().length }})
-        </button>
-      </div>
-    </div>
-
-    <div class="divide-y" style="border-color:#F0F1F3">
-      <!-- TAB 1: OPEN TASKS -->
-      @if (activeTab === 'OPEN' || !activeTab) {
-      @for (task of devTasks(); track task.id) {
-      <div class="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/50 transition-colors">
-        <span class="w-20 flex-shrink-0 text-[12px] font-mono" style="color:#9AA1AC">{{ task.taskKey }}</span>
-        <span class="flex-1 text-[13px] font-medium" style="color:#14161C">{{ task.summary }}</span>
-        <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
-                  {{ getStatusLabel(task.status) }}
-                </span>
-        <span class="text-[12px] flex-shrink-0" [style.color]="isOverdue(task.dueDate) ? '#D0342C' : '#9AA1AC'">
-                  {{ task.dueDate ?? '—' }}
-                </span>
-      </div>
-      } @empty {
-      <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">No open tasks assigned.</div>
-      }
-      }
-
-      <!-- TAB 2: COMPLETED TASKS -->
-      @if (activeTab === 'COMPLETED') {
-      @for (task of devCompletedTasks(); track task.id) {
-      <div class="flex items-center gap-4 px-5 py-3 bg-slate-50/20 opacity-80">
-        <span class="w-20 flex-shrink-0 text-[12px] font-mono line-through" style="color:#9AA1AC">{{ task.taskKey }}</span>
-        <span class="flex-1 text-[13px] font-medium line-through text-slate-500">{{ task.summary }}</span>
-        <span class="badge badge-done">Done</span>
-        <span class="text-[12px] flex-shrink-0 text-slate-400">
-                  {{ task.dueDate ?? '—' }}
-                </span>
-      </div>
-      } @empty {
-      <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">No completed tasks yet.</div>
-      }
-      }
-
-      <!-- TAB 3: OVERDUE TASKS -->
-      @if (activeTab === 'OVERDUE') {
-      @for (task of devOverdueTasks(); track task.id) {
-      <div class="flex items-center gap-4 px-5 py-3 hover:bg-red-50/10 transition-colors">
-        <span class="w-20 flex-shrink-0 text-[12px] font-mono text-red-500" style="color:#9AA1AC">{{ task.taskKey }}</span>
-        <span class="flex-1 text-[13px] font-medium font-semibold" style="color:#D0342C">{{ task.summary }}</span>
-        <span class="badge" [class]="task.status === 'TODO' ? 'badge-todo' : 'badge-inprogress'">
-                  {{ getStatusLabel(task.status) }}
-                </span>
-        <span class="text-[12px] flex-shrink-0 font-bold" style="color:#D0342C">
-                  Overdue: {{ task.dueDate ?? '—' }}
-                </span>
-      </div>
-      } @empty {
-      <div class="px-5 py-6 text-center text-[13px]" style="color:#9AA1AC">Great! No overdue tasks.</div>
-      }
-      }
-    </div>
-  </div>
-</div>
-} @else {
-<div class="text-[13px] p-5 text-center text-slate-400">Loading personal intelligence…</div>
-}
-
-<hr class="my-6 border-dashed" style="border-color: #E6E8EC" />
-
-<!-- [PHẦN DỰ ÁN ĐANG CHỌN] Thống kê trạng thái chi tiết của Dự án -->
-@if (pmData(); as pm) {
-<div class="mt-4">
-  <h3 class="text-[15px] font-bold mb-3" style="color:#14161C">Selected Project Analytics</h3>
-
-  <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Tasks</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pm.totalTasks }}</p>
-    </div>
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Total Logged Hours</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#14161C">{{ pm.totalLoggedHours }}h</p>
-    </div>
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="text-[11px] font-semibold uppercase tracking-widest" style="color:#9AA1AC">Active Sprint</p>
-      <p class="mt-2 text-[26px] font-extrabold" style="color:#3B4FD9">
-        {{ pm.sprintProgress ? pm.sprintProgress.sprintName : 'None' }}
-      </p>
-    </div>
-  </div>
-
-  <div class="mt-4 grid gap-4 sm:grid-cols-2">
-    <!-- Tasks by Status -->
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Status</p>
-      @for (s of statusOrder; track s.key) {
-      @let statusCount = pm.taskByStatus[s.key];
-      <div class="mb-3 flex items-center gap-3">
-        <span class="w-24 shrink-0 text-[13px]" style="color:#4B5160">{{ s.label }}</span>
-        <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
-          <div class="absolute inset-y-0 left-0 rounded-full"
-               [class]="s.css"
-               [style.width.%]="pm.totalTasks ? (statusCount / pm.totalTasks * 100) : 0"></div>
+<div class="app-page dashboard-page">
+  @if (role === 'ADMIN') {
+    <section class="dashboard-hero relative overflow-hidden rounded-[28px] px-6 py-7 text-white sm:px-8 sm:py-9">
+      <div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div>
+      <div class="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div class="max-w-2xl">
+          <p class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.17em] text-indigo-100"><span class="h-1.5 w-1.5 rounded-full bg-cyan-300"></span> Workspace pulse</p>
+          <h2 class="max-w-xl text-[32px] font-extrabold leading-[1.05] tracking-[-.065em] sm:text-[42px]">Move work forward with confidence.</h2>
+          <p class="mt-4 max-w-lg text-sm leading-6 text-indigo-100/85">A focused, real-time view of your team, portfolio and the work that needs attention.</p>
+          <div class="mt-7 flex flex-wrap gap-3">
+            <a routerLink="/projects" class="hero-primary-link">Explore projects <span>&rarr;</span></a>
+            <a routerLink="/users" class="hero-secondary-link">Manage team</a>
+          </div>
         </div>
-        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ statusCount }}</span>
-      </div>
-      }
-    </div>
-
-    <!-- Tasks by Priority -->
-    <div class="rounded-xl border bg-white p-5" style="border-color:#E6E8EC">
-      <p class="mb-4 text-[14px] font-bold" style="color:#14161C">Tasks by Priority</p>
-      @for (p of priorityOrder; track p.key) {
-      @let priorityCount = pm.taskByPriority[p.key];
-      <div class="mb-3 flex items-center gap-3">
-        <span class="w-20 shrink-0 text-[13px]" style="color:#4B5160">{{ p.label }}</span>
-        <div class="relative h-1.5 flex-1 rounded-full" style="background:#F0F1F3">
-          <div class="absolute inset-y-0 left-0 rounded-full bg-current"
-               [class]="p.css"
-               [style.width.%]="pm.totalTasks ? (priorityCount / pm.totalTasks * 100) : 0"></div>
+        <div class="hidden w-[224px] rounded-2xl border border-white/15 bg-white/[.09] p-5 backdrop-blur-sm lg:block">
+          <p class="text-[10px] font-bold uppercase tracking-[.15em] text-indigo-200">Portfolio health</p>
+          <div class="mt-4 flex items-end gap-2"><span class="text-4xl font-extrabold tracking-[-.06em]">{{ adminStats()?.activeProjects || 0 }}</span><span class="mb-1 text-xs text-indigo-200">active projects</span></div>
+          <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15"><div class="h-full w-3/4 rounded-full bg-cyan-300"></div></div>
         </div>
-        <span class="w-6 shrink-0 text-right text-[13px] font-semibold" style="color:#14161C">{{ priorityCount }}</span>
       </div>
-      }
-    </div>
-  </div>
+    </section>
 
-  <!-- Active Sprint Progress -->
-  @if (pm.sprintProgress; as sp) {
-  <div class="mt-4 rounded-[12px] border bg-white p-5" style="border-color:#E6E8EC">
-    <div class="flex items-center justify-between">
-      <p class="text-[14px] font-bold" style="color:#14161C">Active Sprint: {{ sp.sprintName }}</p>
-      <span class="text-[13px] font-medium" style="color:#3B4FD9">
-              {{ sp.percentComplete }}% Complete
-            </span>
-    </div>
-    <div class="mt-3 h-1.5 w-full rounded-full" style="background:#F0F1F3">
-      <div class="h-full rounded-full transition-all duration-500" style="background:#3B4FD9" [style.width.%]="sp.percentComplete"></div>
-    </div>
-    <div class="mt-2 flex justify-between text-[12px]" style="color:#9AA1AC">
-      <p>{{ sp.doneTasks }} of {{ sp.totalTasks }} tasks completed</p>
-    </div>
-  </div>
+    <section class="dashboard-metrics mt-6">
+      <article class="metric-card metric-indigo"><div class="metric-icon">&#9678;</div><p>Team members</p><strong>{{ adminStats()?.totalUsers || 0 }}</strong><small><span class="metric-dot bg-emerald-400"></span>{{ adminStats()?.activeUsers || 0 }} active now</small></article>
+      <article class="metric-card metric-violet"><div class="metric-icon">&#9635;</div><p>Total projects</p><strong>{{ adminStats()?.totalProjects || 0 }}</strong><small><span class="metric-dot bg-[#919cff]"></span>{{ adminStats()?.activeProjects || 0 }} currently active</small></article>
+      <article class="metric-card metric-cyan"><div class="metric-icon">&#10003;</div><p>Tasks in motion</p><strong>{{ adminStats()?.totalTasks || 0 }}</strong><small><span class="metric-dot bg-cyan-400"></span>Across all workspaces</small></article>
+      <article class="metric-card metric-amber"><div class="metric-icon">&#9716;</div><p>Logged hours</p><strong>{{ adminStats()?.totalLoggedHours || 0 }}<em>h</em></strong><small><span class="metric-dot bg-amber-400"></span>Team delivery effort</small></article>
+    </section>
+
+    <section class="mt-6 grid gap-5 xl:grid-cols-[1.35fr_.9fr]">
+      <article class="surface-card p-5 sm:p-6">
+        <div class="flex items-start justify-between gap-4"><div><p class="section-kicker">Project landscape</p><h3 class="mt-1 text-xl font-extrabold tracking-[-.045em]">Project health</h3></div><a routerLink="/projects" class="text-xs font-bold text-[#5969dc] no-underline">View all &rarr;</a></div>
+        <div class="mt-7 space-y-5">
+          @for (status of ['ACTIVE', 'PLANNING', 'ON_HOLD', 'COMPLETED']; track status) {
+            @let total = adminStats()?.totalProjects || 0;
+            @let count = adminStats()?.projectByStatus?.[status] || 0;
+            <div class="health-row">
+              <div class="flex w-24 items-center gap-2"><span [class]="status === 'ACTIVE' ? 'bg-emerald-400' : status === 'PLANNING' ? 'bg-[#7181ef]' : status === 'ON_HOLD' ? 'bg-amber-400' : 'bg-[#aeb6c9]'" class="h-2 w-2 rounded-full"></span><span>{{ status.replace('_', ' ') }}</span></div>
+              <div class="health-track"><div [class]="status === 'ACTIVE' ? 'bg-emerald-400' : status === 'PLANNING' ? 'bg-[#7181ef]' : status === 'ON_HOLD' ? 'bg-amber-400' : 'bg-[#aeb6c9]'" class="health-fill" [style.width.%]="total ? count / total * 100 : 0"></div></div>
+              <strong>{{ count }}</strong>
+            </div>
+          }
+        </div>
+      </article>
+      <article class="surface-card relative overflow-hidden p-5 sm:p-6">
+        <div class="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-indigo-100 blur-2xl"></div>
+        <div class="relative"><p class="section-kicker">Task mix</p><h3 class="mt-1 text-xl font-extrabold tracking-[-.045em]">Work distribution</h3></div>
+        <div class="relative mt-7 grid grid-cols-3 gap-3">
+          @for (type of ['STORY', 'TASK', 'BUG']; track type) {
+            <div class="work-type-card"><span [class]="type === 'STORY' ? 'bg-[#7c8bff]' : type === 'TASK' ? 'bg-cyan-500' : 'bg-rose-400'" class="mb-5 block h-2 w-8 rounded-full"></span><p>{{ type }}</p><strong>{{ adminStats()?.taskByType?.[type] || 0 }}</strong></div>
+          }
+        </div>
+      </article>
+    </section>
+  } @else {
+    <section class="dashboard-hero relative overflow-hidden rounded-[28px] px-6 py-7 text-white sm:px-8 sm:py-9">
+      <div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div>
+      <div class="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div class="max-w-xl"><p class="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.17em] text-indigo-100"><span class="h-1.5 w-1.5 rounded-full bg-cyan-300"></span> My focus</p><h2 class="text-[32px] font-extrabold leading-[1.05] tracking-[-.065em] sm:text-[42px]">Make progress on work that matters.</h2><p class="mt-4 text-sm leading-6 text-indigo-100/85">Your priorities, project progress and next actions in one intentional space.</p></div><a routerLink="/projects" class="hero-primary-link shrink-0">Open projects <span>&rarr;</span></a></div>
+    </section>
+
+    @if (devData(); as dev) {
+      <section class="dashboard-metrics mt-6">
+        <article class="metric-card metric-indigo"><div class="metric-icon">&#9670;</div><p>Open tasks</p><strong>{{ dev.myOpenTasks }}</strong><small>Ready for your attention</small></article>
+        <article class="metric-card metric-emerald"><div class="metric-icon">&#10003;</div><p>Completed</p><strong>{{ dev.myCompletedTasks }}</strong><small>Work you have delivered</small></article>
+        <article class="metric-card metric-rose"><div class="metric-icon">!</div><p>Overdue</p><strong>{{ dev.myOverdueTasks }}</strong><small>Needs a quick follow-up</small></article>
+        <article class="metric-card metric-amber"><div class="metric-icon">&#9716;</div><p>Logged hours</p><strong>{{ dev.totalLoggedHours }}<em>h</em></strong><small>Time invested this period</small></article>
+      </section>
+    }
+
+    <section class="surface-card mt-6 overflow-hidden">
+      <div class="flex flex-col justify-between gap-4 border-b border-[#edf0f5] px-5 py-5 sm:flex-row sm:items-center sm:px-6"><div><p class="section-kicker">Execution</p><h3 class="mt-1 text-xl font-extrabold tracking-[-.045em]">My tasks</h3><p class="mt-1 text-xs text-[#8792a7]">A calm, clear view of your assigned work.</p></div><div class="task-tabs"><button (click)="activeTab = 'OPEN'" [class.active]="activeTab === 'OPEN'">Open</button><button (click)="activeTab = 'COMPLETED'" [class.active]="activeTab === 'COMPLETED'">Completed</button><button (click)="activeTab = 'OVERDUE'" [class.active]="activeTab === 'OVERDUE'">Overdue</button></div></div>
+      @let visibleTasks = activeTab === 'COMPLETED' ? devCompletedTasks() : activeTab === 'OVERDUE' ? devOverdueTasks() : devTasks();
+      <div class="divide-y divide-[#edf0f5]">
+        @for (task of visibleTasks; track task.id) {
+          <a [routerLink]="['/tasks', task.id]" class="task-row"><span class="task-key">{{ task.taskKey }}</span><span class="min-w-0 flex-1 truncate text-sm font-bold text-[#2f3a52]">{{ task.summary }}</span><span class="task-status" [style.backgroundColor]="task.statusColor">{{ task.status }}</span><span class="task-date" [class.text-red-500]="isOverdue(task.dueDate)">{{ task.dueDate || 'No due date' }}</span><span class="task-arrow">&rarr;</span></a>
+        } @empty {
+          <div class="px-5 py-16 text-center"><div class="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-[#f0f2ff] text-lg text-[#6979e7]">&#10003;</div><p class="mt-3 text-sm font-bold text-[#3a455c]">Nothing here right now</p><p class="mt-1 text-xs text-[#8792a7]">Your tasks will appear here when they are assigned.</p></div>
+        }
+      </div>
+    </section>
+
+    @if (pmData(); as pm) {
+      <section class="mt-6 grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><article class="surface-card p-6"><p class="section-kicker">Current project</p><p class="mt-2 text-xl font-extrabold tracking-[-.045em] text-[#17203a]">{{ pm.sprintProgress?.sprintName || 'Project overview' }}</p><div class="mt-6 flex gap-7"><div><p class="text-2xl font-extrabold tracking-[-.05em]">{{ pm.totalTasks }}</p><p class="mt-1 text-[11px] font-semibold text-[#8b94a8]">TOTAL TASKS</p></div><div><p class="text-2xl font-extrabold tracking-[-.05em]">{{ pm.totalLoggedHours }}h</p><p class="mt-1 text-[11px] font-semibold text-[#8b94a8]">LOGGED TIME</p></div></div></article><article class="surface-card p-6"><div class="flex items-start justify-between"><div><p class="section-kicker">Delivery</p><p class="mt-1 text-xl font-extrabold tracking-[-.045em]">Sprint progress</p></div><span class="rounded-xl bg-[#eef0ff] px-3 py-2 text-sm font-extrabold text-[#5969dc]">{{ pm.sprintProgress?.percentComplete || 0 }}%</span></div><div class="mt-7 h-3 overflow-hidden rounded-full bg-[#edf0f5]"><div class="h-full rounded-full bg-gradient-to-r from-[#5868da] via-[#7989fa] to-cyan-400" [style.width.%]="pm.sprintProgress?.percentComplete || 0"></div></div><p class="mt-3 text-xs font-medium text-[#8792a7]">{{ pm.sprintProgress?.doneTasks || 0 }} of {{ pm.sprintProgress?.totalTasks || 0 }} tasks completed</p></article></section>
+    }
   }
 </div>
-} @else {
-<div class="text-[13px] p-5 text-center text-slate-400">Loading project metrics…</div>
-}
-}

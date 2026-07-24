@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -13,10 +14,11 @@ import { ToastService } from '../../../../core/services/toast';
   templateUrl: './project-edit.html',
 })
 export class ProjectEdit implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly router         = inject(Router);
   private readonly projectService = inject(ProjectService);
-  private readonly toast = inject(ToastService);
+  private readonly toast          = inject(ToastService);
+  private readonly platformId     = inject(PLATFORM_ID);
 
   readonly projectId = this.route.snapshot.paramMap.get('id') ?? '';
   readonly statuses: ProjectStatus[] = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED'];
@@ -31,6 +33,7 @@ export class ProjectEdit implements OnInit {
   readonly errorMessage = signal<string | null>(null);
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
     if (!this.projectId) {
       this.errorMessage.set('Missing project ID.');
       this.loading.set(false);

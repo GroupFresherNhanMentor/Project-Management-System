@@ -9,6 +9,7 @@ import {
   ProjectMemberDto,
   ProjectMemberCandidateDto,
   AddProjectMemberRequest,
+  UpdateProjectMemberRoleRequest,
 } from '../models/project-member.model';
 import { SprintDto, CreateSprintRequest, UpdateSprintRequest, UpdateSprintStatusRequest } from '../models/sprint.model';
 
@@ -77,6 +78,12 @@ export class ProjectService {
   addMember(projectId: string, body: AddProjectMemberRequest): Observable<ProjectMemberDto> {
     return this.http
       .post<ApiResponse<ProjectMemberDto>>(API.projects.members(projectId), body)
+      .pipe(map(r => r.data));
+  }
+
+  updateMemberRole(projectId: string, memberId: string, body: UpdateProjectMemberRoleRequest): Observable<ProjectMemberDto> {
+    return this.http
+      .patch<ApiResponse<ProjectMemberDto>>(API.projects.memberRole(projectId, memberId), body)
       .pipe(map(r => r.data));
   }
 

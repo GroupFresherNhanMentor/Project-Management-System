@@ -1,41 +1,26 @@
-<a routerLink="/projects" class="mb-5 inline-flex items-center gap-1 text-[13px]" style="color:#3B4FD9">‹ Back to Projects</a>
+<div class="app-page creation-page">
+  <a routerLink="/projects" class="back-link"><span>&larr;</span> Back to projects</a>
 
-<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:640px">
-  <h2 class="mb-5 text-[16px] font-extrabold" style="color:#14161C">New Project</h2>
-  <div class="flex flex-col gap-3">
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Project Code *</label>
-        <input [(ngModel)]="projectCode" placeholder="e.g. WEB" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] uppercase outline-none focus:border-primary" style="border-color:#E1E4E9" />
+  <div class="creation-heading">
+    <div><p class="section-kicker">Project portfolio</p><h2>Start a new project</h2><p>Set the essentials first. You can invite members, plan sprints and add work after the project is created.</p></div>
+    <div class="creation-heading-icon project">&#9635;</div>
+  </div>
+
+  <div class="creation-layout">
+    <section class="creation-form-card">
+      <div class="creation-card-header"><div><h3>Project foundation</h3><p>Give the project a clear identity, status and timeline.</p></div><span class="form-step">Required fields marked *</span></div>
+      <div class="mt-7 grid gap-5">
+        <div class="grid gap-5 sm:grid-cols-[.65fr_1.35fr]"><label class="form-field"><span>Project code <b>*</b></span><input [(ngModel)]="projectCode" placeholder="e.g. WEB" class="control-field w-full px-3.5 text-sm uppercase" /></label><label class="form-field"><span>Project name <b>*</b></span><input [(ngModel)]="projectName" placeholder="Give this project a memorable name" class="control-field w-full px-3.5 text-sm" /></label></div>
+        <label class="form-field max-w-[250px]"><span>Initial status <b>*</b></span><select [(ngModel)]="status" class="control-field w-full px-3.5 text-sm">@for (item of statuses; track item) { <option [value]="item">{{ item.replace('_', ' ') }}</option> }</select><small>Most projects begin in Planning.</small></label>
+        <label class="form-field"><span>Project description <i>Optional</i></span><textarea [(ngModel)]="description" rows="4" placeholder="What are you building and what outcome matters?" class="control-field w-full resize-none px-3.5 py-3 text-sm"></textarea></label>
+        <div class="grid gap-5 sm:grid-cols-2"><label class="form-field"><span>Start date <b>*</b></span><input [(ngModel)]="startDate" type="date" class="control-field w-full px-3.5 text-sm" /></label><label class="form-field"><span>Target end date <b>*</b></span><input [(ngModel)]="endDate" type="date" class="control-field w-full px-3.5 text-sm" /></label></div>
       </div>
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Project Name *</label>
-        <input [(ngModel)]="projectName" placeholder="Project name" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none focus:border-primary" style="border-color:#E1E4E9" />
-      </div>
-    </div>
-    <div>
-      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Status *</label>
-      <select [(ngModel)]="status" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9">
-        @for (item of statuses; track item) { <option [value]="item">{{ item }}</option> }
-      </select>
-    </div>
-    <div>
-      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Description</label>
-      <textarea [(ngModel)]="description" rows="3" placeholder="Description…" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none resize-none" style="border-color:#E1E4E9"></textarea>
-    </div>
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Start Date *</label>
-        <input [(ngModel)]="startDate" type="date" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
-      </div>
-      <div>
-        <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">End Date *</label>
-        <input [(ngModel)]="endDate" type="date" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9" />
-      </div>
-    </div>
-    <div class="flex gap-2 pt-1">
-      <button (click)="submit()" [disabled]="submitting" class="rounded-[8px] px-5 py-2.5 text-[13px] font-bold text-white disabled:opacity-60" style="background:#3B4FD9">Create</button>
-      <a routerLink="/projects" class="inline-flex items-center rounded-[8px] border px-5 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160;text-decoration:none">Cancel</a>
-    </div>
+      <div class="creation-actions"><a routerLink="/projects" class="button-secondary">Cancel</a><button (click)="submit()" [disabled]="submitting" class="button-primary min-w-[164px]">{{ submitting ? 'Creating...' : 'Create project' }} <span aria-hidden="true">&rarr;</span></button></div>
+    </section>
+
+    <aside class="creation-aside project-aside">
+      <div class="aside-icon project">&#10022;</div><p class="section-kicker">A simple launch plan</p><h3>From idea to organized work.</h3>
+      <ol><li><span>1</span><div><strong>Create the project</strong><p>Set its identity, lifecycle state and intended timeframe.</p></div></li><li><span>2</span><div><strong>Build the team</strong><p>Add project members and assign the right responsibilities.</p></div></li><li><span>3</span><div><strong>Plan the work</strong><p>Create a sprint, shape the backlog and begin delivery.</p></div></li></ol>
+    </aside>
   </div>
 </div>

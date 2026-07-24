@@ -1,72 +1,36 @@
-<a routerLink="/users" class="mb-5 inline-flex items-center gap-1 text-[13px] hover:underline" style="color:#3B4FD9;text-decoration:none">← Back to Users</a>
+<div class="app-page creation-page">
+  <a routerLink="/users" class="back-link"><span>&larr;</span> Back to team directory</a>
 
-<div class="rounded-[12px] border bg-white p-6" style="border-color:#E6E8EC;max-width:560px">
-  <h2 class="mb-1 text-[18px] font-extrabold" style="color:#14161C">New User</h2>
-  <p class="mb-5 text-[12px]" style="color:#9AA1AC">Username and password will be auto-generated</p>
+  <div class="creation-heading">
+    <div><p class="section-kicker">Team directory</p><h2>Create a new teammate</h2><p>Add a teammate now. Their sign-in credentials are safely generated when you create the account.</p></div>
+    <div class="creation-heading-icon user">&#9678;</div>
+  </div>
 
-  <div class="flex flex-col gap-4">
-    <div>
-      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Full Name *</label>
-      <input [(ngModel)]="fullName" placeholder="e.g. John Doe" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-    </div>
+  <div class="creation-layout">
+    <section class="creation-form-card">
+      <div class="creation-card-header"><div><h3>Account details</h3><p>Enter the information needed to set up this account.</p></div><span class="form-step">Step 1 of 1</span></div>
+      <div class="mt-7 grid gap-5">
+        <label class="form-field"><span>Full name <b>*</b></span><input [(ngModel)]="fullName" placeholder="e.g. Jane Doe" class="control-field w-full px-3.5 text-sm" /></label>
+        <label class="form-field"><span>Work email <b>*</b></span><input [(ngModel)]="email" type="email" placeholder="jane@company.com" class="control-field w-full px-3.5 text-sm" /></label>
+        <label class="form-field max-w-[250px]"><span>Workspace role</span><select [(ngModel)]="role" class="control-field w-full px-3.5 text-sm">@for (r of roles; track r) { <option [value]="r">{{ r }}</option> }</select><small>Choose the access level for this teammate.</small></label>
+      </div>
+      <div class="creation-actions"><a routerLink="/users" class="button-secondary">Cancel</a><button (click)="submit()" [disabled]="submitting()" class="button-primary min-w-[142px]">{{ submitting() ? 'Creating...' : 'Create user' }} <span aria-hidden="true">&rarr;</span></button></div>
+    </section>
 
-    <div>
-      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Email *</label>
-      <input [(ngModel)]="email" type="email" placeholder="john@company.com" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C" />
-    </div>
-
-    <div style="max-width:200px">
-      <label class="mb-1 block text-[12px] font-medium" style="color:#6B7280">Role</label>
-      <select [(ngModel)]="role" class="w-full rounded-[8px] border px-3 py-2.5 text-[13px] outline-none" style="border-color:#E1E4E9;color:#14161C">
-        @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
-      </select>
-    </div>
-
-    <div class="flex gap-3 pt-2">
-      <button
-        (click)="submit()"
-        [disabled]="submitting()"
-        class="rounded-[8px] px-6 py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
-        style="background:#3B4FD9"
-      >{{ submitting() ? 'Creating…' : 'Create User' }}</button>
-      <a routerLink="/users" class="inline-flex items-center rounded-[8px] border px-6 py-2.5 text-[13px] font-medium" style="border-color:#E1E4E9;color:#4B5160;text-decoration:none">Cancel</a>
-    </div>
+    <aside class="creation-aside">
+      <div class="aside-icon user">&#10003;</div><p class="section-kicker">What happens next</p><h3>Ready to join the workspace.</h3>
+      <ol><li><span>1</span><div><strong>We create the account</strong><p>A secure username and temporary password are generated.</p></div></li><li><span>2</span><div><strong>Share credentials</strong><p>Copy the details from the confirmation screen and send them securely.</p></div></li><li><span>3</span><div><strong>They sign in</strong><p>Your teammate can enter the workspace immediately.</p></div></li></ol>
+    </aside>
   </div>
 </div>
 
-<!-- Credentials popup -->
 @if (result(); as r) {
-  <div class="fixed inset-0 z-50 flex items-center justify-center" style="background:rgba(20,22,28,0.4)">
-    <div class="w-full rounded-[14px] bg-white p-6" style="max-width:420px;box-shadow:0 20px 50px -20px rgba(20,24,40,0.3)">
-      <div class="mb-1 flex h-10 w-10 items-center justify-center rounded-full" style="background:#E4F5E9">
-        <span class="text-lg">✓</span>
-      </div>
-      <h3 class="mb-1 mt-3 text-[16px] font-extrabold" style="color:#14161C">User Created</h3>
-      <p class="mb-4 text-[12px]" style="color:#9AA1AC">Share these credentials with the user</p>
-
-      <div class="mb-4 rounded-[8px] p-4" style="background:#FAFBFC">
-        <div class="mb-3 flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold uppercase" style="color:#9AA1AC">Username</p>
-            <p class="mt-0.5 text-[14px] font-bold font-mono" style="color:#14161C">{{ r.user.username }}</p>
-          </div>
-          <button (click)="copy(r.user.username)" class="rounded-[6px] border px-2.5 py-1 text-[11px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Copy</button>
-        </div>
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-[11px] font-semibold uppercase" style="color:#9AA1AC">Temporary Password</p>
-            <p class="mt-0.5 text-[14px] font-bold font-mono" style="color:#14161C">{{ r.generatedPassword }}</p>
-          </div>
-          <button (click)="copy(r.generatedPassword)" class="rounded-[6px] border px-2.5 py-1 text-[11px] font-medium" style="border-color:#E1E4E9;color:#4B5160">Copy</button>
-        </div>
-      </div>
-
-      <div class="text-[12px]" style="color:#9AA1AC">
-        <p>Employee ID: <strong style="color:#4B5160">{{ r.user.employeeId }}</strong></p>
-        <p>Email: <strong style="color:#4B5160">{{ r.user.email }}</strong></p>
-      </div>
-
-      <button (click)="closeResult()" class="mt-4 w-full rounded-[8px] py-2.5 text-[13px] font-bold text-white" style="background:#3B4FD9">Done</button>
-    </div>
+  <div class="fixed inset-0 z-50 grid place-items-center bg-[#111936]/55 p-4 backdrop-blur-sm">
+    <section class="credential-modal w-full max-w-[470px]">
+      <div class="credential-success">&#10003;</div><p class="section-kicker mt-5">Account created</p><h3>Your teammate is ready.</h3><p class="mt-2 text-sm leading-6 text-[#748096]">Share these temporary credentials securely. The user can use them to sign in right away.</p>
+      <div class="credential-list"><div><span>Username</span><strong>{{ r.user.username }}</strong><button (click)="copy(r.user.username)">Copy</button></div><div><span>Temporary password</span><strong>{{ r.generatedPassword }}</strong><button (click)="copy(r.generatedPassword)">Copy</button></div></div>
+      <div class="mt-4 rounded-xl bg-[#f7f8fc] px-4 py-3 text-xs leading-5 text-[#68748a]"><strong class="text-[#344057]">{{ r.user.employeeId }}</strong> &middot; {{ r.user.email }}</div>
+      <button (click)="closeResult()" class="button-primary mt-6 w-full">Done</button>
+    </section>
   </div>
 }
